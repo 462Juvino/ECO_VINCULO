@@ -15802,6 +15802,3592 @@
         n.restore();
       }
 
+      function desenharPyrombra(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "round";
+        let strokeW = Math.max(1.8, o * 0.02);
+
+        let flutua = Math.sin(tempo * 4) * o * 0.05;
+
+        let corBrasa = "#ea580c";
+        let luzBrasa = "#fde047";
+        let corSombra = "#0f172a"; // Fogo negro/roxo muito escuro
+        let brilhoSombra = "#4c1d95";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.32 * (1 + (u.stage || 0) * 0.28);
+
+        // AURA DE FOGO NEGRO (Chamas traseiras)
+        n.fillStyle = corSombra;
+        n.strokeStyle = brilhoSombra;
+        n.lineWidth = strokeW * 1.5;
+
+        for(let i = -1; i <= 1; i += 2) {
+          n.beginPath();
+          let flicker = Math.sin(tempo * 12 + i) * raio * 0.15;
+          n.moveTo(0, raio * 0.5);
+          n.quadraticCurveTo(i * raio * 0.9, 0, i * raio * 0.5 + flicker, -raio * 0.8 + flicker);
+          n.quadraticCurveTo(i * raio * 0.2, -raio * 0.4, 0, -raio * 1.3 + flicker * 1.5);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        }
+
+        // CORPO ÍGNEO (Chama central incandescente)
+        let gradFogo = n.createLinearGradient(0, -raio * 1.2, 0, raio * 0.6);
+        gradFogo.addColorStop(0, corSombra);
+        gradFogo.addColorStop(0.5, corBrasa);
+        gradFogo.addColorStop(1, luzBrasa);
+
+        n.fillStyle = gradFogo;
+        n.strokeStyle = corBrasa;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(0, raio * 0.6);
+        n.bezierCurveTo(raio * 0.7, raio * 0.4, raio * 0.6, -raio * 0.1, 0, -raio * 1.1 + Math.sin(tempo * 15) * raio * 0.1);
+        n.bezierCurveTo(-raio * 0.6, -raio * 0.1, -raio * 0.7, raio * 0.4, 0, raio * 0.6);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // NÚCLEO INFERIOR
+        n.fillStyle = luzBrasa;
+        n.beginPath();
+        n.ellipse(0, raio * 0.25, raio * 0.25, raio * 0.2, 0, 0, Math.PI * 2);
+        n.fill();
+
+        // OLHOS AMEAÇADORES (Fendas anguladas)
+        if (isFainted) {
+          n.strokeStyle = corSombra;
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = corSombra;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.08, -raio * 0.02);
+            n.lineTo(lado * raio * 0.35, -raio * 0.2); // Ângulo agressivo
+            n.lineTo(lado * raio * 0.28, 0);
+            n.lineTo(lado * raio * 0.1, raio * 0.1);
+            n.closePath();
+            n.fill();
+
+            // Ponto de luz sinistro no olho
+            n.fillStyle = luzBrasa;
+            n.beginPath();
+            n.arc(lado * raio * 0.22, -raio * 0.06, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = corSombra;
+          });
+        }
+
+        // BRASAS NEGRAS FLUTUANTES
+        if (!isFainted) {
+          n.fillStyle = corSombra;
+          n.strokeStyle = corBrasa;
+          n.lineWidth = strokeW * 0.5;
+          for (let i = 0; i < 4; i++) {
+            let px = Math.cos(tempo * 3 + i * 2.1) * raio * 1.1;
+            let py = Math.sin(tempo * 4 + i * 1.7) * raio * 0.9 - raio * 0.2;
+            n.beginPath();
+            n.moveTo(px, py + raio * 0.08);
+            n.quadraticCurveTo(px + raio * 0.08, py, px, py - raio * 0.12);
+            n.quadraticCurveTo(px - raio * 0.08, py, px, py + raio * 0.08);
+            n.fill();
+            n.stroke();
+          }
+        }
+
+        n.restore();
+      }
+
+      function desenharRedemuinho(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 5) * 0.025;
+
+        n.lineCap = "round";
+        n.lineJoin = "round";
+        let strokeW = Math.max(1.5, o * 0.018);
+
+        let corFaisca = "#facc15";
+        let sombraFaisca = "#a16207";
+        let luzFaisca = "#fef08a";
+        let corCorpo = "#452b17";
+        let corGorro = "#dc2626";
+        let sombraGorro = "#991b1b";
+
+        let flutua = Math.sin(tempo * 8) * o * 0.08 - o * 0.1;
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.15);
+
+        // REDEMOINHO DE VENTO ELÉTRICO MAIOR
+        n.strokeStyle = sombraFaisca;
+        n.lineWidth = strokeW;
+        n.fillStyle = corFaisca;
+        for (let i = 0; i < 5; i++) {
+          n.save();
+          let yOffset = raio * 0.4 + i * raio * 0.25;
+          let w = raio * 0.5 - i * raio * 0.07;
+          let h = raio * 0.15 - i * raio * 0.02;
+          let sway = Math.sin(tempo * 15 + i * 1.5) * raio * 0.15;
+          n.translate(sway, yOffset);
+          n.beginPath();
+          n.ellipse(0, 0, Math.max(0.1, w), Math.max(0.1, h), 0, 0, Math.PI * 2);
+          n.fill();
+          n.stroke();
+          n.restore();
+        }
+
+        // CORPO
+        n.fillStyle = corCorpo;
+        n.strokeStyle = "#27180d";
+        n.beginPath();
+        n.ellipse(0, raio * 0.1, raio * 0.35, raio * 0.45, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // BRAÇOS CRUZADOS (Postura de quem vai aprontar)
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.ellipse(lado * raio * 0.2, raio * 0.2, raio * 0.15, raio * 0.08, lado * -0.4, 0, Math.PI * 2);
+          n.fill();
+          n.stroke();
+        });
+
+        // GORRO VERMELHO (Maior e desgrenhado pelo vento)
+        n.fillStyle = corGorro;
+        n.strokeStyle = sombraGorro;
+        n.beginPath();
+        n.moveTo(-raio * 0.35, -raio * 0.15);
+        n.quadraticCurveTo(0, -raio * 0.35, raio * 0.35, -raio * 0.15);
+        n.quadraticCurveTo(raio * 0.6, -raio * 0.9, raio * 0.9, -raio * 1.1);
+        n.quadraticCurveTo(raio * 0.2, -raio * 1.3, -raio * 0.35, -raio * 0.15);
+        n.fill();
+        n.stroke();
+
+        n.beginPath();
+        n.arc(raio * 0.9, -raio * 1.1, raio * 0.08, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // OLHOS E EXPRESSÃO
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = -raio * 0.05;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#fff";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.ellipse(lado * raio * 0.15, -raio * 0.05, raio * 0.08, raio * 0.12, lado * 0.2, 0, Math.PI * 2);
+            n.fill();
+          });
+          n.fillStyle = corFaisca;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.arc(lado * raio * 0.15, -raio * 0.05, raio * 0.04, 0, Math.PI * 2);
+            n.fill();
+          });
+        }
+
+        // SORRISO ZOMBETEIRO COM DENTINHO
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW * 0.8;
+        n.beginPath();
+        n.moveTo(-raio * 0.15, raio * 0.15);
+        n.quadraticCurveTo(0, raio * 0.3, raio * 0.2, raio * 0.1);
+        n.stroke();
+
+        if(!isFainted) {
+          n.fillStyle = "#fff";
+          n.beginPath();
+          n.moveTo(raio * 0.05, raio * 0.21);
+          n.lineTo(raio * 0.12, raio * 0.26);
+          n.lineTo(raio * 0.15, raio * 0.15);
+          n.fill();
+          n.stroke();
+        }
+
+        // GRAVETO
+        n.strokeStyle = "#78350f";
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(raio * 0.15, raio * 0.15);
+        n.lineTo(raio * 0.4, raio * 0.25);
+        n.stroke();
+
+        // ESPIRAIS DOURADAS (Faíscas contínuas em hélice)
+        if (!isFainted) {
+          n.strokeStyle = luzFaisca;
+          n.lineWidth = strokeW * 1.2;
+          n.beginPath();
+          for (let i = 0; i <= 30; i++) {
+            let t = i / 30;
+            let ang = tempo * 8 + t * Math.PI * 6;
+            let rOrbit = raio * 0.6 + t * raio * 0.6;
+            let px = Math.cos(ang) * rOrbit;
+            let py = Math.sin(ang) * (rOrbit * 0.3) + raio * 1.2 - t * raio * 2.5;
+            if (i === 0) n.moveTo(px, py);
+            else n.lineTo(px, py);
+          }
+          n.stroke();
+
+          // Raios soltos
+          n.fillStyle = luzFaisca;
+          for(let i = 0; i < 3; i++) {
+             let ang = tempo * 10 + i * 2.1;
+             let px = Math.cos(ang) * raio * 1.3;
+             let py = Math.sin(ang) * raio * 0.9 + raio * 0.2;
+             n.beginPath();
+             n.moveTo(px, py - raio * 0.15);
+             n.lineTo(px + raio * 0.05, py);
+             n.lineTo(px - raio * 0.02, py + raio * 0.1);
+             n.lineTo(px - raio * 0.06, py);
+             n.fill();
+          }
+        }
+
+        n.restore();
+      }
+
+      function desenharRochombra(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.02);
+
+        let flutua = Math.sin(tempo * 2.5) * o * 0.03;
+
+        let corPedra = "#57534e";
+        let sombraPedra = "#1c1917";
+        let luzPedra = "#78716c";
+        let corSombra = "#0f172a";
+        let brilhoSombra = "#8b5cf6";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.25);
+
+        // AURA QUE ENGOLE A LUZ (Gradiente reverso escuro)
+        if (!isFainted) {
+          let aura = n.createRadialGradient(0, 0, raio * 0.2, 0, 0, raio * 1.8);
+          aura.addColorStop(0, "rgba(15, 23, 42, 0.7)");
+          aura.addColorStop(0.5, "rgba(124, 58, 237, 0.15)");
+          aura.addColorStop(1, "rgba(15, 23, 42, 0)");
+          n.fillStyle = aura;
+          n.beginPath();
+          n.arc(0, 0, raio * 1.8, 0, Math.PI * 2);
+          n.fill();
+        }
+
+        // BRAÇOS FLUTUANTES / ROCHAS DEFENSIVAS ORBITAIS
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = brilhoSombra;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          let sway = Math.sin(tempo * 3 + lado) * raio * 0.1;
+          n.beginPath();
+          n.moveTo(lado * raio * 0.7 + sway, -raio * 0.2);
+          n.lineTo(lado * raio * 0.95 + sway, raio * 0.15);
+          n.lineTo(lado * raio * 0.65 + sway, raio * 0.45);
+          n.lineTo(lado * raio * 0.45 + sway, raio * 0.1);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // CORPO PRINCIPAL (FORTALEZA DE PEDRA)
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzPedra);
+        gradCorpo.addColorStop(0.5, corPedra);
+        gradCorpo.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        // Base pesada
+        n.moveTo(-raio * 0.65, raio * 0.85);
+        n.lineTo(raio * 0.65, raio * 0.85);
+        // Lateral direita
+        n.lineTo(raio * 0.75, raio * 0.3);
+        n.lineTo(raio * 0.55, -raio * 0.4);
+        // Topo (Muralhas/Torres da fortaleza)
+        n.lineTo(raio * 0.55, -raio * 0.8);
+        n.lineTo(raio * 0.25, -raio * 0.6);
+        n.lineTo(0, -raio * 0.95);
+        n.lineTo(-raio * 0.25, -raio * 0.6);
+        n.lineTo(-raio * 0.55, -raio * 0.8);
+        // Lateral esquerda
+        n.lineTo(-raio * 0.55, -raio * 0.4);
+        n.lineTo(-raio * 0.75, raio * 0.3);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // PLACAS DE ARMADURA E RACHADURAS DE ENERGIA SOMBRIA
+        n.strokeStyle = brilhoSombra;
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 0.6); n.lineTo(0, raio * 0.4); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.65, 0); n.lineTo(-raio * 0.25, raio * 0.15); n.lineTo(0, -raio * 0.1); n.stroke();
+        n.beginPath(); n.moveTo(raio * 0.65, 0); n.lineTo(raio * 0.25, raio * 0.15); n.lineTo(0, -raio * 0.1); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.4, raio * 0.85); n.lineTo(-raio * 0.2, raio * 0.5); n.lineTo(0, raio * 0.4); n.stroke();
+        n.beginPath(); n.moveTo(raio * 0.4, raio * 0.85); n.lineTo(raio * 0.2, raio * 0.5); n.lineTo(0, raio * 0.4); n.stroke();
+
+        // Núcleo central pulsante
+        n.fillStyle = brilhoSombra;
+        n.beginPath(); n.arc(0, -raio * 0.1, Math.max(raio * 0.05, Math.sin(tempo * 5) * raio * 0.08), 0, Math.PI*2); n.fill();
+
+        // OLHOS IMPONENTES (Fendas anguladas sinistras)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.3, cy = raio * 0.25;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+            n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+            n.stroke();
+          });
+        } else {
+          [-1, 1].forEach((lado) => {
+            n.fillStyle = corSombra;
+            n.beginPath();
+            n.moveTo(lado * raio * 0.15, raio * 0.15);
+            n.lineTo(lado * raio * 0.45, raio * 0.1); // Ângulo afiado para baixo
+            n.lineTo(lado * raio * 0.35, raio * 0.35);
+            n.lineTo(lado * raio * 0.2, raio * 0.3);
+            n.closePath();
+            n.fill();
+
+            // Ponto de luz da pupila (Focado no centro)
+            n.fillStyle = brilhoSombra;
+            n.beginPath();
+            n.arc(lado * raio * 0.25, raio * 0.2, raio * 0.04, 0, Math.PI * 2);
+            n.fill();
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharTerrascal(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.02);
+
+        let flutua = Math.sin(tempo * 2.5) * o * 0.02;
+
+        let corPedra = "#8b7355";
+        let sombraPedra = "#4a3b2c";
+        let luzPedra = "#c1a78e";
+        let corMagma = "#ea580c";
+        let luzMagma = "#fde047";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.25);
+
+        // PERNAS PESADAS DE ROCHA
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.3, raio * 0.4);
+          n.lineTo(lado * raio * 0.6, raio * 0.8);
+          n.lineTo(lado * raio * 0.2, raio * 0.85);
+          n.lineTo(lado * raio * 0.1, raio * 0.5);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // CAUDA CORTANTE DE PEDRA
+        n.beginPath();
+        n.moveTo(-raio * 0.4, raio * 0.2);
+        n.lineTo(-raio * 0.9, raio * 0.4);
+        n.lineTo(-raio * 0.5, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CARAPAÇA PRINCIPAL (Formato de diamante bruto)
+        let gradCasco = n.createLinearGradient(0, -raio, 0, raio * 0.5);
+        gradCasco.addColorStop(0, luzPedra);
+        gradCasco.addColorStop(0.5, corPedra);
+        gradCasco.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradCasco;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW * 1.5;
+
+        n.beginPath();
+        n.moveTo(0, -raio * 0.9);
+        n.lineTo(raio * 0.6, -raio * 0.5);
+        n.lineTo(raio * 0.8, 0);
+        n.lineTo(raio * 0.5, raio * 0.6);
+        n.lineTo(-raio * 0.5, raio * 0.6);
+        n.lineTo(-raio * 0.8, 0);
+        n.lineTo(-raio * 0.6, -raio * 0.5);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // PLACAS DA ARMADURA
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 0.9); n.lineTo(0, 0); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.8, 0); n.lineTo(0, 0); n.lineTo(raio * 0.8, 0); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.5, raio * 0.6); n.lineTo(0, 0); n.lineTo(raio * 0.5, raio * 0.6); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.6, -raio * 0.5); n.lineTo(0, 0); n.lineTo(raio * 0.6, -raio * 0.5); n.stroke();
+
+        // FISSURAS LUMINOSAS (Magma pulsante)
+        if (!isFainted) {
+          let brilhoMagma = Math.sin(tempo * 5) * 0.5 + 0.5;
+          n.strokeStyle = corMagma;
+          n.lineWidth = strokeW * 1.5;
+          n.beginPath(); n.moveTo(-raio * 0.3, 0); n.lineTo(-raio * 0.1, raio * 0.3); n.stroke();
+          n.beginPath(); n.moveTo(raio * 0.3, 0); n.lineTo(raio * 0.1, raio * 0.3); n.stroke();
+
+          n.strokeStyle = luzMagma;
+          n.lineWidth = strokeW * 0.5;
+          n.globalAlpha = brilhoMagma;
+          n.beginPath(); n.moveTo(-raio * 0.3, 0); n.lineTo(-raio * 0.1, raio * 0.3); n.stroke();
+          n.beginPath(); n.moveTo(raio * 0.3, 0); n.lineTo(raio * 0.1, raio * 0.3); n.stroke();
+          n.globalAlpha = 1;
+        }
+
+        // CHIFRES ROBUSTOS (Herança do Brascal)
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.4, -raio * 0.7);
+          n.lineTo(lado * raio * 0.7, -raio * 1.1);
+          n.lineTo(lado * raio * 0.7, -raio * 0.4);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // ELMO DA ARMADURA (Rosto cravado na pedra)
+        n.fillStyle = sombraPedra;
+        n.beginPath();
+        n.moveTo(-raio * 0.3, raio * 0.1);
+        n.lineTo(raio * 0.3, raio * 0.1);
+        n.lineTo(raio * 0.2, raio * 0.4);
+        n.lineTo(-raio * 0.2, raio * 0.4);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS (Fendas de Magma agressivas)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = raio * 0.25;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.05, cy - raio * 0.05); n.lineTo(cx + raio * 0.05, cy + raio * 0.05);
+            n.moveTo(cx + raio * 0.05, cy - raio * 0.05); n.lineTo(cx - raio * 0.05, cy + raio * 0.05);
+            n.stroke();
+          });
+        } else {
+          [-1, 1].forEach((lado) => {
+            n.fillStyle = corMagma;
+            n.beginPath();
+            n.moveTo(lado * raio * 0.05, raio * 0.2);
+            n.lineTo(lado * raio * 0.25, raio * 0.25);
+            n.lineTo(lado * raio * 0.15, raio * 0.35);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzMagma;
+            n.beginPath();
+            n.arc(lado * raio * 0.15, raio * 0.25, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+          });
+        }
+
+        // MANDÍBULA TRAVADA
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.15, raio * 0.5);
+        n.lineTo(raio * 0.15, raio * 0.5);
+        n.stroke();
+
+        n.restore();
+      }
+
+      function desenharTidalvolt(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.02);
+
+        // Movimento de "surf" agressivo
+        let flutua = Math.sin(tempo * 5) * o * 0.06;
+
+        let corMare = "#0284c7";
+        let sombraMare = "#0c4a6e";
+        let luzMare = "#38bdf8";
+        let corFaisca = "#facc15";
+        let luzFaisca = "#fef08a";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // ONDA DA TEMPESTADE (O Tidalvolt surfa sobre ela)
+        if (!isFainted) {
+          n.strokeStyle = luzMare;
+          n.lineWidth = strokeW * 1.5;
+          let waveOffset = Math.sin(tempo * 8) * raio * 0.1;
+          n.beginPath();
+          n.moveTo(-raio * 1.4, raio * 0.8 + waveOffset);
+          n.quadraticCurveTo(-raio * 0.7, raio * 1.2, 0, raio * 0.9 - waveOffset);
+          n.quadraticCurveTo(raio * 0.7, raio * 0.6, raio * 1.4, raio * 1.0 + waveOffset);
+          n.stroke();
+
+          n.strokeStyle = corMare;
+          n.lineWidth = strokeW;
+          n.beginPath();
+          n.moveTo(-raio * 1.2, raio * 1.1 + waveOffset);
+          n.quadraticCurveTo(0, raio * 1.5, raio * 1.2, raio * 1.3 - waveOffset);
+          n.stroke();
+        }
+
+        // CAUDA DE RELÂMPAGO (Atrás)
+        n.fillStyle = corFaisca;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.2, -raio * 0.5);
+        n.lineTo(-raio * 0.5, -raio * 1.3);
+        n.lineTo(0, -raio * 0.9);
+        n.lineTo(raio * 0.4, -raio * 1.5);
+        n.lineTo(raio * 0.1, -raio * 0.6);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // ASAS DE MANTA RAY (Extremidades em ziguezague elétrico)
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 1.2;
+
+        let baterAsa = Math.sin(tempo * 12) * raio * 0.15;
+
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(0, raio * 0.7); // Focinho
+          // Borda de ataque aerodinâmica
+          n.quadraticCurveTo(lado * raio * 0.8, raio * 0.2, lado * raio * 1.6, -raio * 0.2 + baterAsa);
+          // Borda de fuga (Ziguezague de energia)
+          n.lineTo(lado * raio * 1.1, -raio * 0.05 + baterAsa * 0.8);
+          n.lineTo(lado * raio * 1.3, raio * 0.15 + baterAsa * 0.6);
+          n.lineTo(lado * raio * 0.6, raio * 0.05 + baterAsa * 0.3);
+          n.lineTo(lado * raio * 0.8, raio * 0.3);
+          n.lineTo(0, -raio * 0.4); // Conecta nas costas
+          n.closePath();
+          n.fill();
+          n.stroke();
+
+          // Veias de energia nas asas
+          if (!isFainted) {
+            n.strokeStyle = luzFaisca;
+            n.lineWidth = strokeW * 0.6;
+            n.beginPath();
+            n.moveTo(lado * raio * 0.4, raio * 0.1);
+            n.lineTo(lado * raio * 1.0, -raio * 0.05 + baterAsa * 0.8);
+            n.stroke();
+          }
+        });
+
+        // CORPO PRINCIPAL (Torpedo elegante)
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, sombraMare);
+        gradCorpo.addColorStop(0.6, corMare);
+        gradCorpo.addColorStop(1, luzMare);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.ellipse(0, raio * 0.15, raio * 0.35, raio * 0.75, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // PLACAS CONDUTORAS NO DORSO (Ouro/Amarelo)
+        n.fillStyle = corFaisca;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 0.8;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.4);
+        n.lineTo(raio * 0.15, -raio * 0.1);
+        n.lineTo(0, raio * 0.2);
+        n.lineTo(-raio * 0.15, -raio * 0.1);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS PREDADORES (Agressivos, sem pupilas brancas fofas)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.18, cy = raio * 0.4;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          [-1, 1].forEach((lado) => {
+            // Fenda escura
+            n.fillStyle = "#0f172a";
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, raio * 0.45);
+            n.lineTo(lado * raio * 0.3, raio * 0.32); // Angulado para baixo (raiva)
+            n.lineTo(lado * raio * 0.25, raio * 0.5);
+            n.closePath();
+            n.fill();
+
+            // Foco de energia pura no olho
+            n.fillStyle = luzFaisca;
+            n.beginPath();
+            n.arc(lado * raio * 0.22, raio * 0.42, raio * 0.04, 0, Math.PI * 2);
+            n.fill();
+          });
+        }
+
+        // ARCOS ELÉTRICOS (Orbitando a criatura)
+        if (!isFainted) {
+          n.strokeStyle = luzFaisca;
+          n.lineWidth = strokeW;
+          for (let i = 0; i < 3; i++) {
+            let sparkAng = tempo * 8 + i * 2.1;
+            let dist = raio * 1.3 + Math.sin(tempo * 15 + i) * raio * 0.2;
+            let px = Math.cos(sparkAng) * dist;
+            let py = Math.sin(sparkAng) * (dist * 0.5); // Órbita elíptica
+
+            n.beginPath();
+            n.moveTo(px, py);
+            n.lineTo(px + raio * 0.15, py - raio * 0.15);
+            n.lineTo(px + raio * 0.05, py + raio * 0.1);
+            n.lineTo(px - raio * 0.1, py + raio * 0.2);
+            n.stroke();
+          }
+        }
+
+        n.restore();
+      }
+
+      function desenharTidolith(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.02);
+
+        let flutua = Math.sin(tempo * 2.5) * o * 0.04;
+
+        let corPedra = "#57534e";
+        let sombraPedra = "#292524";
+        let luzPedra = "#a8a29e";
+        let corMare = "#0284c7";
+        let luzMare = "#7dd3fc";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // BASE DA ILHA (Rochedo invertido)
+        let gradRocha = n.createLinearGradient(0, -raio, 0, raio);
+        gradRocha.addColorStop(0, luzPedra);
+        gradRocha.addColorStop(0.5, corPedra);
+        gradRocha.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradRocha;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 0.9, -raio * 0.4);
+        n.lineTo(-raio * 0.4, raio * 0.8);
+        n.lineTo(raio * 0.4, raio * 0.8);
+        n.lineTo(raio * 0.9, -raio * 0.4);
+        n.lineTo(raio * 0.5, -raio * 0.8);
+        n.lineTo(-raio * 0.5, -raio * 0.8);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // RELEVO E FISSURAS
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(-raio * 0.5, -raio * 0.8); n.lineTo(-raio * 0.2, 0); n.lineTo(-raio * 0.4, raio * 0.8); n.stroke();
+        n.beginPath(); n.moveTo(raio * 0.5, -raio * 0.8); n.lineTo(raio * 0.2, 0); n.lineTo(raio * 0.4, raio * 0.8); n.stroke();
+
+        // CASCATA DE ÁGUA VIVA (Magia de Maré)
+        if (!isFainted) {
+          n.fillStyle = luzMare;
+          n.strokeStyle = corMare;
+          n.lineWidth = strokeW * 0.8;
+          let fluxo = Math.sin(tempo * 6) * raio * 0.05;
+          n.beginPath();
+          n.moveTo(-raio * 0.2, -raio * 0.7);
+          n.quadraticCurveTo(fluxo, -raio * 0.2, -raio * 0.1, raio * 0.5);
+          n.lineTo(raio * 0.1, raio * 0.5);
+          n.quadraticCurveTo(fluxo, -raio * 0.2, raio * 0.2, -raio * 0.7);
+          n.closePath();
+          n.fill();
+          n.stroke();
+
+          // Partículas de água caindo
+          n.fillStyle = "#ffffff";
+          for(let i=0; i<3; i++) {
+             let py = -raio * 0.5 + ((tempo * 2 + i) % 1) * raio * 1.2;
+             n.beginPath(); n.arc(fluxo, py, raio * 0.04, 0, Math.PI * 2); n.fill();
+          }
+        }
+
+        // PICO DA ILHA E MUSGO
+        n.fillStyle = "#15803d";
+        n.strokeStyle = sombraPedra;
+        n.beginPath();
+        n.moveTo(-raio * 0.6, -raio * 0.6);
+        n.lineTo(0, -raio * 1.1);
+        n.lineTo(raio * 0.6, -raio * 0.6);
+        n.lineTo(raio * 0.2, -raio * 0.7);
+        n.lineTo(-raio * 0.2, -raio * 0.7);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS ANCESTRAIS (Brilho das profundezas)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.4, cy = raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.ellipse(lado * raio * 0.4, raio * 0.1, raio * 0.08, raio * 0.12, 0, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = luzMare;
+            n.beginPath();
+            n.arc(lado * raio * 0.4, raio * 0.08, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharUmbralith(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 3) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+
+        let flutua = Math.sin(tempo * 2) * o * 0.08;
+
+        let corSombra = "#4c1d95";
+        let sombraSombra = "#1e1b4b";
+        let luzSombra = "#a78bfa";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // MONÓLITO PRINCIPAL (Formato de cristal afiado)
+        let gradCristal = n.createLinearGradient(-raio * 0.5, 0, raio * 0.5, 0);
+        gradCristal.addColorStop(0, sombraSombra);
+        gradCristal.addColorStop(0.5, corSombra);
+        gradCristal.addColorStop(1, luzSombra);
+
+        n.fillStyle = gradCristal;
+        n.strokeStyle = sombraSombra;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, -raio * 1.2);
+        n.lineTo(raio * 0.5, -raio * 0.4);
+        n.lineTo(raio * 0.4, raio * 0.6);
+        n.lineTo(0, raio * 1.2);
+        n.lineTo(-raio * 0.4, raio * 0.6);
+        n.lineTo(-raio * 0.5, -raio * 0.4);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // FACETAS DO CRISTAL
+        n.strokeStyle = "rgba(0,0,0,0.5)";
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 1.2); n.lineTo(0, raio * 1.2); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.5, -raio * 0.4); n.lineTo(0, -raio * 0.2); n.lineTo(raio * 0.5, -raio * 0.4); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.4, raio * 0.6); n.lineTo(0, raio * 0.4); n.lineTo(raio * 0.4, raio * 0.6); n.stroke();
+
+        // OLHOS SILENCIOSOS E VAZIOS
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = -raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.06, cy - raio * 0.06); n.lineTo(cx + raio * 0.06, cy + raio * 0.06);
+            n.moveTo(cx + raio * 0.06, cy - raio * 0.06); n.lineTo(cx - raio * 0.06, cy + raio * 0.06);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#020617";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.15);
+            n.lineTo(lado * raio * 0.3, -raio * 0.2);
+            n.lineTo(lado * raio * 0.25, 0);
+            n.lineTo(lado * raio * 0.1, 0);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzSombra;
+            n.beginPath();
+            n.arc(lado * raio * 0.2, -raio * 0.1, raio * 0.02, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#020617";
+          });
+        }
+
+        // FRAGMENTOS ORBITAIS (Mova sem som)
+        if (!isFainted) {
+          n.fillStyle = corSombra;
+          n.strokeStyle = luzSombra;
+          n.lineWidth = strokeW * 0.5;
+          for(let i=0; i<3; i++) {
+            let ang = tempo * 2 + i * 2.1;
+            let px = Math.cos(ang) * raio * 1.1;
+            let py = Math.sin(ang) * raio * 0.4 + raio * 0.4;
+            n.beginPath();
+            n.moveTo(px, py - raio * 0.15);
+            n.lineTo(px + raio * 0.1, py);
+            n.lineTo(px, py + raio * 0.15);
+            n.lineTo(px - raio * 0.1, py);
+            n.closePath();
+            n.fill();
+            n.stroke();
+          }
+        }
+
+        n.restore();
+      }
+
+      function desenharUmbravolt(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.5, o * 0.018);
+
+        let flutua = Math.sin(tempo * 5) * o * 0.05;
+
+        let corSombra = "#1e1b4b";
+        let sombraSombra = "#020617";
+        let corFaisca = "#eab308";
+        let luzFaisca = "#fef08a";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // AURA ELÉTRICA EXTERNA
+        if (!isFainted) {
+          n.strokeStyle = luzFaisca;
+          n.lineWidth = strokeW * 0.8;
+          for (let i = 0; i < 5; i++) {
+            let ang = tempo * 10 + i * 1.2;
+            let extX = Math.cos(ang) * raio * 1.4;
+            let extY = Math.sin(ang) * raio * 1.4;
+            n.beginPath();
+            n.moveTo(0, 0);
+            n.lineTo(extX * 0.5, extY * 0.8 + Math.sin(tempo*20)*raio*0.2);
+            n.lineTo(extX, extY);
+            n.stroke();
+          }
+        }
+
+        // ESFERA DE SOMBRA (Corpo)
+        let gradCorpo = n.createRadialGradient(0, -raio*0.2, raio*0.2, 0, 0, raio);
+        gradCorpo.addColorStop(0, corSombra);
+        gradCorpo.addColorStop(1, sombraSombra);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = luzFaisca;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.arc(0, 0, raio, 0, Math.PI * 2);
+        n.fill();
+
+        // Aro elétrico ao redor da esfera
+        n.setLineDash([raio * 0.2, raio * 0.1]);
+        n.stroke();
+        n.setLineDash([]);
+
+        // CHIFRE DE RELÂMPAGO
+        n.fillStyle = corFaisca;
+        n.strokeStyle = luzFaisca;
+        n.lineWidth = strokeW * 1.2;
+        n.beginPath();
+        n.moveTo(-raio * 0.2, -raio * 0.8);
+        n.lineTo(0, -raio * 1.5);
+        n.lineTo(raio * 0.2, -raio * 0.8);
+        n.lineTo(0, -raio * 0.9);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS (Fendas afiadas e elétricas)
+        if (isFainted) {
+          n.strokeStyle = corFaisca;
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.3, cy = -raio * 0.2;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+            n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzFaisca;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.2, -raio * 0.1);
+            n.lineTo(lado * raio * 0.45, -raio * 0.3);
+            n.lineTo(lado * raio * 0.35, -raio * 0.05);
+            n.lineTo(lado * raio * 0.15, 0);
+            n.closePath();
+            n.fill();
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharVirasselva(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 4) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "round";
+        let strokeW = Math.max(1.5, o * 0.018);
+
+        let flutua = Math.sin(tempo * 3) * o * 0.05;
+
+        let corFlora = "#16a34a";
+        let sombraFlora = "#14532d";
+        let luzFlora = "#4ade80";
+        let corMadeira = "#78350f";
+        let sombraMadeira = "#451a03";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.32 * (1 + (u.stage || 0) * 0.2);
+
+        // CAJADO RÚSTICO E TORTO (Mão de trás)
+        n.strokeStyle = sombraMadeira;
+        n.lineWidth = strokeW * 3;
+        n.beginPath();
+        n.moveTo(raio * 0.6, -raio * 1.2);
+        n.lineTo(raio * 0.5, raio * 1.1);
+        n.stroke();
+        n.strokeStyle = corMadeira;
+        n.lineWidth = strokeW * 1.5;
+        n.stroke();
+
+        // PÉS VIRADOS PARA TRÁS (Curupira)
+        n.fillStyle = sombraFlora;
+        n.strokeStyle = sombraMadeira;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          // Repare que o pé aponta para trás (lado direito, x positivo)
+          n.ellipse(lado * raio * 0.3 + raio * 0.1, raio * 0.8, raio * 0.2, raio * 0.1, 0, 0, Math.PI * 2);
+          n.fill();
+          n.stroke();
+        });
+
+        // CORPO / JUBA DE FOLHAS SELVAGENS
+        let gradCorpo = n.createRadialGradient(0, 0, raio * 0.2, 0, 0, raio);
+        gradCorpo.addColorStop(0, luzFlora);
+        gradCorpo.addColorStop(0.8, corFlora);
+        gradCorpo.addColorStop(1, sombraFlora);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+
+        n.beginPath();
+        let pontas = 8;
+        for (let i = 0; i < pontas; i++) {
+          let ang = (i * Math.PI * 2) / pontas;
+          let dist = raio * (0.8 + Math.sin(tempo * 5 + i * 2) * 0.1);
+          let px = Math.cos(ang) * dist;
+          let py = Math.sin(ang) * dist;
+          if (i === 0) n.moveTo(px, py);
+          else n.quadraticCurveTo(0, 0, px, py);
+        }
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // MÁSCARA/ROSTO NA SOMBRA DAS FOLHAS
+        n.fillStyle = sombraMadeira;
+        n.beginPath();
+        n.ellipse(0, 0, raio * 0.45, raio * 0.35, 0, 0, Math.PI * 2);
+        n.fill();
+
+        // OLHOS FEROZES (Brilham na escuridão da máscara)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzFlora;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.1);
+            n.lineTo(lado * raio * 0.3, -raio * 0.05);
+            n.lineTo(lado * raio * 0.25, raio * 0.1);
+            n.lineTo(lado * raio * 0.1, 0);
+            n.closePath();
+            n.fill();
+          });
+        }
+
+        // BRAÇOS E MÃOS SEGURANDO O CAJADO
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.arc(raio * 0.5, raio * 0.2, raio * 0.15, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        n.restore();
+      }
+
+      function desenharVoltaquas(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 5) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 6) * o * 0.05;
+
+        let corFaisca = "#facc15";
+        let sombraFaisca = "#ca8a04";
+        let luzFaisca = "#fef08a";
+        let corMare = "#0ea5e9";
+        let sombraMare = "#0369a1";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // ONDAS DE CHOQUE (Pulsos emitidos pelo gerador)
+        if (!isFainted) {
+          n.strokeStyle = luzFaisca;
+          for(let i=0; i<3; i++) {
+            let p = (tempo * 2 + i/3) % 1;
+            n.globalAlpha = 1 - p;
+            n.lineWidth = strokeW * 2 * (1-p);
+            n.beginPath();
+            n.ellipse(0, 0, raio * (1 + p*1.5), raio * (0.6 + p), 0, 0, Math.PI * 2);
+            n.stroke();
+          }
+          n.globalAlpha = 1;
+        }
+
+        // BARBATANAS DORSAIS ELÉTRICAS
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 1.2;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.6);
+        for(let i=0; i<4; i++) {
+           let x = -raio * 0.3 + i * raio * 0.3;
+           n.lineTo(x - raio*0.1, -raio * 1.2 + Math.sin(tempo*15+i)*raio*0.1);
+           n.lineTo(x + raio*0.1, -raio * 0.6);
+        }
+        n.fill();
+        n.stroke();
+
+        // CORPO DE LEVIATÃ (Alongado e robusto)
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzFaisca);
+        gradCorpo.addColorStop(0.5, corFaisca);
+        gradCorpo.addColorStop(1, sombraFaisca);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraFaisca;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 1.2, 0); // Cauda
+        n.bezierCurveTo(-raio * 0.8, -raio * 0.9, raio * 0.6, -raio * 0.9, raio * 0.9, -raio * 0.2); // Costas
+        n.bezierCurveTo(raio * 1.1, 0, raio * 0.9, raio * 0.4, raio * 0.6, raio * 0.6); // Focinho
+        n.bezierCurveTo(0, raio * 0.8, -raio * 0.6, raio * 0.5, -raio * 1.2, 0); // Barriga
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CAUDA CONDUTORA
+        n.fillStyle = corMare;
+        n.beginPath();
+        n.moveTo(-raio * 1.1, 0);
+        n.lineTo(-raio * 1.6, -raio * 0.4);
+        n.lineTo(-raio * 1.4, 0);
+        n.lineTo(-raio * 1.6, raio * 0.4);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // NADADEIRAS LATERAIS (Com fendas de energia)
+        [-1, 1].forEach(lado => {
+           n.fillStyle = corMare;
+           n.beginPath();
+           n.moveTo(0, 0);
+           n.bezierCurveTo(raio * 0.2, lado * raio * 0.8, -raio * 0.4, lado * raio * 0.6, -raio * 0.6, 0);
+           n.fill();
+           n.stroke();
+
+           if (!isFainted) {
+             n.strokeStyle = luzFaisca;
+             n.lineWidth = strokeW;
+             n.beginPath();
+             n.moveTo(-raio*0.1, lado*raio*0.2); n.lineTo(-raio*0.3, lado*raio*0.4);
+             n.stroke();
+           }
+        });
+
+        // OLHOS FEROZES E BRILHANTES
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          let cx = raio * 0.6, cy = -raio * 0.1;
+          n.beginPath();
+          n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+          n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+          n.stroke();
+        } else {
+          n.fillStyle = "#0f172a";
+          n.beginPath();
+          n.moveTo(raio * 0.5, -raio * 0.2);
+          n.lineTo(raio * 0.8, -raio * 0.1);
+          n.lineTo(raio * 0.7, 0);
+          n.lineTo(raio * 0.55, -raio * 0.05);
+          n.closePath();
+          n.fill();
+
+          n.fillStyle = luzFaisca;
+          n.beginPath();
+          n.arc(raio * 0.65, -raio * 0.1, raio * 0.04, 0, Math.PI * 2);
+          n.fill();
+        }
+
+        // BOCA DENTADA (Eletricidade estática)
+        n.strokeStyle = "#0f172a";
+        n.beginPath();
+        n.moveTo(raio * 0.4, raio * 0.3);
+        n.lineTo(raio * 0.6, raio * 0.4);
+        n.lineTo(raio * 0.8, raio * 0.2);
+        n.stroke();
+
+        n.restore();
+      }
+
+      function desenharVoltsombra(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 8) * 0.01;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+
+        let flutua = Math.sin(tempo * 4) * o * 0.06;
+
+        let corFaisca = "#facc15";
+        let luzFaisca = "#fef08a";
+        let corSombra = "#1e1b4b";
+        let sombraSombra = "#020617";
+        let brilhoSombra = "#8b5cf6";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.35 * (1 + (u.stage || 0) * 0.2);
+
+        // NUVEM TEMPESTUOSA NEGRA (Fundo)
+        if (!isFainted) {
+          n.fillStyle = sombraSombra;
+          n.beginPath();
+          for(let i=0; i<6; i++) {
+             let ang = (i/6)*Math.PI*2 + tempo;
+             let dist = raio * 1.2 + Math.sin(tempo*3+i)*raio*0.2;
+             if(i===0) n.moveTo(Math.cos(ang)*dist, Math.sin(ang)*dist);
+             else n.lineTo(Math.cos(ang)*dist, Math.sin(ang)*dist);
+          }
+          n.closePath();
+          n.fill();
+        }
+
+        // NÚCLEO PRISMÁTICO (Diamante central)
+        let gradCristal = n.createLinearGradient(-raio, 0, raio, 0);
+        gradCristal.addColorStop(0, corFaisca);
+        gradCristal.addColorStop(0.5, luzFaisca);
+        gradCristal.addColorStop(1, corFaisca);
+
+        n.fillStyle = gradCristal;
+        n.strokeStyle = sombraSombra;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(0, -raio * 1.2);
+        n.lineTo(raio * 0.6, 0);
+        n.lineTo(0, raio * 1.2);
+        n.lineTo(-raio * 0.6, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // FACETAS DO PRISMA
+        n.strokeStyle = "rgba(0,0,0,0.3)";
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 1.2); n.lineTo(0, raio * 1.2); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.6, 0); n.lineTo(raio * 0.6, 0); n.stroke();
+
+        // RAIOS NEGROS E ROXOS (Cortando o cristal)
+        if (!isFainted) {
+           n.strokeStyle = brilhoSombra;
+           n.lineWidth = strokeW * 1.5;
+           n.beginPath();
+           n.moveTo(-raio * 0.5, -raio * 0.5);
+           n.lineTo(0, 0);
+           n.lineTo(raio * 0.4, Math.sin(tempo*15)*raio*0.2);
+           n.lineTo(raio * 0.8, -raio * 0.3);
+           n.stroke();
+        }
+
+        // OLHOS (Fendas escuras que encaram fixamente)
+        if (isFainted) {
+          n.strokeStyle = sombraSombra;
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = sombraSombra;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.1);
+            n.lineTo(lado * raio * 0.3, -raio * 0.2);
+            n.lineTo(lado * raio * 0.25, raio * 0.1);
+            n.lineTo(lado * raio * 0.1, 0);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = brilhoSombra;
+            n.beginPath();
+            n.arc(lado * raio * 0.2, -raio * 0.05, raio * 0.03, 0, Math.PI*2);
+            n.fill();
+            n.fillStyle = sombraSombra;
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharVulcabra(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        // Movimento pesado
+        let esc = 1 + Math.sin(tempo * 2) * 0.01;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.02);
+        let flutua = Math.sin(tempo * 3) * o * 0.02;
+
+        let corPedra = "#4a3b2c";
+        let luzPedra = "#8b7355";
+        let sombraPedra = "#27180d";
+        let corBrasa = "#ea580c";
+        let luzBrasa = "#fde047";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.38 * (1 + (u.stage || 0) * 0.2);
+
+        // MAGMA JORRANDO (Cratera nas costas/topo)
+        if (!isFainted) {
+          n.fillStyle = corBrasa;
+          n.beginPath();
+          n.moveTo(-raio * 0.4, -raio * 0.8);
+          n.lineTo(-raio * 0.6, -raio * 1.4 + Math.sin(tempo*8)*raio*0.2);
+          n.lineTo(0, -raio * 1.1);
+          n.lineTo(raio * 0.6, -raio * 1.5 + Math.cos(tempo*7)*raio*0.2);
+          n.lineTo(raio * 0.4, -raio * 0.8);
+          n.fill();
+
+          n.fillStyle = luzBrasa;
+          n.beginPath();
+          n.arc(0, -raio * 1.2, raio * 0.15, 0, Math.PI*2);
+          n.fill();
+        }
+
+        // BRAÇOS E PERNAS (Grosseiros e atarracados)
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach(lado => {
+           // Perna
+           n.beginPath();
+           n.rect(lado * raio * 0.4 - raio * 0.15, raio * 0.6, raio * 0.3, raio * 0.3);
+           n.fill(); n.stroke();
+           // Braço
+           n.beginPath();
+           n.moveTo(lado * raio * 0.6, 0);
+           n.lineTo(lado * raio * 0.9, raio * 0.4);
+           n.lineTo(lado * raio * 0.5, raio * 0.5);
+           n.closePath();
+           n.fill(); n.stroke();
+        });
+
+        // CORPO VULCÂNICO (Formato cônico / montanha)
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, corPedra);
+        gradCorpo.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 0.4, -raio * 0.8); // Topo esquerdo (Cratera)
+        n.lineTo(raio * 0.4, -raio * 0.8);  // Topo direito
+        n.lineTo(raio * 0.8, raio * 0.6);   // Base direita
+        n.lineTo(-raio * 0.8, raio * 0.6);  // Base esquerda
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // PLACAS E VEIAS DE MAGMA
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(-raio * 0.2, -raio * 0.8); n.lineTo(-raio * 0.4, raio * 0.6); n.stroke();
+        n.beginPath(); n.moveTo(raio * 0.2, -raio * 0.8); n.lineTo(raio * 0.4, raio * 0.6); n.stroke();
+
+        if (!isFainted) {
+          n.strokeStyle = corBrasa;
+          n.lineWidth = strokeW * 1.5;
+          n.beginPath();
+          n.moveTo(-raio * 0.3, 0);
+          n.lineTo(0, raio * 0.2);
+          n.lineTo(raio * 0.3, 0);
+          n.stroke();
+        }
+
+        // ROSTO BRUTAL
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.25, cy = -raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.15, -raio * 0.2);
+            n.lineTo(lado * raio * 0.4, -raio * 0.05);
+            n.lineTo(lado * raio * 0.25, 0);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzBrasa;
+            n.beginPath();
+            n.arc(lado * raio * 0.25, -raio * 0.1, raio * 0.03, 0, Math.PI*2);
+            n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        // BOCA DE FENDA (Mau humor)
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.2, raio * 0.3);
+        n.lineTo(raio * 0.2, raio * 0.25);
+        n.stroke();
+
+        n.restore();
+      }
+
+      function desenharAbissalga20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 3) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2.5) * o * 0.06;
+
+        let corMare = "#0369a1";
+        let sombraMare = "#082f49";
+        let corFlora = "#15803d";
+        let luzFlora = "#4ade80";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.38 * (1 + (u.stage || 0) * 0.2);
+
+        // TENTÁCULOS DE ALGAS MACIÇAS (KRAKEN)
+        n.fillStyle = sombraMare;
+        n.strokeStyle = corFlora;
+        n.lineWidth = strokeW * 1.5;
+        [-1, 1].forEach(lado => {
+           for(let i = 0; i < 3; i++) {
+             n.beginPath();
+             let offset = i * 0.5;
+             let ang = Math.sin(tempo * 4 + offset * lado) * 0.2;
+             n.moveTo(lado * raio * 0.4, 0);
+             n.quadraticCurveTo(lado * raio * (1 + offset), raio * (0.8 + offset), lado * raio * (0.5 + ang * 2), raio * (1.5 + offset * 0.5));
+             n.quadraticCurveTo(lado * raio * 0.2, raio * 0.8, 0, raio * 0.5);
+             n.fill();
+             n.stroke();
+           }
+        });
+
+        // CORPO KRAKEN
+        let gradCorpo = n.createLinearGradient(0, -raio * 1.2, 0, raio * 0.5);
+        gradCorpo.addColorStop(0, sombraMare);
+        gradCorpo.addColorStop(0.6, corMare);
+        gradCorpo.addColorStop(1, corFlora);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(0, -raio * 1.2);
+        n.bezierCurveTo(raio * 1.2, -raio * 1.0, raio * 0.8, raio * 0.6, 0, raio * 0.8);
+        n.bezierCurveTo(-raio * 0.8, raio * 0.6, -raio * 1.2, -raio * 1.0, 0, -raio * 1.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CARAPAÇA DE ALGAS ESPINHENTAS
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraMare;
+        n.beginPath();
+        n.moveTo(0, -raio * 1.3);
+        n.lineTo(raio * 0.5, -raio * 0.8);
+        n.lineTo(raio * 0.2, -raio * 0.5);
+        n.lineTo(0, -raio * 0.6);
+        n.lineTo(-raio * 0.2, -raio * 0.5);
+        n.lineTo(-raio * 0.5, -raio * 0.8);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // DETALHES BIOLUMINESCENTES
+        if (!isFainted) {
+           n.fillStyle = luzFlora;
+           [[-raio * 0.4, -raio * 0.2], [raio * 0.4, -raio * 0.2], [0, raio * 0.3]].forEach(pos => {
+             n.beginPath();
+             n.arc(pos[0], pos[1], raio * 0.06, 0, Math.PI * 2);
+             n.fill();
+           });
+        }
+
+        // OLHO ÚNICO ATERRORIZANTE
+        if (isFainted) {
+           n.strokeStyle = "#000";
+           n.lineWidth = strokeW * 2;
+           n.beginPath();
+           n.moveTo(-raio * 0.2, -raio * 0.2); n.lineTo(raio * 0.2, 0.2 * raio);
+           n.moveTo(raio * 0.2, -raio * 0.2); n.lineTo(-raio * 0.2, 0.2 * raio);
+           n.stroke();
+        } else {
+           n.fillStyle = "#000";
+           n.beginPath();
+           n.ellipse(0, 0, raio * 0.25, raio * 0.15, 0, 0, Math.PI * 2);
+           n.fill();
+           n.fillStyle = luzFlora;
+           n.beginPath();
+           n.arc(0, 0, raio * 0.08, 0, Math.PI * 2);
+           n.fill();
+
+           n.strokeStyle = "#000";
+           n.lineWidth = strokeW;
+           n.beginPath();
+           n.moveTo(0, -raio * 0.15); n.lineTo(0, raio * 0.15);
+           n.stroke();
+        }
+
+        n.restore();
+      }
+
+      function desenharAbissalga21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2) * o * 0.04;
+
+        let corFlora = "#166534";
+        let sombraFlora = "#052e16";
+        let corMadeira = "#451a03";
+        let brilhoVeneno = "#bef264";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4 * (1 + (u.stage || 0) * 0.2);
+
+        // RAÍZES E CIPÓS TENTACULARES
+        n.fillStyle = corMadeira;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+        [-1, 1].forEach(lado => {
+           for(let i = 0; i < 4; i++) {
+             n.beginPath();
+             let wave = Math.sin(tempo * 3 + i) * raio * 0.15;
+             n.moveTo(lado * raio * 0.3, 0);
+             n.lineTo(lado * raio * (0.8 + i * 0.2) + wave, raio * (0.6 + i * 0.3));
+             n.lineTo(lado * raio * 0.2, raio * 0.5);
+             n.fill();
+             n.stroke();
+           }
+        });
+
+        // CORPO (Tronco vivo maciço)
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, sombraFlora);
+        gradCorpo.addColorStop(0.5, corFlora);
+        gradCorpo.addColorStop(1, corMadeira);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.ellipse(0, 0, raio * 0.85, raio * 0.95, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // MANDÍBULAS DE MADEIRA/RAÍZES
+        n.fillStyle = corMadeira;
+        n.beginPath();
+        n.moveTo(-raio * 0.4, raio * 0.2);
+        n.lineTo(raio * 0.4, raio * 0.2);
+        n.lineTo(raio * 0.6, raio * 0.7);
+        n.lineTo(0, raio * 0.5);
+        n.lineTo(-raio * 0.6, raio * 0.7);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // ESPINHOS DORSAIS TÓXICOS
+        n.fillStyle = sombraFlora;
+        [-raio * 0.6, -raio * 0.3, 0, raio * 0.3, raio * 0.6].forEach((x, i) => {
+           n.beginPath();
+           n.moveTo(x, -raio * 0.8);
+           n.lineTo(x - raio * 0.15, -raio * 1.3 + (i % 2) * raio * 0.2);
+           n.lineTo(x + raio * 0.15, -raio * 0.7);
+           n.fill();
+           n.stroke();
+        });
+
+        // OLHOS (Fendas tóxicas)
+        if (isFainted) {
+           n.strokeStyle = "#000";
+           n.lineWidth = strokeW * 2;
+           [-1, 1].forEach((lado) => {
+             let cx = lado * raio * 0.4, cy = -raio * 0.1;
+             n.beginPath();
+             n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+             n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+             n.stroke();
+           });
+        } else {
+           n.fillStyle = sombraFlora;
+           [-1, 1].forEach((lado) => {
+             n.beginPath();
+             n.moveTo(lado * raio * 0.2, -raio * 0.2);
+             n.lineTo(lado * raio * 0.6, -raio * 0.3);
+             n.lineTo(lado * raio * 0.5, 0);
+             n.closePath();
+             n.fill();
+
+             n.fillStyle = brilhoVeneno;
+             n.beginPath();
+             n.arc(lado * raio * 0.4, -raio * 0.15, raio * 0.05, 0, Math.PI * 2);
+             n.fill();
+             n.fillStyle = sombraFlora;
+           });
+        }
+
+        n.restore();
+      }
+
+      function desenharAbissalume(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 1.5) * o * 0.1;
+
+        let corMare = "#0284c7";
+        let sombraMare = "#082f49";
+        let luzMare = "#38bdf8";
+        let brilho = "#e0f2fe";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.15);
+
+        // TENTÁCULOS ABISSAIS (Majestosos)
+        n.lineWidth = strokeW * 1.5;
+        for (let i = -3; i <= 3; i++) {
+          if (i === 0) continue;
+          n.beginPath();
+          n.strokeStyle = Math.abs(i) % 2 === 1 ? luzMare : corMare;
+          let tOffset = i * 0.8;
+          n.moveTo(i * raio * 0.2, 0);
+          n.bezierCurveTo(
+            i * raio * 0.4 + Math.sin(tempo * 3 + tOffset) * raio * 0.4, raio * 0.8,
+            i * raio * 0.1 + Math.cos(tempo * 2.5 + tOffset) * raio * 0.6, raio * 1.5,
+            i * raio * 0.5 + Math.sin(tempo * 4 + tOffset) * raio * 0.5, raio * 2.2
+          );
+          n.stroke();
+        }
+
+        // VÉU INTERNO DA ÁGUA-VIVA
+        n.fillStyle = sombraMare;
+        n.beginPath();
+        n.ellipse(0, raio * 0.2, raio * 0.7, raio * 0.3, 0, 0, Math.PI * 2);
+        n.fill();
+
+        // NÚCLEO BIOLUMINESCENTE PULSANTE
+        if (!isFainted) {
+          let gradNucleo = n.createRadialGradient(0, -raio * 0.2, raio * 0.1, 0, -raio * 0.2, raio * 0.6);
+          let pulso = Math.sin(tempo * 6) * 0.2 + 0.8;
+          gradNucleo.addColorStop(0, `rgba(224, 242, 254, ${pulso})`);
+          gradNucleo.addColorStop(0.5, `rgba(56, 189, 248, ${pulso * 0.6})`);
+          gradNucleo.addColorStop(1, "rgba(2, 132, 199, 0)");
+          n.fillStyle = gradNucleo;
+          n.beginPath();
+          n.arc(0, -raio * 0.2, raio * 0.8, 0, Math.PI * 2);
+          n.fill();
+        }
+
+        // CÚPULA EXTERNA (Translúcida e colossal)
+        n.fillStyle = "rgba(2, 132, 199, 0.65)";
+        n.strokeStyle = luzMare;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(-raio * 0.9, raio * 0.2);
+        n.bezierCurveTo(-raio * 1.1, -raio * 0.8, -raio * 0.5, -raio * 1.2, 0, -raio * 1.2);
+        n.bezierCurveTo(raio * 0.5, -raio * 1.2, raio * 1.1, -raio * 0.8, raio * 0.9, raio * 0.2);
+        n.bezierCurveTo(raio * 0.5, raio * 0.4, -raio * 0.5, raio * 0.4, -raio * 0.9, raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // MARCAS MAGNÉTICAS NA CÚPULA
+        n.strokeStyle = brilho;
+        n.lineWidth = strokeW;
+        n.globalAlpha = 0.8;
+        [-1, 1].forEach(lado => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.3, -raio * 1.0);
+          n.lineTo(lado * raio * 0.5, -raio * 0.6);
+          n.lineTo(lado * raio * 0.8, -raio * 0.4);
+          n.stroke();
+        });
+        n.globalAlpha = 1;
+
+        // OLHOS (Fendas vazias alienígenas)
+        if (isFainted) {
+          n.strokeStyle = sombraMare;
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.3, cy = -raio * 0.2;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+            n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = sombraMare;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.2, -raio * 0.1);
+            n.lineTo(lado * raio * 0.45, -raio * 0.25);
+            n.lineTo(lado * raio * 0.35, -raio * 0.05);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = brilho;
+            n.beginPath();
+            n.arc(lado * raio * 0.28, -raio * 0.15, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = sombraMare;
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharAlgaffin20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 5) * o * 0.08;
+
+        let corFlora = "#15803d";
+        let sombraFlora = "#064e3b";
+        let luzFlora = "#4ade80";
+        let corMare = "#0284c7";
+        let sombraMare = "#0c4a6e";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4 * (1 + (u.stage || 0) * 0.2);
+
+        // CORPO SERPENTINO DO DRAGÃO MARINHO
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, raio * 0.5);
+        n.bezierCurveTo(raio * 1.5, raio * 0.5, raio * 1.5, -raio * 0.8, 0, -raio * 0.8);
+        n.bezierCurveTo(-raio * 1.5, -raio * 0.8, -raio * 1.5, raio * 1.2, raio * 0.5, raio * 1.2);
+        n.bezierCurveTo(raio * 0.8, raio * 1.2, raio * 1.0, raio * 0.8, raio * 0.8, raio * 0.6);
+        n.lineTo(raio * 0.5, raio * 0.9);
+        n.bezierCurveTo(-raio * 0.8, raio * 0.9, -raio * 0.8, -raio * 0.2, 0, -raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // ARMADURA CORTANTE DE ALGAS
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW;
+
+        for(let i = 0; i < 6; i++) {
+           n.save();
+           n.rotate(i * 0.5 - 1.5);
+           n.beginPath();
+           n.moveTo(0, -raio * 0.6);
+           n.lineTo(raio * 0.2, -raio * 1.2);
+           n.lineTo(raio * 0.3, -raio * 0.6);
+           n.fill();
+           n.stroke();
+           n.restore();
+        }
+
+        // CABEÇA AERODINÂMICA
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraMare;
+        n.beginPath();
+        n.moveTo(-raio * 0.3, -raio * 0.2);
+        n.lineTo(raio * 0.8, -raio * 0.4);
+        n.lineTo(raio * 0.9, 0);
+        n.lineTo(raio * 0.4, raio * 0.3);
+        n.lineTo(-raio * 0.4, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // LÂMINAS LATERAIS NO ROSTO
+        n.fillStyle = luzFlora;
+        n.beginPath();
+        n.moveTo(raio * 0.4, raio * 0.3);
+        n.lineTo(raio * 0.2, raio * 0.8);
+        n.lineTo(-raio * 0.1, raio * 0.2);
+        n.fill();
+        n.stroke();
+
+        // OLHO PREDADOR FEROZ
+        if (isFainted) {
+           n.strokeStyle = "#000";
+           n.lineWidth = strokeW * 1.5;
+           n.beginPath();
+           n.moveTo(raio * 0.3, -raio * 0.1); n.lineTo(raio * 0.5, raio * 0.1);
+           n.moveTo(raio * 0.5, -raio * 0.1); n.lineTo(raio * 0.3, raio * 0.1);
+           n.stroke();
+        } else {
+           n.fillStyle = "#0f172a";
+           n.beginPath();
+           n.moveTo(raio * 0.3, -raio * 0.1);
+           n.lineTo(raio * 0.6, -raio * 0.05);
+           n.lineTo(raio * 0.4, 0.1 * raio);
+           n.closePath();
+           n.fill();
+
+           n.fillStyle = luzFlora;
+           n.beginPath();
+           n.arc(raio * 0.45, -raio * 0.02, raio * 0.03, 0, Math.PI * 2);
+           n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharAlgaffin21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 5) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 4) * o * 0.08;
+
+        let corFlora = "#15803d";
+        let sombraFlora = "#064e3b";
+        let corMare = "#0284c7";
+        let luzFlora = "#bbf7d0";
+        let florRosa = "#ec4899";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42 * (1 + (u.stage || 0) * 0.2);
+
+        // CORPO SERPENTINO (Grosso e majestoso)
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, raio * 0.5);
+        n.bezierCurveTo(raio * 1.8, raio * 0.8, raio * 1.6, -raio * 1.2, 0, -raio * 0.9);
+        n.bezierCurveTo(-raio * 1.6, -raio * 1.2, -raio * 1.8, raio * 1.4, raio * 0.6, raio * 1.2);
+        n.bezierCurveTo(raio * 0.9, raio * 1.2, raio * 1.2, raio * 0.8, raio * 0.8, raio * 0.6);
+        n.lineTo(raio * 0.5, raio * 0.9);
+        n.bezierCurveTo(-raio * 1.0, raio * 1.0, -raio * 0.8, -raio * 0.3, 0, -raio * 0.3);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // FLORES DE LÓTUS GIGANTES (Dorso)
+        n.lineWidth = strokeW;
+        [[-raio * 0.9, -raio * 0.2, 0.5], [raio * 0.9, -raio * 0.4, 0.8], [raio * 0.2, raio * 1.1, 0.4]].forEach(flor => {
+           n.save();
+           n.translate(flor[0], flor[1]);
+           n.scale(flor[2], flor[2]);
+
+           // Folha base
+           n.fillStyle = sombraFlora;
+           n.beginPath(); n.ellipse(0, raio*0.2, raio*0.8, raio*0.3, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+           // Pétalas rosas
+           n.fillStyle = florRosa;
+           n.strokeStyle = "#be185d";
+           for(let i=-2; i<=2; i++) {
+              n.beginPath();
+              n.moveTo(0, raio*0.1);
+              n.quadraticCurveTo(i*raio*0.5, -raio*0.4, i*raio*0.8, -raio*0.8);
+              n.quadraticCurveTo(i*raio*0.2, -raio*0.2, 0, raio*0.1);
+              n.fill(); n.stroke();
+           }
+           n.restore();
+        });
+
+        // CABEÇA DRACONIANA COM RAÍZES
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 0.4, -raio * 0.2);
+        n.lineTo(raio * 0.7, -raio * 0.5);
+        n.lineTo(raio * 0.8, 0);
+        n.lineTo(raio * 0.3, raio * 0.4);
+        n.lineTo(-raio * 0.5, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CHIFRES DE RAIZ ANCESTRAL
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 2;
+        n.beginPath(); n.moveTo(-raio*0.2, -raio*0.3); n.quadraticCurveTo(-raio*0.6, -raio*0.8, -raio*0.8, -raio*0.6); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.2, -raio*0.4); n.quadraticCurveTo(raio*0.4, -raio*1.0, raio*0.6, -raio*0.9); n.stroke();
+
+        // OLHO MÍSTICO
+        if (isFainted) {
+           n.strokeStyle = "#000";
+           n.lineWidth = strokeW * 1.5;
+           n.beginPath();
+           n.moveTo(raio * 0.3, -raio * 0.1); n.lineTo(raio * 0.5, raio * 0.1);
+           n.moveTo(raio * 0.5, -raio * 0.1); n.lineTo(raio * 0.3, raio * 0.1);
+           n.stroke();
+        } else {
+           n.fillStyle = "#0f172a";
+           n.beginPath();
+           n.moveTo(raio * 0.3, -raio * 0.1);
+           n.lineTo(raio * 0.6, -raio * 0.2);
+           n.lineTo(raio * 0.45, 0.1 * raio);
+           n.closePath();
+           n.fill();
+
+           n.fillStyle = luzFlora;
+           n.beginPath();
+           n.arc(raio * 0.42, -raio * 0.05, raio * 0.04, 0, Math.PI * 2);
+           n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharAquaroch20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2.5) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.04;
+
+        let corMare = "#0369a1";
+        let sombraMare = "#082f49";
+        let luzMare = "#22d3ee";
+        let corPedra = "#292524";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.15);
+
+        // VÓRTICE DE ÁGUA ABISSAL
+        if (!isFainted) {
+          n.strokeStyle = luzMare;
+          n.lineWidth = strokeW * 0.5;
+          for(let i=0; i<3; i++) {
+             n.beginPath();
+             n.ellipse(0, 0, raio * 1.2 + Math.sin(tempo*4+i)*raio*0.1, raio * 0.4, tempo*2+i, 0, Math.PI*2);
+             n.stroke();
+          }
+        }
+
+        // NADADEIRAS COLOSSAIS
+        n.fillStyle = sombraMare;
+        n.strokeStyle = corPedra;
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          n.save();
+          n.translate(lado * raio * 0.6, raio * 0.2);
+          n.rotate(lado * 0.3 + Math.sin(tempo * 3) * 0.1 * lado);
+          n.beginPath();
+          n.moveTo(0, 0);
+          n.bezierCurveTo(lado * raio * 0.8, -raio * 0.2, lado * raio * 1.2, raio * 0.5, lado * raio * 0.8, raio * 0.9);
+          n.bezierCurveTo(lado * raio * 0.4, raio * 0.7, lado * raio * 0.2, raio * 0.4, 0, raio * 0.2);
+          n.closePath();
+          n.fill();
+          n.stroke();
+          n.restore();
+        });
+
+        // CASCO DE PEDRA ABISSAL
+        let gradCasco = n.createRadialGradient(0, -raio * 0.4, raio * 0.1, 0, -raio * 0.2, raio);
+        gradCasco.addColorStop(0, corMare);
+        gradCasco.addColorStop(1, corPedra);
+
+        n.fillStyle = gradCasco;
+        n.strokeStyle = corPedra;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.arc(0, 0, raio * 0.95, Math.PI, 0);
+        n.quadraticCurveTo(0, raio * 0.4, -raio * 0.95, 0);
+        n.fill();
+        n.stroke();
+
+        // CORAIS BIOLUMINESCENTES
+        if (!isFainted) {
+          n.fillStyle = luzMare;
+          n.shadowColor = luzMare;
+          n.shadowBlur = 15;
+          [[-raio*0.5, -raio*0.4], [raio*0.4, -raio*0.6], [0, -raio*0.8], [-raio*0.2, -raio*0.2]].forEach(pos => {
+             n.beginPath();
+             n.arc(pos[0], pos[1], raio*0.06 + Math.sin(tempo*5)*raio*0.02, 0, Math.PI*2);
+             n.fill();
+          });
+          n.shadowBlur = 0;
+        }
+
+        // CABEÇA DA TARTARUGA PREDADORA
+        n.fillStyle = sombraMare;
+        n.strokeStyle = corPedra;
+        n.beginPath();
+        n.ellipse(0, raio * 0.35, raio * 0.35, raio * 0.3, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // BICO AFIADO
+        n.beginPath();
+        n.moveTo(-raio * 0.15, raio * 0.55);
+        n.lineTo(0, raio * 0.75);
+        n.lineTo(raio * 0.15, raio * 0.55);
+        n.stroke();
+
+        // ISCA ABISSAL (Lanterna brilhante)
+        n.strokeStyle = corPedra;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(0, raio * 0.1);
+        n.quadraticCurveTo(raio * 0.4, raio * 0.1, raio * 0.5, raio * 0.4);
+        n.stroke();
+        if (!isFainted) {
+          n.fillStyle = luzMare;
+          n.beginPath();
+          n.arc(raio * 0.5, raio * 0.4, raio * 0.08, 0, Math.PI*2);
+          n.fill();
+        }
+
+        // OLHOS VAZIOS
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = raio * 0.3;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.06, cy - raio * 0.06); n.lineTo(cx + raio * 0.06, cy + raio * 0.06);
+            n.moveTo(cx + raio * 0.06, cy - raio * 0.06); n.lineTo(cx - raio * 0.06, cy + raio * 0.06);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzMare;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.ellipse(lado * raio * 0.2, raio * 0.3, raio * 0.05, raio * 0.02, lado * 0.3, 0, Math.PI * 2);
+            n.fill();
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharAquaroch21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.01;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2) * o * 0.02; // Movimento bem pesado
+
+        let corPedra = "#57534e";
+        let sombraPedra = "#1c1917";
+        let corMare = "#0ea5e9";
+        let luzMare = "#e0f2fe";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.15);
+
+        // PATAS DE MONTANHA
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.4, raio * 0.4);
+          n.lineTo(lado * raio * 0.8, raio * 0.8);
+          n.lineTo(lado * raio * 0.3, raio * 0.9);
+          n.lineTo(lado * raio * 0.1, raio * 0.6);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // CASCO (Cadeia de Montanhas)
+        let gradMontanha = n.createLinearGradient(0, -raio * 1.2, 0, raio * 0.2);
+        gradMontanha.addColorStop(0, corPedra);
+        gradMontanha.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradMontanha;
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 0.9, raio * 0.2);
+        n.lineTo(-raio * 0.6, -raio * 0.8);
+        n.lineTo(-raio * 0.2, -raio * 0.5);
+        n.lineTo(0, -raio * 1.1); // Pico central
+        n.lineTo(raio * 0.3, -raio * 0.6);
+        n.lineTo(raio * 0.7, -raio * 0.7);
+        n.lineTo(raio * 0.9, raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CACHOEIRAS ESCORRENDO PELO CASCO
+        if (!isFainted) {
+          n.strokeStyle = luzMare;
+          n.lineWidth = strokeW * 1.2;
+          [-raio*0.4, raio*0.1, raio*0.5].forEach((xOffset, idx) => {
+            n.setLineDash([raio * 0.1, raio * 0.05]);
+            n.beginPath();
+            let startY = -raio * 0.4 + (idx%2) * raio * 0.2;
+            n.moveTo(xOffset, startY);
+            n.quadraticCurveTo(xOffset + raio*0.1, 0, xOffset, raio * 0.3);
+            n.stroke();
+          });
+          n.setLineDash([]);
+        }
+
+        // CABEÇA BLINDADA
+        n.fillStyle = sombraPedra;
+        n.beginPath();
+        n.moveTo(-raio * 0.3, raio * 0.1);
+        n.lineTo(raio * 0.3, raio * 0.1);
+        n.lineTo(raio * 0.25, raio * 0.6);
+        n.lineTo(0, raio * 0.75); // Queixo
+        n.lineTo(-raio * 0.25, raio * 0.6);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS (Energia d'água represada)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = raio * 0.35;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.06, cy - raio * 0.06); n.lineTo(cx + raio * 0.06, cy + raio * 0.06);
+            n.moveTo(cx + raio * 0.06, cy - raio * 0.06); n.lineTo(cx - raio * 0.06, cy + raio * 0.06);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = corMare;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, raio * 0.3);
+            n.lineTo(lado * raio * 0.25, raio * 0.35);
+            n.lineTo(lado * raio * 0.15, raio * 0.45);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzMare;
+            n.beginPath();
+            n.arc(lado * raio * 0.15, raio * 0.38, raio * 0.02, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = corMare;
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharBrasalma(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 4) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.04;
+
+        let corMagma = "#ea580c";
+        let luzMagma = "#fde047";
+        let sombraMagma = "#9a3412";
+        let corObsidiana = "#1c1917";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42 * (1 + (u.stage || 0) * 0.15);
+
+        // AURA DE CALOR EXTREMO
+        if (!isFainted) {
+          let aura = n.createRadialGradient(0, 0, raio * 0.5, 0, 0, raio * 1.6);
+          aura.addColorStop(0, "rgba(253, 224, 71, 0.4)");
+          aura.addColorStop(0.5, "rgba(234, 88, 12, 0.2)");
+          aura.addColorStop(1, "rgba(234, 88, 12, 0)");
+          n.fillStyle = aura;
+          n.beginPath();
+          n.arc(0, 0, raio * 1.6, 0, Math.PI * 2);
+          n.fill();
+        }
+
+        // JUBA DE EXPLOSÕES SOLARES (Magma)
+        n.fillStyle = sombraMagma;
+        n.strokeStyle = corMagma;
+        n.lineWidth = strokeW * 1.5;
+        let pontas = 10;
+        n.beginPath();
+        for (let i = 0; i < pontas; i++) {
+          let ang = (i * Math.PI * 2) / pontas - Math.PI / 2;
+          let distExt = raio * 1.2 + Math.sin(tempo * 10 + i) * raio * 0.1;
+          let distInt = raio * 0.7;
+
+          let pxExt = Math.cos(ang) * distExt;
+          let pyExt = Math.sin(ang) * distExt;
+          let pxInt = Math.cos(ang + Math.PI/pontas) * distInt;
+          let pyInt = Math.sin(ang + Math.PI/pontas) * distInt;
+
+          if (i === 0) n.moveTo(pxExt, pyExt);
+          else n.lineTo(pxExt, pyExt);
+          n.lineTo(pxInt, pyInt);
+        }
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // CORPO COLOSSAL (Behemoth)
+        let gradCorpo = n.createRadialGradient(0, -raio * 0.2, raio * 0.1, 0, 0, raio);
+        gradCorpo.addColorStop(0, luzMagma);
+        gradCorpo.addColorStop(0.6, corMagma);
+        gradCorpo.addColorStop(1, sombraMagma);
+
+        n.fillStyle = gradCorpo;
+        n.beginPath();
+        n.ellipse(0, 0, raio * 0.85, raio * 0.85, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // BRAÇOS E PERNAS DE OBSIDIANA
+        n.fillStyle = corObsidiana;
+        n.strokeStyle = sombraMagma;
+        [-1, 1].forEach(lado => {
+           // Braços
+           n.beginPath();
+           n.ellipse(lado * raio * 0.6, raio * 0.3, raio * 0.25, raio * 0.3, lado * -0.3, 0, Math.PI*2);
+           n.fill(); n.stroke();
+           // Pernas curtas
+           n.beginPath();
+           n.ellipse(lado * raio * 0.35, raio * 0.75, raio * 0.18, raio * 0.2, 0, 0, Math.PI*2);
+           n.fill(); n.stroke();
+        });
+
+        // MÁSCARA FACIAL DE OBSIDIANA (Agressiva)
+        n.beginPath();
+        n.moveTo(-raio * 0.5, -raio * 0.2);
+        n.lineTo(raio * 0.5, -raio * 0.2);
+        n.lineTo(raio * 0.3, raio * 0.4);
+        n.lineTo(0, raio * 0.5);
+        n.lineTo(-raio * 0.3, raio * 0.4);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // OLHOS FERVENDO (Brilho intenso)
+        if (isFainted) {
+          n.strokeStyle = "#fff";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.25, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzMagma;
+          n.shadowColor = corMagma;
+          n.shadowBlur = 10;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.15, -raio * 0.05);
+            n.lineTo(lado * raio * 0.35, -raio * 0.15); // Sobrancelha franzida
+            n.lineTo(lado * raio * 0.3, 0.1 * raio);
+            n.closePath();
+            n.fill();
+          });
+          n.shadowBlur = 0;
+        }
+
+        // SÍMBOLO DA LENDA (Testa)
+        n.strokeStyle = luzMagma;
+        n.lineWidth = strokeW * 0.8;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.15);
+        n.lineTo(-raio * 0.1, -raio * 0.05);
+        n.lineTo(raio * 0.1, -raio * 0.05);
+        n.closePath();
+        n.stroke();
+
+        n.restore();
+      }
+
+      function desenharCantamar(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let isMarca = u.silhouette === "iara-marca";
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 3) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2) * o * 0.06;
+
+        let corMare = "#0284c7";
+        let luzMare = "#38bdf8";
+        let sombraMare = "#0c4a6e";
+        let corPele = "#bae6fd";
+        let corMarca = "#ea580c";
+        let luzMarca = "#fde047";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4 * (1 + (u.stage || 0) * 0.15);
+
+        // AURA HIPNÓTICA (Canto)
+        if (!isFainted) {
+          let auraColor = isMarca ? "rgba(234, 88, 12, 0.15)" : "rgba(56, 189, 248, 0.15)";
+          for(let i=1; i<=3; i++) {
+             n.beginPath();
+             n.strokeStyle = auraColor;
+             n.lineWidth = strokeW * 2;
+             n.arc(0, 0, raio * 0.8 + ((tempo * 20) % (raio*1.5)) * i * 0.5, 0, Math.PI*2);
+             n.stroke();
+          }
+        }
+
+        // CABELO DE ÁGUA FLUIDO (Atrás)
+        n.fillStyle = corMare;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.8);
+        n.bezierCurveTo(raio * 1.2, -raio * 0.5, raio * 1.5, raio * 0.5, raio * 0.8, raio * 1.2);
+        n.bezierCurveTo(0, raio * 0.8, -raio * 1.5, raio * 0.5, -raio * 1.2, -raio * 0.5);
+        n.fill();
+        n.stroke();
+
+        // CAUDA DE SEREIA DOS RIOS
+        let gradCauda = n.createLinearGradient(0, 0, 0, raio * 1.5);
+        gradCauda.addColorStop(0, corMare);
+        gradCauda.addColorStop(1, sombraMare);
+        n.fillStyle = gradCauda;
+        n.beginPath();
+        n.moveTo(-raio * 0.3, raio * 0.2);
+        n.quadraticCurveTo(raio * 0.5, raio * 1.2, -raio * 0.4, raio * 1.6);
+        n.quadraticCurveTo(-raio * 0.1, raio * 1.5, raio * 0.3, raio * 1.8);
+        n.quadraticCurveTo(0, raio * 1.2, raio * 0.3, raio * 0.2);
+        n.fill();
+        n.stroke();
+
+        // CORPO / TRONCO
+        n.fillStyle = corPele;
+        n.strokeStyle = sombraMare;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.ellipse(0, 0, raio * 0.4, raio * 0.6, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // MARCA DO TATÁ (Versão Rara)
+        if (isMarca && !isFainted) {
+          n.strokeStyle = luzMarca;
+          n.lineWidth = strokeW * 1.5;
+          n.shadowColor = corMarca;
+          n.shadowBlur = 10;
+          n.beginPath();
+          // Espiral mágica
+          for(let i=0; i<15; i++) {
+             let ang = i * 0.6 - tempo*2;
+             let dist = i * raio * 0.015;
+             if(i===0) n.moveTo(Math.cos(ang)*dist, Math.sin(ang)*dist + raio*0.2);
+             else n.lineTo(Math.cos(ang)*dist, Math.sin(ang)*dist + raio*0.2);
+          }
+          n.stroke();
+          n.shadowBlur = 0;
+        }
+
+        // BRAÇOS / NADADEIRAS LATERAIS AFIADAS
+        n.fillStyle = luzMare;
+        [-1, 1].forEach(lado => {
+           n.beginPath();
+           n.moveTo(lado * raio * 0.3, -raio * 0.2);
+           n.quadraticCurveTo(lado * raio * 0.8, -raio * 0.4, lado * raio * 0.9, raio * 0.1);
+           n.quadraticCurveTo(lado * raio * 0.5, 0, lado * raio * 0.3, raio * 0.2);
+           n.fill();
+           n.stroke();
+        });
+
+        // ROSTO
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = -raio * 0.2;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.06, cy - raio * 0.06); n.lineTo(cx + raio * 0.06, cy + raio * 0.06);
+            n.moveTo(cx + raio * 0.06, cy - raio * 0.06); n.lineTo(cx - raio * 0.06, cy + raio * 0.06);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = sombraMare;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.ellipse(lado * raio * 0.15, -raio * 0.2, raio * 0.08, raio * 0.12, 0, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#fff";
+            n.beginPath();
+            n.arc(lado * raio * 0.15, -raio * 0.25, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = sombraMare;
+          });
+        }
+
+        // BOCA CANTANDO
+        if (!isFainted) {
+          n.fillStyle = "#000";
+          n.beginPath();
+          n.ellipse(0, -raio * 0.05, raio * 0.04, raio * 0.06, 0, 0, Math.PI * 2);
+          n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharCapoeirao(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.03;
+
+        let corCasca = "#451a03";
+        let sombraCasca = "#270f01";
+        let luzCasca = "#78350f";
+        let corMusgo = "#15803d";
+        let luzFlora = "#4ade80";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42 * (1 + (u.stage || 0) * 0.15);
+
+        // CAJADO ANCESTRAL GIGANTE (Mão de trás)
+        n.strokeStyle = sombraCasca;
+        n.lineWidth = strokeW * 3;
+        n.beginPath();
+        n.moveTo(raio * 0.6, -raio * 1.5);
+        n.lineTo(raio * 0.4, raio * 1.2);
+        n.stroke();
+        n.strokeStyle = luzCasca;
+        n.lineWidth = strokeW * 1.5;
+        n.stroke();
+
+        if (!isFainted) {
+           n.fillStyle = luzFlora;
+           n.beginPath();
+           n.arc(raio * 0.6, -raio * 1.5, raio * 0.15, 0, Math.PI*2);
+           n.fill();
+        }
+
+        // PÉS VIRADOS DE RAÍZES (Curupira)
+        n.fillStyle = sombraCasca;
+        n.strokeStyle = "#000";
+        n.lineWidth = strokeW;
+        [-1, 1].forEach(lado => {
+           n.beginPath();
+           n.moveTo(lado * raio * 0.3, raio * 0.6);
+           n.lineTo(lado * raio * 0.6 + raio * 0.2, raio * 1.0);
+           n.lineTo(lado * raio * 0.1 + raio * 0.1, raio * 0.9);
+           n.closePath();
+           n.fill();
+           n.stroke();
+        });
+
+        // ARMADURA DE TRONCO MACIÇO
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzCasca);
+        gradCorpo.addColorStop(0.5, corCasca);
+        gradCorpo.addColorStop(1, sombraCasca);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraCasca;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(-raio * 0.7, -raio * 0.5);
+        n.lineTo(raio * 0.7, -raio * 0.5);
+        n.lineTo(raio * 0.9, raio * 0.2);
+        n.lineTo(raio * 0.4, raio * 0.8);
+        n.lineTo(-raio * 0.4, raio * 0.8);
+        n.lineTo(-raio * 0.9, raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // MANTAL DE MUSGO E FOLHAS
+        n.fillStyle = corMusgo;
+        n.strokeStyle = sombraCasca;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.8, -raio * 0.4);
+        n.quadraticCurveTo(-raio * 0.4, -raio * 1.0, 0, -raio * 1.1);
+        n.quadraticCurveTo(raio * 0.4, -raio * 1.0, raio * 0.8, -raio * 0.4);
+        n.quadraticCurveTo(raio * 0.4, -raio * 0.1, 0, -raio * 0.3);
+        n.quadraticCurveTo(-raio * 0.4, -raio * 0.1, -raio * 0.8, -raio * 0.4);
+        n.fill();
+        n.stroke();
+
+        // BURACO NO TRONCO (Rosto sombrio)
+        n.fillStyle = sombraCasca;
+        n.beginPath();
+        n.ellipse(0, 0, raio * 0.4, raio * 0.3, 0, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // OLHOS BRILHANTES (Luz da Floresta)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzFlora;
+          n.shadowColor = luzFlora;
+          n.shadowBlur = 10;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.05);
+            n.lineTo(lado * raio * 0.25, -raio * 0.1);
+            n.lineTo(lado * raio * 0.2, 0.05 * raio);
+            n.closePath();
+            n.fill();
+          });
+          n.shadowBlur = 0;
+        }
+
+        // BRAÇOS ROBUSTOS
+        n.fillStyle = corCasca;
+        [-1, 1].forEach(lado => {
+           n.beginPath();
+           n.ellipse(lado * raio * 0.8, raio * 0.3, raio * 0.2, raio * 0.4, lado * -0.2, 0, Math.PI*2);
+           n.fill(); n.stroke();
+        });
+
+        n.restore();
+      }
+
+      function desenharFaebluma20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 4) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.08;
+
+        let corFlora = "#16a34a";
+        let luzFlora = "#86efac";
+        let sombraFlora = "#14532d";
+        let luzFaisca = "#fef08a";
+        let sombraFaisca = "#ca8a04";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42 * (1 + (u.stage || 0) * 0.15);
+        let baterAsa = Math.sin(tempo * 10) * 0.3 + 0.7;
+
+        // ASAS COLOSSAIS DE FOLHA E RELÂMPAGO
+        [-1, 1].forEach((lado) => {
+          n.save();
+          n.scale(lado * baterAsa, 1);
+
+          let gradAsa = n.createLinearGradient(0, 0, raio * 1.8, -raio * 1.5);
+          gradAsa.addColorStop(0, sombraFlora);
+          gradAsa.addColorStop(0.5, corFlora);
+          gradAsa.addColorStop(1, luzFlora);
+
+          n.fillStyle = gradAsa;
+          n.strokeStyle = sombraFlora;
+          n.lineWidth = strokeW * 1.5;
+
+          // Asa Superior Majestosa
+          n.beginPath();
+          n.moveTo(0, 0);
+          n.bezierCurveTo(raio * 1.2, -raio * 0.2, raio * 2.2, -raio * 1.5, raio * 0.5, -raio * 1.8);
+          n.bezierCurveTo(raio * 0.2, -raio * 1.2, raio * 0.4, -raio * 0.5, 0, -raio * 0.3);
+          n.fill(); n.stroke();
+
+          // Asa Inferior Afiada
+          n.beginPath();
+          n.moveTo(0, 0);
+          n.bezierCurveTo(raio * 1.5, raio * 0.4, raio * 1.2, raio * 1.6, raio * 0.2, raio * 1.2);
+          n.bezierCurveTo(raio * 0.5, raio * 0.8, raio * 0.2, raio * 0.2, 0, raio * 0.2);
+          n.fill(); n.stroke();
+
+          // Veios Elétricos nas Asas
+          if (!isFainted) {
+             n.strokeStyle = luzFaisca;
+             n.lineWidth = strokeW * 0.8;
+             n.beginPath(); n.moveTo(0, -raio * 0.3); n.lineTo(raio * 0.8, -raio * 0.9); n.lineTo(raio * 1.2, -raio * 0.8); n.stroke();
+             n.beginPath(); n.moveTo(0, raio * 0.2); n.lineTo(raio * 0.6, raio * 0.8); n.lineTo(raio * 0.8, raio * 1.2); n.stroke();
+          }
+          n.restore();
+        });
+
+        // CORPO DE IMPERATRIZ (Alongado e blindado)
+        n.fillStyle = sombraFlora;
+        n.strokeStyle = luzFlora;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.2, -raio * 0.5);
+        n.quadraticCurveTo(0, -raio * 0.8, raio * 0.2, -raio * 0.5);
+        n.lineTo(raio * 0.15, raio * 0.8);
+        n.lineTo(0, raio * 1.2);
+        n.lineTo(-raio * 0.15, raio * 0.8);
+        n.closePath();
+        n.fill(); n.stroke();
+
+        // COROA / ANTENAS ELÉTRICAS
+        n.strokeStyle = sombraFaisca;
+        n.lineWidth = strokeW * 1.5;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.1, -raio * 0.7);
+          n.lineTo(lado * raio * 0.5, -raio * 1.4);
+          n.lineTo(lado * raio * 0.8, -raio * 1.1);
+          n.stroke();
+
+          if (!isFainted) {
+            n.fillStyle = luzFaisca;
+            n.beginPath(); n.arc(lado * raio * 0.8, -raio * 1.1, raio * 0.1, 0, Math.PI*2); n.fill();
+          }
+        });
+
+        // ROSTO IMPLACÁVEL
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.1, cy = -raio * 0.3;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.05, cy - raio * 0.05); n.lineTo(cx + raio * 0.05, cy + raio * 0.05);
+            n.moveTo(cx + raio * 0.05, cy - raio * 0.05); n.lineTo(cx - raio * 0.05, cy + raio * 0.05);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzFaisca;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.05, -raio * 0.4);
+            n.lineTo(lado * raio * 0.2, -raio * 0.25);
+            n.lineTo(lado * raio * 0.15, -raio * 0.2);
+            n.closePath();
+            n.fill();
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharFaebluma21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 5) * o * 0.06;
+
+        let corFaisca = "#eab308";
+        let sombraFaisca = "#713f12";
+        let luzFaisca = "#fef08a";
+        let corFlora = "#22c55e";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4 * (1 + (u.stage || 0) * 0.15);
+        let baterAsa = Math.sin(tempo * 15) * 0.4 + 0.6;
+
+        // ASAS DE ENERGIA PLASMA/ESTILHAÇOS
+        [-1, 1].forEach((lado) => {
+          n.save();
+          n.scale(lado * baterAsa, 1);
+
+          n.fillStyle = "rgba(250, 204, 21, 0.8)";
+          n.strokeStyle = luzFaisca;
+          n.lineWidth = strokeW;
+
+          // Segmentos superiores afiados
+          n.beginPath();
+          n.moveTo(raio * 0.2, 0);
+          n.lineTo(raio * 1.6, -raio * 0.6);
+          n.lineTo(raio * 1.2, -raio * 1.2);
+          n.lineTo(raio * 0.4, -raio * 1.6);
+          n.closePath();
+          n.fill(); n.stroke();
+
+          // Segmentos inferiores pontiagudos
+          n.beginPath();
+          n.moveTo(raio * 0.2, raio * 0.2);
+          n.lineTo(raio * 1.4, raio * 0.8);
+          n.lineTo(raio * 0.6, raio * 1.4);
+          n.closePath();
+          n.fill(); n.stroke();
+
+          n.restore();
+        });
+
+        // CORPO CRISTALINO ELÉTRICO
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzFaisca);
+        gradCorpo.addColorStop(0.5, corFaisca);
+        gradCorpo.addColorStop(1, sombraFaisca);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraFaisca;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.8);
+        n.lineTo(raio * 0.3, -raio * 0.2);
+        n.lineTo(raio * 0.2, raio * 0.8);
+        n.lineTo(0, raio * 1.2);
+        n.lineTo(-raio * 0.2, raio * 0.8);
+        n.lineTo(-raio * 0.3, -raio * 0.2);
+        n.closePath();
+        n.fill(); n.stroke();
+
+        // GOLA/MÁSCARA DE FLORA (Folhas rígidas protetoras)
+        n.fillStyle = corFlora;
+        n.strokeStyle = "#064e3b";
+        n.beginPath();
+        n.moveTo(0, -raio * 0.2);
+        n.lineTo(raio * 0.5, -raio * 0.6);
+        n.lineTo(raio * 0.4, 0);
+        n.lineTo(0, raio * 0.3);
+        n.lineTo(-raio * 0.4, 0);
+        n.lineTo(-raio * 0.5, -raio * 0.6);
+        n.closePath();
+        n.fill(); n.stroke();
+
+        // OLHOS (Fendas de energia)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 1.5;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.15, cy = -raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.05, cy - raio * 0.05); n.lineTo(cx + raio * 0.05, cy + raio * 0.05);
+            n.moveTo(cx + raio * 0.05, cy - raio * 0.05); n.lineTo(cx - raio * 0.05, cy + raio * 0.05);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.05, -raio * 0.2);
+            n.lineTo(lado * raio * 0.25, -raio * 0.1);
+            n.lineTo(lado * raio * 0.15, 0);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzFaisca;
+            n.beginPath(); n.arc(lado * raio * 0.15, -raio * 0.1, Math.max(1, raio*0.03), 0, Math.PI*2); n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        // RAIOS ORBITAIS (Agressividade elétrica)
+        if (!isFainted) {
+           n.strokeStyle = luzFaisca;
+           n.lineWidth = strokeW * 1.5;
+           for(let i=0; i<3; i++) {
+              let px = Math.cos(tempo * 5 + i * 2) * raio * 1.4;
+              let py = Math.sin(tempo * 4 + i * 2) * raio;
+              n.beginPath();
+              n.moveTo(px, py - raio*0.2);
+              n.lineTo(px + raio*0.1, py);
+              n.lineTo(px - raio*0.1, py + raio*0.2);
+              n.stroke();
+           }
+        }
+
+        n.restore();
+      }
+
+      function desenharFaevolta21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 3) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 5) * o * 0.06;
+
+        let corFaisca = "#eab308";
+        let sombraFaisca = "#713f12";
+        let corMadeira = "#27180d"; // Escudo de raízes/madeira
+        let luzFlora = "#4ade80";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.15);
+
+        // AURA DE TEMPESTADE GEOMÉTRICA
+        if (!isFainted) {
+          n.strokeStyle = "rgba(250, 204, 21, 0.4)";
+          n.lineWidth = strokeW * 2;
+          n.save();
+          n.rotate(tempo * 2);
+          n.beginPath();
+          n.rect(-raio, -raio, raio * 2, raio * 2);
+          n.stroke();
+          n.restore();
+
+          n.save();
+          n.rotate(-tempo * 1.5);
+          n.beginPath();
+          n.rect(-raio*0.8, -raio*0.8, raio * 1.6, raio * 1.6);
+          n.stroke();
+          n.restore();
+        }
+
+        // ESCUDO ROTATIVO DE RAÍZES (Madeira e Flora)
+        n.fillStyle = corMadeira;
+        n.strokeStyle = luzFlora;
+        n.lineWidth = strokeW;
+        for(let i=0; i<4; i++) {
+           n.save();
+           let ang = tempo * 3 + (i * Math.PI) / 2;
+           n.rotate(ang);
+           n.beginPath();
+           n.moveTo(raio * 0.6, 0);
+           n.lineTo(raio * 1.2, -raio * 0.2);
+           n.lineTo(raio * 1.4, 0);
+           n.lineTo(raio * 1.2, raio * 0.2);
+           n.closePath();
+           n.fill();
+           n.stroke();
+           n.restore();
+        }
+
+        // NÚCLEO CENTRAL (Diamante Elétrico)
+        let gradNucleo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo = gradNucleo; // Reaproveitando gradiente
+        gradCorpo.addColorStop(0, "#fef08a");
+        gradCorpo.addColorStop(0.5, corFaisca);
+        gradCorpo.addColorStop(1, sombraFaisca);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraFaisca;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.9);
+        n.lineTo(raio * 0.6, 0);
+        n.lineTo(0, raio * 0.9);
+        n.lineTo(-raio * 0.6, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // Fissuras do núcleo
+        n.strokeStyle = "rgba(0,0,0,0.5)";
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 0.9); n.lineTo(0, raio * 0.9); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.6, 0); n.lineTo(raio * 0.6, 0); n.stroke();
+
+        // OLHOS FENDADOS E LUMINOSOS
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 2;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.1);
+            n.lineTo(lado * raio * 0.35, -raio * 0.2);
+            n.lineTo(lado * raio * 0.25, 0);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = luzFlora; // Brilho de natureza pura
+            n.beginPath();
+            n.arc(lado * raio * 0.2, -raio * 0.1, raio * 0.03, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharFaevolta20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 8) * 0.025;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 6) * o * 0.05;
+
+        let corFaisca = "#eab308";
+        let luzFaisca = "#fef08a";
+        let plasma = "#ffffff";
+        let corFlora = "#4ade80";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.15);
+
+        // ANÉIS DE PLASMA INSTÁVEL (Aura suprema)
+        if (!isFainted) {
+          n.strokeStyle = luzFaisca;
+          n.lineWidth = strokeW;
+          for (let i = 0; i < 3; i++) {
+            n.save();
+            n.rotate(tempo * (4 + i) + i * 2);
+            n.beginPath();
+            n.ellipse(0, 0, raio * 1.5, raio * 0.3, 0, 0, Math.PI * 2);
+            n.stroke();
+            n.restore();
+          }
+        }
+
+        // NÚCLEO TETRAÉDRICO (Triforce de energia pura)
+        let gradNucleo = n.createLinearGradient(0, -raio * 1.2, 0, raio * 1.2);
+        gradNucleo.addColorStop(0, plasma);
+        gradNucleo.addColorStop(0.5, luzFaisca);
+        gradNucleo.addColorStop(1, corFaisca);
+
+        n.fillStyle = gradCorpo = gradNucleo;
+        n.strokeStyle = corFaisca;
+        n.lineWidth = strokeW * 2;
+
+        // Prisma Flutuante Central
+        n.beginPath();
+        n.moveTo(0, -raio * 1.2);
+        n.lineTo(raio * 0.8, raio * 0.8);
+        n.lineTo(-raio * 0.8, raio * 0.8);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // Facetas internas do prisma
+        n.strokeStyle = "rgba(234, 179, 8, 0.5)"; // Sombra faísca translúcida
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 1.2); n.lineTo(0, raio * 0.2); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.8, raio * 0.8); n.lineTo(0, raio * 0.2); n.lineTo(raio * 0.8, raio * 0.8); n.stroke();
+
+        // RAÍZES CARBONIZADAS (Flora tentando conter o poder)
+        n.strokeStyle = corFlora;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio * 0.9, raio * 0.6);
+        n.quadraticCurveTo(-raio * 0.5, 0, 0, -raio * 0.4);
+        n.quadraticCurveTo(raio * 0.5, 0, raio * 0.9, raio * 0.6);
+        n.stroke();
+
+        // RELÂMPAGOS ERRÁTICOS
+        if (!isFainted) {
+          n.strokeStyle = plasma;
+          n.lineWidth = strokeW * 1.5;
+          for (let i = 0; i < 4; i++) {
+            let px = Math.cos(tempo * 15 + i) * raio * 1.2;
+            let py = Math.sin(tempo * 12 + i * 1.5) * raio * 1.2;
+            n.beginPath();
+            n.moveTo(0, 0);
+            n.lineTo(px * 0.5 + Math.random() * raio * 0.2, py * 0.5 + Math.random() * raio * 0.2);
+            n.lineTo(px, py);
+            n.stroke();
+          }
+        }
+
+        // OLHOS (Energia Pura)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 2;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.25, cy = 0;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.1, cy - raio * 0.1); n.lineTo(cx + raio * 0.1, cy + raio * 0.1);
+            n.moveTo(cx + raio * 0.1, cy - raio * 0.1); n.lineTo(cx - raio * 0.1, cy + raio * 0.1);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            // Fendas agressivas
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.1);
+            n.lineTo(lado * raio * 0.4, -raio * 0.05);
+            n.lineTo(lado * raio * 0.3, raio * 0.15);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = plasma;
+            n.beginPath(); n.arc(lado * raio * 0.25, 0, raio * 0.04, 0, Math.PI * 2); n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharFlorajag20(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 3) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2) * o * 0.03;
+
+        // Focado em Defesa: Madeira escura, musgo espesso
+        let corMadeira = "#451a03";
+        let sombraMadeira = "#270f01";
+        let corMusgo = "#14532d";
+        let luzMusgo = "#22c55e";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42 * (1 + (u.stage || 0) * 0.15);
+
+        // JUBA DE MUSGO (Escudo natural gigante)
+        let gradMusgo = n.createRadialGradient(0, 0, raio * 0.3, 0, 0, raio * 1.5);
+        gradMusgo.addColorStop(0, luzMusgo);
+        gradMusgo.addColorStop(1, corMusgo);
+
+        n.fillStyle = gradMusgo;
+        n.strokeStyle = sombraMadeira;
+        n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.arc(0, -raio * 0.2, raio * 1.2, 0, Math.PI * 2);
+        n.fill();
+        n.stroke();
+
+        // ORELHAS DE TRONCO MACIÇO
+        n.fillStyle = corMadeira;
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.5, -raio * 0.8);
+          n.lineTo(lado * raio * 1.1, -raio * 1.2);
+          n.lineTo(lado * raio * 0.9, -raio * 0.4);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // CABEÇA / ROSTO BLINDADO (Madeira ancestral)
+        n.fillStyle = corMadeira;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.7);
+        n.lineTo(raio * 0.7, -raio * 0.2);
+        n.lineTo(raio * 0.5, raio * 0.6);
+        n.lineTo(0, raio * 0.9);
+        n.lineTo(-raio * 0.5, raio * 0.6);
+        n.lineTo(-raio * 0.7, -raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // DETALHES DA CASCA (Veios da madeira)
+        n.strokeStyle = sombraMadeira;
+        n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, -raio * 0.7); n.lineTo(0, raio * 0.9); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.5, 0); n.lineTo(raio * 0.5, 0); n.stroke();
+
+        // PRESAS DEFENSIVAS (Raízes grossas)
+        n.fillStyle = "#d4d4d8";
+        [-1, 1].forEach((lado) => {
+          n.beginPath();
+          n.moveTo(lado * raio * 0.2, raio * 0.7);
+          n.lineTo(lado * raio * 0.35, raio * 1.3);
+          n.lineTo(lado * raio * 0.5, raio * 0.5);
+          n.closePath();
+          n.fill();
+          n.stroke();
+        });
+
+        // OLHOS FEROZES (Brilho protetor)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 2;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.25, cy = -raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = luzMusgo;
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.15, -raio * 0.2);
+            n.lineTo(lado * raio * 0.4, -raio * 0.1);
+            n.lineTo(lado * raio * 0.3, raio * 0.05);
+            n.closePath();
+            n.fill();
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharFlorajag21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 5) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 4) * o * 0.05;
+
+        // Focado em Ataque: Verde vibrante, folhas afiadas como navalhas
+        let corFlora = "#22c55e";
+        let sombraFlora = "#166534";
+        let luzFlora = "#bbf7d0";
+        let corPetala = "#ec4899"; // Detalhe agressivo
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4 * (1 + (u.stage || 0) * 0.15);
+
+        // JUBA DE FOLHAS NAVALHA (Dinâmico, virado para a frente)
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        for (let i = 0; i < 8; i++) {
+           let ang = (i * Math.PI * 2) / 8 + Math.PI / 8;
+           let dist = raio * 1.4 + Math.sin(tempo * 8 + i) * raio * 0.1;
+           let px = Math.cos(ang) * dist;
+           let py = Math.sin(ang) * dist;
+           if (i === 0) n.moveTo(px, py);
+           else n.lineTo(px, py);
+        }
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // PÉTALAS CORTANTES (Detalhe predatório)
+        n.fillStyle = corPetala;
+        [-1, 1].forEach(lado => {
+           n.beginPath();
+           n.moveTo(lado * raio * 0.6, -raio * 0.5);
+           n.lineTo(lado * raio * 1.2, -raio * 1.0);
+           n.lineTo(lado * raio * 0.4, -raio * 0.8);
+           n.closePath();
+           n.fill();
+           n.stroke();
+        });
+
+        // CABEÇA AERODINÂMICA (Felino ágil)
+        n.fillStyle = luzFlora;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.6);
+        n.lineTo(raio * 0.5, -raio * 0.2);
+        n.lineTo(raio * 0.4, raio * 0.5);
+        n.lineTo(0, raio * 0.8);
+        n.lineTo(-raio * 0.4, raio * 0.5);
+        n.lineTo(-raio * 0.5, -raio * 0.2);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // MARCAS DE PREDADOR NO ROSTO
+        n.strokeStyle = sombraFlora;
+        n.lineWidth = strokeW * 1.5;
+        [-1, 1].forEach((lado) => {
+           n.beginPath();
+           n.moveTo(lado * raio * 0.2, 0);
+           n.lineTo(lado * raio * 0.4, raio * 0.4);
+           n.stroke();
+        });
+
+        // OLHOS FEROZES (Brilho predatório)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 2;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.25, cy = -raio * 0.1;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.08, cy - raio * 0.08); n.lineTo(cx + raio * 0.08, cy + raio * 0.08);
+            n.moveTo(cx + raio * 0.08, cy - raio * 0.08); n.lineTo(cx - raio * 0.08, cy + raio * 0.08);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#022c22";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.moveTo(lado * raio * 0.1, -raio * 0.2);
+            n.lineTo(lado * raio * 0.4, -raio * 0.1);
+            n.lineTo(lado * raio * 0.25, raio * 0.05);
+            n.closePath();
+            n.fill();
+
+            n.fillStyle = corPetala; // Olho rosa brilhante
+            n.beginPath();
+            n.arc(lado * raio * 0.25, -raio * 0.08, raio * 0.04, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#022c22";
+          });
+        }
+
+        n.restore();
+      }
+
+      function desenharFlorolith21(n, u, r, l, o, f) {
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 2) * 0.015;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 2) * o * 0.03;
+
+        let corPedra = "#57534e";
+        let sombraPedra = "#292524";
+        let luzPedra = "#a8a29e";
+        let corFlora = "#15803d";
+        let luzFlora = "#4ade80";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45 * (1 + (u.stage || 0) * 0.2);
+
+        // PILARES DE PEDRA (Braços/Ombros Colossais)
+        n.fillStyle = sombraPedra;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW * 1.5;
+        [-1, 1].forEach(lado => {
+           n.beginPath();
+           n.moveTo(lado * raio * 0.6, -raio * 0.5);
+           n.lineTo(lado * raio * 1.1, -raio * 0.2);
+           n.lineTo(lado * raio * 1.0, raio * 0.8);
+           n.lineTo(lado * raio * 0.5, raio * 0.6);
+           n.closePath();
+           n.fill();
+           n.stroke();
+        });
+
+        // CORPO MEGALÍTICO CENTRAL
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzPedra);
+        gradCorpo.addColorStop(0.5, corPedra);
+        gradCorpo.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradCorpo;
+        n.strokeStyle = sombraPedra;
+        n.beginPath();
+        n.moveTo(0, -raio * 1.1);
+        n.lineTo(raio * 0.6, -raio * 0.6);
+        n.lineTo(raio * 0.5, raio * 0.8);
+        n.lineTo(-raio * 0.5, raio * 0.8);
+        n.lineTo(-raio * 0.6, -raio * 0.6);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // RAÍZES GIGANTES ENVOLVENDO A PEDRA
+        n.strokeStyle = corFlora;
+        n.lineWidth = strokeW * 2.5;
+        n.beginPath(); n.moveTo(-raio * 0.7, -raio * 0.2); n.quadraticCurveTo(0, 0, raio * 0.7, -raio * 0.4); n.stroke();
+        n.beginPath(); n.moveTo(-raio * 0.6, raio * 0.4); n.quadraticCurveTo(0, raio * 0.6, raio * 0.6, raio * 0.2); n.stroke();
+
+        // NÚCLEO CRISTALINO / FLORA GEODE
+        n.fillStyle = luzFlora;
+        n.beginPath();
+        n.moveTo(0, -raio * 0.4);
+        n.lineTo(raio * 0.3, 0);
+        n.lineTo(0, raio * 0.4);
+        n.lineTo(-raio * 0.3, 0);
+        n.closePath();
+        n.fill();
+        n.stroke();
+
+        // Brilho do Núcleo
+        if (!isFainted) {
+          n.fillStyle = "#ffffff";
+          n.beginPath();
+          n.arc(0, 0, Math.max(raio * 0.05, Math.sin(tempo * 4) * raio * 0.1), 0, Math.PI * 2);
+          n.fill();
+        }
+
+        // COBERTURA DE FLORESTA ANCESTRAL (Topo)
+        n.fillStyle = corFlora;
+        n.strokeStyle = sombraPedra;
+        n.lineWidth = strokeW;
+        n.beginPath();
+        n.moveTo(-raio * 0.7, -raio * 0.8);
+        n.quadraticCurveTo(-raio * 0.4, -raio * 1.4, 0, -raio * 1.2);
+        n.quadraticCurveTo(raio * 0.4, -raio * 1.4, raio * 0.7, -raio * 0.8);
+        n.quadraticCurveTo(0, -raio * 0.6, -raio * 0.7, -raio * 0.8);
+        n.fill();
+        n.stroke();
+
+        // OLHOS (Fendas na pedra acima do geode)
+        if (isFainted) {
+          n.strokeStyle = "#000";
+          n.lineWidth = strokeW * 2;
+          [-1, 1].forEach((lado) => {
+            let cx = lado * raio * 0.2, cy = -raio * 0.6;
+            n.beginPath();
+            n.moveTo(cx - raio * 0.06, cy - raio * 0.06); n.lineTo(cx + raio * 0.06, cy + raio * 0.06);
+            n.moveTo(cx + raio * 0.06, cy - raio * 0.06); n.lineTo(cx - raio * 0.06, cy + raio * 0.06);
+            n.stroke();
+          });
+        } else {
+          n.fillStyle = "#0f172a";
+          [-1, 1].forEach((lado) => {
+            n.beginPath();
+            n.rect(lado * raio * 0.15 - raio * 0.08, -raio * 0.65, raio * 0.16, raio * 0.08);
+            n.fill();
+
+            n.fillStyle = luzFlora;
+            n.beginPath();
+            n.arc(lado * raio * 0.18, -raio * 0.61, raio * 0.025, 0, Math.PI * 2);
+            n.fill();
+            n.fillStyle = "#0f172a";
+          });
+        }
+
+        n.restore();
+      }
+
       function So(n, u, r, l, o, f = {}) {
         let { flip: $, t: _ = 0, fainted: v } = f,
           Z = On[u.types[0]].color,
@@ -15837,6 +19423,142 @@
           }
           if (u.silhouette === "petraflor") {
             desenharPetraflor(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "pyrombra") {
+            desenharPyrombra(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "redemuinho") {
+            desenharRedemuinho(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "rochombra") {
+            desenharRochombra(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "terrascal") {
+            desenharTerrascal(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "tidalvolt") {
+            desenharTidalvolt(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "tidolith") {
+            desenharTidolith(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "umbralith") {
+            desenharUmbralith(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "umbravolt") {
+            desenharUmbravolt(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "virasselva") {
+            desenharVirasselva(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "voltaquas") {
+            desenharVoltaquas(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "voltsombra") {
+            desenharVoltsombra(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "vulcabra") {
+            desenharVulcabra(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "abissalga_20") {
+            desenharAbissalga20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "abissalga_21") {
+            desenharAbissalga21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "gotaviva-3") {
+            desenharAbissalume(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "algaffin_20") {
+            desenharAlgaffin20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "algaffin_21") {
+            desenharAlgaffin21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "aquaroch_20") {
+            desenharAquaroch20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "aquaroch_21") {
+            desenharAquaroch21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "brasalma") {
+            desenharBrasalma(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "iara" || u.silhouette === "iara-marca") {
+            desenharCantamar(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "curupira-evo2") {
+            desenharCapoeirao(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "virasselva") {
+            desenharVirasselva(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faebluma_20") {
+            desenharFaebluma20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faebluma_21") {
+            desenharFaebluma21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faevolta_21") {
+            desenharFaevolta21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "virasselva") {
+            desenharVirasselva(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faebluma_20") {
+            desenharFaebluma20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faebluma_21") {
+            desenharFaebluma21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faevolta_20") {
+            desenharFaevolta20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "faevolta_21") {
+            desenharFaevolta21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "florajag_20") {
+            desenharFlorajag20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "florajag_21") {
+            desenharFlorajag21(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "florolith_21") {
+            desenharFlorolith21(n, u, r, l, o, f);
             return;
           }
           if (u.silhouette) {
