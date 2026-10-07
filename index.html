@@ -18427,6 +18427,89 @@
         n.restore();
       }
 
+      function desenharCantamarMarca(n, u, r, l, o, f) {
+        // Cantamar da Marca (iara-marca) - A Sereia do Rio fervente (Variante Fogo)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        n.save(); n.translate(r, l + Math.sin(tempo * 3) * o * 0.05); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.45; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corPele = "#38bdf8"; let corEscamas = "#0369a1";
+        let corCabelo = "#0284c7";
+        let brilhoMarca = "#f97316"; let corMagia = "#fde047"; // Fogo do Tatá
+
+        // 1. Magia do Canto Fervente (Ondas de som misturadas com calor)
+        if(!isFainted) {
+            n.strokeStyle = "rgba(249, 115, 22, 0.5)"; // Laranja neon
+            n.lineWidth = strokeW * 2;
+            let pulso = (tempo * 25) % (raio*2.5);
+            n.beginPath(); n.arc(raio*0.5, -raio*0.2, pulso, -Math.PI/2.5, Math.PI/2.5); n.stroke();
+            n.strokeStyle = "rgba(253, 224, 71, 0.3)"; // Amarelo
+            n.beginPath(); n.arc(raio*0.5, -raio*0.2, pulso + raio*0.4, -Math.PI/3, Math.PI/3); n.stroke();
+        }
+
+        // 2. Cauda Majestosa com a Espiral Brilhante
+        n.fillStyle = corEscamas; n.strokeStyle = "#082f49"; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(0, raio*0.2);
+        n.quadraticCurveTo(-raio*1.3, raio*0.8, -raio*0.9, raio*1.5);
+        n.lineTo(-raio*0.5, raio*1.2);
+        n.quadraticCurveTo(0, raio*0.8, raio*0.2, raio*0.4);
+        n.fill(); n.stroke();
+
+        // Barbatana Caudal
+        n.beginPath(); n.moveTo(-raio*0.9, raio*1.5); n.lineTo(-raio*1.5, raio*1.9); n.lineTo(-raio*1.0, raio*1.3); n.lineTo(-raio*1.3, raio*2.1); n.lineTo(-raio*0.5, raio*1.2); n.fill(); n.stroke();
+
+        // A Espiral da Marca a brilhar na cauda
+        if(!isFainted) {
+            n.strokeStyle = brilhoMarca; n.lineWidth = strokeW * 1.5; n.shadowColor = brilhoMarca; n.shadowBlur = 10;
+            n.beginPath();
+            n.arc(-raio*0.5, raio*0.8, raio*0.2, 0, Math.PI*1.5);
+            n.arc(-raio*0.5, raio*0.8, raio*0.1, Math.PI*1.5, Math.PI*3);
+            n.stroke();
+            n.shadowBlur = 0;
+        }
+
+        // 3. Cabelos Hidrodinâmicos
+        n.fillStyle = corCabelo; n.strokeStyle = "#082f49";
+        n.beginPath(); n.moveTo(-raio*0.2, -raio*0.6); n.quadraticCurveTo(-raio*0.9, -raio*0.8, -raio*1.1, -raio*0.1); n.quadraticCurveTo(-raio*0.6, 0.1*raio, -raio*0.2, -raio*0.2); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.2, -raio*0.6); n.quadraticCurveTo(raio*0.9, -raio*0.8, raio*1.1, -raio*0.1); n.quadraticCurveTo(raio*0.6, 0.1*raio, raio*0.2, -raio*0.2); n.fill(); n.stroke();
+
+        // 4. Corpo da Sereia
+        n.fillStyle = corPele; n.strokeStyle = "#0284c7"; n.lineWidth = strokeW*2;
+        n.beginPath(); n.ellipse(0, -raio*0.1, raio*0.4, raio*0.5, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Top/Escamas Peitorais
+        n.fillStyle = corEscamas;
+        n.beginPath(); n.arc(0, raio*0.2, raio*0.4, 0, Math.PI); n.fill(); n.stroke();
+
+        // Braços
+        n.beginPath(); n.moveTo(-raio*0.3, 0); n.quadraticCurveTo(-raio*0.7, raio*0.5, -raio*0.2, raio*0.7); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.3, 0); n.quadraticCurveTo(raio*0.7, raio*0.5, raio*0.2, raio*0.7); n.stroke();
+
+        // 5. Rosto (Siren Predatória)
+        if(isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(-raio*0.15, -raio*0.2); n.lineTo(-raio*0.05, -raio*0.1); n.stroke();
+            n.beginPath(); n.moveTo(raio*0.15, -raio*0.2); n.lineTo(raio*0.05, -raio*0.1); n.stroke();
+        } else {
+            n.fillStyle = "#fff"; n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.ellipse(-raio*0.15, -raio*0.15, raio*0.1, raio*0.06, -Math.PI/6, 0, Math.PI*2); n.fill(); n.stroke();
+            n.beginPath(); n.ellipse(raio*0.15, -raio*0.15, raio*0.1, raio*0.06, Math.PI/6, 0, Math.PI*2); n.fill(); n.stroke();
+
+            // Pupilas brilhantes de fogo
+            n.fillStyle = corMagia;
+            n.beginPath(); n.arc(-raio*0.12, -raio*0.15, raio*0.04, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.12, -raio*0.15, raio*0.04, 0, Math.PI*2); n.fill();
+
+            // Canto Hipnótico
+            n.fillStyle = "#000";
+            n.beginPath(); n.ellipse(0, 0, raio*0.04, raio*0.08, 0, 0, Math.PI*2); n.fill();
+        }
+        n.restore();
+      }
+
       function desenharCapoeirao(n, u, r, l, o, f) {
         let isFainted = f.fainted;
         let tempo = f.t || 0;
@@ -19734,6 +19817,288 @@
            n.fillStyle = luzFogo;
            n.beginPath(); n.arc(0, 0, raio*0.1, 0, Math.PI*2); n.fill();
            n.restore();
+        }
+
+        n.restore();
+      }
+
+      function desenharGalopimMarca(n, u, r, l, o, f) {
+        // Galopim da Marca (mula-marca) - Variante Rara Sombria/Dourada
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let galope = isFainted ? 0 : Math.sin(tempo * 8) * o * 0.04;
+        n.save(); n.translate(r, l - galope + o * 0.05); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.45; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corPelo = "#1c1917"; let bordaPelo = "#000"; // Obsidiana/Negro
+        let corFogo1 = "#ea580c"; let corFogo2 = "#fde047"; let corFogo3 = "#ffffff"; // Fogo dourado super quente
+
+        // Pernas
+        n.fillStyle = corPelo; n.strokeStyle = bordaPelo; n.lineWidth = strokeW * 2;
+        n.beginPath(); n.moveTo(raio*0.2, raio*0.2); n.lineTo(raio*0.5, raio*0.7); n.lineTo(raio*0.3, raio*0.8); n.closePath(); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(-raio*0.2, 0); n.lineTo(-raio*0.6, raio*0.4); n.lineTo(-raio*0.4, raio*0.5); n.closePath(); n.fill(); n.stroke();
+
+        // Cascos
+        n.fillStyle = corFogo2; n.strokeStyle = "#ca8a04";
+        n.beginPath(); n.moveTo(raio*0.5, raio*0.7); n.lineTo(raio*0.6, raio*0.8); n.lineTo(raio*0.3, raio*0.8); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(-raio*0.6, raio*0.4); n.lineTo(-raio*0.7, raio*0.5); n.lineTo(-raio*0.4, raio*0.5); n.fill(); n.stroke();
+
+        // Corpo
+        n.fillStyle = corPelo; n.strokeStyle = bordaPelo; n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(raio*0.4, raio*0.3); n.quadraticCurveTo(0, raio*0.6, -raio*0.3, raio*0.2); n.quadraticCurveTo(-raio*0.5, -raio*0.2, -raio*0.2, -raio*0.4); n.lineTo(0, -raio*0.5); n.quadraticCurveTo(raio*0.6, -raio*0.2, raio*0.4, raio*0.3);
+        n.fill(); n.stroke();
+
+        // A MARCA DO TATÁ NO PEITO
+        n.strokeStyle = corFogo2; n.lineWidth = strokeW * 1.5; n.shadowColor = corFogo2; n.shadowBlur = isFainted ? 0 : 15;
+        n.beginPath(); n.moveTo(-raio*0.2, -raio*0.1); n.lineTo(-raio*0.05, raio*0.1); n.lineTo(-raio*0.3, raio*0.05); n.closePath(); n.stroke();
+        n.shadowBlur = 0;
+
+        // O FOGO DOURADO
+        if(!isFainted) {
+            let fogoAnim = Math.sin(tempo*15)*raio*0.1;
+            n.fillStyle = corFogo1; n.strokeStyle = "#c2410c"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(-0.2*raio, -raio*0.4); n.quadraticCurveTo(-raio*0.9 - fogoAnim, -raio*0.9, -raio*0.2, -raio*1.4); n.quadraticCurveTo(0.1*raio, -raio*0.9, 0.2*raio, -raio*0.4); n.fill(); n.stroke();
+
+            n.fillStyle = corFogo2; n.strokeStyle = corFogo1;
+            n.beginPath(); n.moveTo(-0.1*raio, -raio*0.4); n.quadraticCurveTo(-raio*0.6 + fogoAnim, -raio*0.8, 0, -raio*1.2); n.quadraticCurveTo(0.2*raio, -raio*0.8, 0.1*raio, -raio*0.4); n.fill(); n.stroke();
+
+            n.fillStyle = corFogo3; n.beginPath(); n.moveTo(-0.05*raio, -raio*0.4); n.quadraticCurveTo(-raio*0.2, -raio*0.7, 0, -raio*0.9); n.quadraticCurveTo(0.1*raio, -raio*0.7, 0.05*raio, -raio*0.4); n.fill();
+        }
+        n.restore();
+      }
+
+      function desenharIgnira(n, u, r, l, o, f) {
+        // Ignira (boitata) - Serpente de Magma Cristalina
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter"; // Miter dá cantos afiados (estilo Faebluma)
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 5) * o * 0.05;
+
+        let corMagma = "#ea580c";
+        let sombraMagma = "#7c2d12";
+        let luzFogo = "#fde047";
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4;
+        let pulsoChama = Math.sin(tempo * 12) * 0.2 + 0.8;
+
+        // 1. CORPO SEGMENTADO (Cristais de Magma)
+        let numSegmentos = 5;
+        let tamSeg = raio * 0.3;
+
+        for (let i = numSegmentos; i > 0; i--) {
+            let cx = -i * raio * 0.25;
+            let cy = Math.sin(tempo * 5 - i) * raio * 0.15; // Movimento serpentino
+
+            // Chamas de Plasma (Estilo estilhaços nas costas de cada segmento)
+            if (!isFainted) {
+                n.save();
+                n.translate(cx, cy);
+                n.scale(1, pulsoChama);
+                n.fillStyle = "rgba(234, 88, 12, 0.8)"; // Magma translúcido
+                n.strokeStyle = luzFogo;
+                n.lineWidth = strokeW * 0.8;
+                n.beginPath();
+                n.moveTo(0, -tamSeg * 0.5);
+                n.lineTo(-tamSeg * 0.8, -tamSeg * 1.8);
+                n.lineTo(tamSeg * 0.5, -tamSeg * 1.2);
+                n.closePath();
+                n.fill(); n.stroke();
+                n.restore();
+            }
+
+            // Segmento (Diamante Afiado)
+            let gradSeg = n.createLinearGradient(0, cy - tamSeg, 0, cy + tamSeg);
+            gradSeg.addColorStop(0, luzFogo); gradSeg.addColorStop(0.5, corMagma); gradSeg.addColorStop(1, sombraMagma);
+
+            n.fillStyle = gradSeg;
+            n.strokeStyle = sombraMagma;
+            n.lineWidth = strokeW * 1.5;
+            n.beginPath();
+            n.moveTo(cx + tamSeg, cy);
+            n.lineTo(cx, cy - tamSeg * 0.8);
+            n.lineTo(cx - tamSeg, cy);
+            n.lineTo(cx, cy + tamSeg * 0.8);
+            n.closePath();
+            n.fill(); n.stroke();
+        }
+
+        // 2. CABEÇA (Víbora Cristalina)
+        let hcx = raio * 0.15;
+        let hcy = Math.sin(tempo * 5) * raio * 0.15;
+
+        let gradCabeca = n.createLinearGradient(0, hcy - raio*0.5, 0, hcy + raio*0.5);
+        gradCabeca.addColorStop(0, luzFogo); gradCabeca.addColorStop(0.5, corMagma); gradCabeca.addColorStop(1, sombraMagma);
+
+        // Capuz/Coroa de Fogo (Estilhaços maiores)
+        if (!isFainted) {
+            n.fillStyle = "rgba(250, 204, 21, 0.8)";
+            n.strokeStyle = luzFogo;
+            n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(hcx, hcy - raio*0.2); n.lineTo(hcx - raio*0.4, hcy - raio*0.8); n.lineTo(hcx + raio*0.2, hcy - raio*0.6); n.closePath(); n.fill(); n.stroke();
+            n.beginPath(); n.moveTo(hcx, hcy - raio*0.2); n.lineTo(hcx + raio*0.4, hcy - raio*0.7); n.lineTo(hcx + raio*0.6, hcy - raio*0.3); n.closePath(); n.fill(); n.stroke();
+        }
+
+        // Geometria da Cabeça (Diamante projetado)
+        n.fillStyle = gradCabeca;
+        n.strokeStyle = sombraMagma;
+        n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(hcx + raio * 0.5, hcy); // Focinho
+        n.lineTo(hcx, hcy - raio * 0.35); // Topo
+        n.lineTo(hcx - raio * 0.25, hcy); // Base craniana
+        n.lineTo(hcx, hcy + raio * 0.25); // Mandíbula
+        n.closePath();
+        n.fill(); n.stroke();
+
+        // 3. OLHOS (Fendas de energia do Faebluma)
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW * 1.5;
+            n.beginPath(); n.moveTo(hcx + raio*0.1, hcy - raio*0.1); n.lineTo(hcx + raio*0.2, hcy); n.stroke();
+        } else {
+            n.fillStyle = "#0f172a";
+            n.beginPath();
+            n.moveTo(hcx + raio*0.1, hcy - raio*0.15);
+            n.lineTo(hcx + raio*0.3, hcy - raio*0.05);
+            n.lineTo(hcx + raio*0.2, hcy);
+            n.closePath(); n.fill();
+
+            // Ponto de luz da pupila
+            n.fillStyle = luzFogo;
+            n.beginPath(); n.arc(hcx + raio*0.2, hcy - raio*0.08, Math.max(1, raio*0.03), 0, Math.PI*2); n.fill();
+        }
+
+        // 4. EMBERS ORBITAIS (Estilhaços de fogo voando)
+        if (!isFainted) {
+            n.strokeStyle = luzFogo;
+            n.lineWidth = strokeW * 1.5;
+            for(let i=0; i<3; i++) {
+                let px = hcx + Math.cos(tempo * 6 + i * 2.5) * raio * 0.8;
+                let py = hcy + Math.sin(tempo * 5 + i * 2.5) * raio * 0.6;
+                n.beginPath();
+                n.moveTo(px, py - raio*0.1);
+                n.lineTo(px + raio*0.05, py);
+                n.lineTo(px - raio*0.05, py + raio*0.1);
+                n.stroke();
+            }
+        }
+
+        n.restore();
+      }
+
+      function desenharIgniraMarca(n, u, r, l, o, f) {
+        // Ignira da Marca (boitata-marca) - Variante Sombria/Dourada Cristalina
+        let isFainted = f.fainted;
+        let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 6) * 0.02;
+
+        n.lineCap = "round";
+        n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 5) * o * 0.05;
+
+        let corObsidiana = "#1e293b";
+        let sombraObsidiana = "#020617";
+        let luzFogo = "#facc15"; // Dourado brilhante da Marca
+
+        n.save();
+        n.translate(r, l + flutua);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.4;
+        let pulsoChama = Math.sin(tempo * 12) * 0.2 + 0.8;
+
+        // 1. CORPO SEGMENTADO (Cristais Negros)
+        let numSegmentos = 5;
+        let tamSeg = raio * 0.3;
+
+        for (let i = numSegmentos; i > 0; i--) {
+            let cx = -i * raio * 0.25;
+            let cy = Math.sin(tempo * 5 - i) * raio * 0.15;
+
+            // Chamas de Plasma Dourado
+            if (!isFainted) {
+                n.save();
+                n.translate(cx, cy);
+                n.scale(1, pulsoChama);
+                n.fillStyle = "rgba(250, 204, 21, 0.7)";
+                n.strokeStyle = luzFogo;
+                n.lineWidth = strokeW * 0.8;
+                n.beginPath(); n.moveTo(0, -tamSeg * 0.5); n.lineTo(-tamSeg * 0.8, -tamSeg * 1.8); n.lineTo(tamSeg * 0.5, -tamSeg * 1.2); n.closePath(); n.fill(); n.stroke();
+                n.restore();
+            }
+
+            // Segmento (Diamante Negro)
+            let gradSeg = n.createLinearGradient(0, cy - tamSeg, 0, cy + tamSeg);
+            gradSeg.addColorStop(0, "#334155"); gradSeg.addColorStop(0.5, corObsidiana); gradSeg.addColorStop(1, sombraObsidiana);
+
+            n.fillStyle = gradSeg; n.strokeStyle = sombraObsidiana; n.lineWidth = strokeW * 1.5;
+            n.beginPath(); n.moveTo(cx + tamSeg, cy); n.lineTo(cx, cy - tamSeg * 0.8); n.lineTo(cx - tamSeg, cy); n.lineTo(cx, cy + tamSeg * 0.8); n.closePath(); n.fill(); n.stroke();
+
+            // Símbolo rúnico dourado em cada escama
+            if(!isFainted) {
+                n.strokeStyle = luzFogo; n.lineWidth = strokeW * 0.5;
+                n.beginPath(); n.moveTo(cx, cy - tamSeg*0.3); n.lineTo(cx, cy + tamSeg*0.3); n.stroke();
+            }
+        }
+
+        // 2. CABEÇA
+        let hcx = raio * 0.15;
+        let hcy = Math.sin(tempo * 5) * raio * 0.15;
+        let gradCabeca = n.createLinearGradient(0, hcy - raio*0.5, 0, hcy + raio*0.5);
+        gradCabeca.addColorStop(0, "#334155"); gradCabeca.addColorStop(0.5, corObsidiana); gradCabeca.addColorStop(1, sombraObsidiana);
+
+        // Capuz de Estilhaços Dourados
+        if (!isFainted) {
+            n.fillStyle = "rgba(250, 204, 21, 0.8)"; n.strokeStyle = luzFogo; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(hcx, hcy - raio*0.2); n.lineTo(hcx - raio*0.4, hcy - raio*0.9); n.lineTo(hcx + raio*0.2, hcy - raio*0.6); n.closePath(); n.fill(); n.stroke();
+            n.beginPath(); n.moveTo(hcx, hcy - raio*0.2); n.lineTo(hcx + raio*0.5, hcy - raio*0.8); n.lineTo(hcx + raio*0.6, hcy - raio*0.3); n.closePath(); n.fill(); n.stroke();
+        }
+
+        // Geometria da Cabeça
+        n.fillStyle = gradCabeca; n.strokeStyle = sombraObsidiana; n.lineWidth = strokeW * 1.5;
+        n.beginPath(); n.moveTo(hcx + raio * 0.5, hcy); n.lineTo(hcx, hcy - raio * 0.35); n.lineTo(hcx - raio * 0.25, hcy); n.lineTo(hcx, hcy + raio * 0.25); n.closePath(); n.fill(); n.stroke();
+
+        // MARCA DO TATÁ (Runa Afiada na Testa)
+        if(!isFainted) {
+            n.strokeStyle = luzFogo; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(hcx, hcy - raio*0.2); n.lineTo(hcx - raio*0.15, hcy - raio*0.1); n.lineTo(hcx, hcy); n.stroke();
+        }
+
+        // 3. OLHOS
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW * 1.5;
+            n.beginPath(); n.moveTo(hcx + raio*0.1, hcy - raio*0.1); n.lineTo(hcx + raio*0.2, hcy); n.stroke();
+        } else {
+            n.fillStyle = "#000";
+            n.beginPath(); n.moveTo(hcx + raio*0.1, hcy - raio*0.15); n.lineTo(hcx + raio*0.3, hcy - raio*0.05); n.lineTo(hcx + raio*0.2, hcy); n.closePath(); n.fill();
+            n.fillStyle = luzFogo;
+            n.beginPath(); n.arc(hcx + raio*0.2, hcy - raio*0.08, Math.max(1, raio*0.03), 0, Math.PI*2); n.fill();
+        }
+
+        // 4. EMBERS ORBITAIS
+        if (!isFainted) {
+            n.strokeStyle = luzFogo; n.lineWidth = strokeW * 1.5;
+            for(let i=0; i<3; i++) {
+                let px = hcx + Math.cos(tempo * 5 + i * 2.5) * raio * 0.8;
+                let py = hcy + Math.sin(tempo * 4 + i * 2.5) * raio * 0.6;
+                n.beginPath(); n.moveTo(px, py - raio*0.1); n.lineTo(px + raio*0.05, py); n.lineTo(px - raio*0.05, py + raio*0.1); n.stroke();
+            }
         }
 
         n.restore();
@@ -21698,6 +22063,810 @@
         n.restore();
       }
 
+      function desenharCurupira(n, u, r, l, o, f) {
+        // Virapé (curupira) - O Protetor da Mata (Mico Folha / Curupira)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let pular = isFainted ? 0 : Math.sin(tempo * 5) * o * 0.04;
+        n.save(); n.translate(r, l - pular + o * 0.05); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.38; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corCorpo = "#4ade80"; let bordaCorpo = "#14532d";
+        let corBarriga = "#86efac";
+
+        // Cauda de Folha (Curvada para cima)
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio*0.3, raio*0.1);
+        n.quadraticCurveTo(-raio*0.8, -raio*0.2, -raio*0.9, raio*0.3);
+        n.quadraticCurveTo(-raio*0.5, raio*0.4, -raio*0.3, raio*0.2);
+        n.fill(); n.stroke();
+
+        // Pés de Macaquinho Virados para TRÁS (Apontam para a esquerda)
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo;
+        // Pé de trás
+        n.beginPath(); n.moveTo(raio*0.1, raio*0.3); n.lineTo(-raio*0.15, raio*0.45); n.lineTo(raio*0.2, raio*0.48); n.closePath(); n.fill(); n.stroke();
+        // Pé da frente
+        n.beginPath(); n.moveTo(-raio*0.1, raio*0.3); n.lineTo(-raio*0.35, raio*0.45); n.lineTo(-raio*0.0, raio*0.48); n.closePath(); n.fill(); n.stroke();
+
+        // Corpo Gordinho (Mico / Sprite da Floresta)
+        n.beginPath(); n.ellipse(0, 0, raio*0.45, raio*0.4, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Barriguinha Clara
+        n.fillStyle = corBarriga;
+        n.beginPath(); n.ellipse(raio*0.1, raio*0.1, raio*0.3, raio*0.25, -0.2, 0, Math.PI*2); n.fill();
+
+        // Braços encolhidos (Patinhas)
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo;
+        n.beginPath(); n.ellipse(-raio*0.1, raio*0.15, raio*0.08, raio*0.12, -Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+        n.beginPath(); n.ellipse(raio*0.25, raio*0.15, raio*0.08, raio*0.12, Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Folhinha no topo da cabeça
+        n.beginPath();
+        n.moveTo(-raio*0.05, -raio*0.4);
+        n.quadraticCurveTo(-raio*0.3, -raio*0.7, -raio*0.1, -raio*0.9);
+        n.quadraticCurveTo(raio*0.2, -raio*0.7, 0.05*raio, -raio*0.4);
+        n.fill(); n.stroke();
+
+        // Rosto Fofo e Protetor
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(-raio*0.1, -raio*0.1); n.lineTo(raio*0.05, 0); n.stroke();
+            n.beginPath(); n.moveTo(raio*0.3, -raio*0.1); n.lineTo(raio*0.15, 0); n.stroke();
+        } else {
+            // Olhos Grandes e Expressivos
+            n.fillStyle = "#fff"; n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.arc(0, -raio*0.1, raio*0.12, 0, Math.PI*2); n.fill(); n.stroke();
+            n.beginPath(); n.arc(raio*0.3, -raio*0.1, raio*0.12, 0, Math.PI*2); n.fill(); n.stroke();
+
+            n.fillStyle = "#000";
+            n.beginPath(); n.arc(0.03*raio, -raio*0.1, raio*0.06, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.33, -raio*0.1, raio*0.06, 0, Math.PI*2); n.fill();
+
+            n.fillStyle = "#fff"; // Brilho do olho
+            n.beginPath(); n.arc(0.01*raio, -raio*0.12, raio*0.02, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.31, -raio*0.12, raio*0.02, 0, Math.PI*2); n.fill();
+
+            // Bochechas da Mata
+            n.fillStyle = "#f472b6"; n.globalAlpha = 0.6;
+            n.beginPath(); n.arc(-raio*0.15, 0.05*raio, raio*0.06, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.45, 0.05*raio, raio*0.06, 0, Math.PI*2); n.fill();
+            n.globalAlpha = 1;
+
+            // Focinho/Boca de Macaquinho (:3)
+            n.strokeStyle = bordaCorpo; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(raio*0.1, 0.1*raio); n.quadraticCurveTo(raio*0.15, 0.18*raio, raio*0.2, 0.1*raio); n.stroke();
+        }
+        n.restore();
+      }
+
+      function desenharCurupiraMarca(n, u, r, l, o, f) {
+        // Virapé da Marca (curupira-marca) - Variante de Fogo (Tatá)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let pular = isFainted ? 0 : Math.sin(tempo * 5) * o * 0.04;
+        n.save(); n.translate(r, l - pular + o * 0.05); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.38; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corCorpo = "#4ade80"; let bordaCorpo = "#14532d";
+        let corBarriga = "#86efac"; let corFogo = "#f97316"; let brilhoFogo = "#fde047";
+
+        // Pegadas de Fogo no Chão (Por baixo dele)
+        if(!isFainted) {
+            n.fillStyle = corFogo; n.globalAlpha = 0.6 + Math.sin(tempo*8)*0.2;
+            n.beginPath(); n.ellipse(raio*0.3, raio*0.6 + pular, raio*0.15, raio*0.08, 0, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.ellipse(raio*0.8, raio*0.6 + pular, raio*0.1, raio*0.05, 0, 0, Math.PI*2); n.fill(); // Pegada mais antiga
+            n.globalAlpha = 1;
+        }
+
+        // Cauda de Folha
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio*0.3, raio*0.1);
+        n.quadraticCurveTo(-raio*0.8, -raio*0.2, -raio*0.9, raio*0.3);
+        n.quadraticCurveTo(-raio*0.5, raio*0.4, -raio*0.3, raio*0.2);
+        n.fill(); n.stroke();
+
+        // Pés em BRASA Virados para Trás
+        n.fillStyle = corFogo; n.strokeStyle = "#7c2d12"; // Pés vermelhos/laranjas
+        n.beginPath(); n.moveTo(raio*0.1, raio*0.3); n.lineTo(-raio*0.15, raio*0.45); n.lineTo(raio*0.2, raio*0.48); n.closePath(); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(-raio*0.1, raio*0.3); n.lineTo(-raio*0.35, raio*0.45); n.lineTo(-raio*0.0, raio*0.48); n.closePath(); n.fill(); n.stroke();
+
+        // Corpo
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo;
+        n.beginPath(); n.ellipse(0, 0, raio*0.45, raio*0.4, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        n.fillStyle = corBarriga;
+        n.beginPath(); n.ellipse(raio*0.1, raio*0.1, raio*0.3, raio*0.25, -0.2, 0, Math.PI*2); n.fill();
+
+        // Marca Tribial do Tatá (Testa)
+        n.fillStyle = corFogo; n.strokeStyle = "#c2410c"; n.lineWidth = strokeW*0.8;
+        n.beginPath(); n.moveTo(raio*0.15, -raio*0.4); n.lineTo(raio*0.1, -raio*0.2); n.lineTo(raio*0.2, -raio*0.2); n.closePath(); n.fill(); n.stroke();
+
+        // Braços
+        n.fillStyle = corCorpo; n.strokeStyle = bordaCorpo; n.lineWidth = strokeW*1.5;
+        n.beginPath(); n.ellipse(-raio*0.1, raio*0.15, raio*0.08, raio*0.12, -Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+        n.beginPath(); n.ellipse(raio*0.25, raio*0.15, raio*0.08, raio*0.12, Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Folhinha no topo (Com a ponta a queimar)
+        let gradFolha = n.createLinearGradient(0, -raio*0.4, 0, -raio*1.0);
+        gradFolha.addColorStop(0, corCorpo); gradFolha.addColorStop(1, corFogo);
+        n.fillStyle = gradFolha; n.strokeStyle = bordaCorpo;
+        n.beginPath();
+        n.moveTo(-raio*0.05, -raio*0.4);
+        n.quadraticCurveTo(-raio*0.3, -raio*0.7, -raio*0.1, -raio*0.9);
+        n.quadraticCurveTo(raio*0.2, -raio*0.7, 0.05*raio, -raio*0.4);
+        n.fill(); n.stroke();
+
+        // Rosto
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(-raio*0.1, -raio*0.1); n.lineTo(raio*0.05, 0); n.stroke();
+            n.beginPath(); n.moveTo(raio*0.3, -raio*0.1); n.lineTo(raio*0.15, 0); n.stroke();
+        } else {
+            // Olhos Dourados (Poder da Marca)
+            n.fillStyle = "#fff"; n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.arc(0, -raio*0.1, raio*0.12, 0, Math.PI*2); n.fill(); n.stroke();
+            n.beginPath(); n.arc(raio*0.3, -raio*0.1, raio*0.12, 0, Math.PI*2); n.fill(); n.stroke();
+
+            n.fillStyle = "#000";
+            n.beginPath(); n.arc(0.03*raio, -raio*0.1, raio*0.06, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.33, -raio*0.1, raio*0.06, 0, Math.PI*2); n.fill();
+
+            n.fillStyle = brilhoFogo; // Brilho Dourado
+            n.beginPath(); n.arc(0.01*raio, -raio*0.12, raio*0.02, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.31, -raio*0.12, raio*0.02, 0, Math.PI*2); n.fill();
+
+            n.fillStyle = corFogo; n.globalAlpha = 0.6;
+            n.beginPath(); n.arc(-raio*0.15, 0.05*raio, raio*0.06, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.45, 0.05*raio, raio*0.06, 0, Math.PI*2); n.fill();
+            n.globalAlpha = 1;
+
+            n.strokeStyle = bordaCorpo; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(raio*0.1, 0.1*raio); n.quadraticCurveTo(raio*0.15, 0.18*raio, raio*0.2, 0.1*raio); n.stroke();
+        }
+        n.restore();
+      }
+
+      function desenharDevorasselvaMarca(n, u, r, l, o, f) {
+        // Devorasselva da Marca (verdente-3-marca) - Dragão Carnívoro com Marca de Fogo
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let pounce = isFainted ? 0 : Math.sin(tempo*4)*o*0.03;
+        n.save(); n.translate(r, l + o*0.05 + pounce); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.45; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corPlanta = "#22c55e"; let bordaPlanta = "#14532d";
+        let corPetala = "#3b0764"; let bordaPetala = "#1e1b4b"; // Pétalas escuras
+        let corMarca = "#ef4444"; let brilhoFogo = "#fde047";
+
+        // 1. Vinhas traseiras (Tentáculos)
+        n.strokeStyle = "#16a34a"; n.lineWidth = strokeW*3;
+        n.beginPath(); n.moveTo(-raio*0.5, 0); n.quadraticCurveTo(-raio*1.5, -raio*0.5, -raio*1.2, -raio*1.0); n.stroke();
+        n.beginPath(); n.moveTo(-raio*0.4, 0); n.quadraticCurveTo(-raio*1.2, raio*0.8, -raio*1.5, raio*0.5); n.stroke();
+
+        // 2. Pernas de Dinossauro (T-Rex)
+        n.fillStyle = corPlanta; n.strokeStyle = bordaPlanta; n.lineWidth = strokeW*1.5;
+        // Perna traseira
+        n.beginPath(); n.moveTo(-raio*0.2, raio*0.3); n.lineTo(-raio*0.4, raio*0.7); n.lineTo(-raio*0.2, raio*1.0); n.lineTo(-raio*0.6, raio*1.0); n.lineTo(-raio*0.6, raio*0.8); n.closePath(); n.fill(); n.stroke();
+        // Perna dianteira
+        n.beginPath(); n.moveTo(raio*0.2, raio*0.4); n.lineTo(0, raio*0.8); n.lineTo(raio*0.2, raio*1.1); n.lineTo(-raio*0.2, raio*1.1); n.lineTo(-raio*0.2, raio*0.9); n.closePath(); n.fill(); n.stroke();
+
+        // 3. Corpo (Bolbo carnudo)
+        n.beginPath(); n.ellipse(-raio*0.2, raio*0.2, raio*0.5, raio*0.4, Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // 4. Cabeça Monstruosa (Mandíbulas de Planta Carnívora)
+        let abreBoca = isFainted ? 0 : Math.abs(Math.sin(tempo*8))*raio*0.2;
+
+        // Pétalas Escuras ao redor da cabeça (Leão/Girassol negro)
+        n.fillStyle = corPetala; n.strokeStyle = bordaPetala;
+        let angulos = [0, Math.PI/4, Math.PI/2, Math.PI*3/4, Math.PI, Math.PI*5/4, Math.PI*3/2];
+        angulos.forEach(ang => {
+            n.beginPath();
+            n.moveTo(raio*0.2, -raio*0.2);
+            n.lineTo(raio*0.2 + Math.cos(ang-0.2)*raio*0.8, -raio*0.2 + Math.sin(ang-0.2)*raio*0.8);
+            n.lineTo(raio*0.2 + Math.cos(ang+0.2)*raio*0.8, -raio*0.2 + Math.sin(ang+0.2)*raio*0.8);
+            n.closePath(); n.fill(); n.stroke();
+        });
+
+        // O Emblema do Tatá na Testa (Formado pelas pétalas)
+        n.fillStyle = corMarca; n.shadowColor = brilhoFogo; n.shadowBlur = isFainted ? 0 : 15;
+        n.beginPath(); n.moveTo(raio*0.2, -raio*0.8); n.lineTo(raio*0.4, -raio*0.4); n.lineTo(0, -raio*0.4); n.closePath(); n.fill(); n.shadowBlur = 0;
+
+        // Mandíbula Inferior
+        n.fillStyle = corPlanta; n.strokeStyle = bordaPlanta;
+        n.beginPath(); n.moveTo(raio*0.2, 0); n.lineTo(raio*1.2, abreBoca); n.lineTo(raio*0.8, raio*0.4); n.lineTo(raio*0.2, raio*0.4); n.closePath(); n.fill(); n.stroke();
+        // Mandíbula Superior
+        n.beginPath(); n.moveTo(raio*0.2, -raio*0.4); n.lineTo(raio*1.3, -raio*0.2 - abreBoca); n.lineTo(raio*0.8, 0); n.lineTo(raio*0.2, 0); n.closePath(); n.fill(); n.stroke();
+
+        // Dentes de Espinho Afiados
+        n.fillStyle = "#fff"; n.strokeStyle = "#d4d4d8";
+        n.beginPath(); n.moveTo(raio*0.6, 0); n.lineTo(raio*0.7, abreBoca+raio*0.1); n.lineTo(raio*0.8, 0); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.9, 0); n.lineTo(raio*1.0, abreBoca+raio*0.1); n.lineTo(raio*1.1, 0); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.6, -raio*0.1); n.lineTo(raio*0.7, -abreBoca-raio*0.2); n.lineTo(raio*0.8, -raio*0.1); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.9, -raio*0.1); n.lineTo(raio*1.0, -abreBoca-raio*0.2); n.lineTo(raio*1.1, -raio*0.1); n.fill(); n.stroke();
+
+        // 5. Olho de Dragão/Réptil
+        n.fillStyle = isFainted ? "#000" : brilhoFogo;
+        n.beginPath(); n.ellipse(raio*0.5, -raio*0.2, raio*0.1, raio*0.05, -Math.PI/6, 0, Math.PI*2); n.fill();
+        if(!isFainted) {
+            n.fillStyle = "#000"; n.beginPath(); n.ellipse(raio*0.5, -raio*0.2, raio*0.02, raio*0.05, -Math.PI/6, 0, Math.PI*2); n.fill(); // Pupila reptiliana
+        }
+
+        n.restore();
+      }
+
+      function desenharDiamangolemMarca(n, u, r, l, o, f) {
+        // Diamangolem da Marca - Golem/Tartaruga de Diamante com Coração do Tatá
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let respiracao = isFainted ? 1 : 1 + Math.sin(tempo * 2) * 0.02; // Respiração lenta e pesada
+        n.save(); n.translate(r, l + o*0.08); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.45; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corPedra = "#78350f"; let bordaPedra = "#451a03";
+        let corCristal = "#e0f2fe"; let bordaCristal = "#0ea5e9";
+        let corFogo = "#ef4444"; let brilhoFogo = "#fde047";
+
+        // 1. Pernas de Rocha Maciça (Pilares)
+        n.fillStyle = corPedra; n.strokeStyle = bordaPedra; n.lineWidth = strokeW*2;
+        [-1, 1].forEach(lado => {
+           n.beginPath(); n.moveTo(lado*raio*0.4, 0); n.lineTo(lado*raio*0.6, raio*0.8); n.lineTo(lado*raio*0.2, raio*0.8); n.closePath(); n.fill(); n.stroke();
+           // Unhas de cristal
+           n.fillStyle = corCristal; n.strokeStyle = bordaCristal;
+           n.beginPath(); n.moveTo(lado*raio*0.25, raio*0.8); n.lineTo(lado*raio*0.3, raio*0.7); n.lineTo(lado*raio*0.35, raio*0.8); n.fill(); n.stroke();
+           n.fillStyle = corPedra; n.strokeStyle = bordaPedra;
+        });
+
+        n.scale(1, respiracao);
+
+        // 2. Ombros / Cristais Traseiros
+        n.fillStyle = corCristal; n.strokeStyle = bordaCristal; n.lineWidth = strokeW*1.5;
+        [-1, 1].forEach(lado => {
+            n.beginPath(); n.moveTo(lado*raio*0.4, 0); n.lineTo(lado*raio*0.9, -raio*0.5); n.lineTo(lado*raio*0.5, -raio*0.8); n.lineTo(0, -raio*0.4); n.closePath(); n.fill(); n.stroke();
+            n.beginPath(); n.moveTo(lado*raio*0.4, 0); n.lineTo(lado*raio*0.5, -raio*0.8); n.stroke(); // Faceta
+        });
+
+        // 3. Corpo/Tronco de Rocha
+        n.fillStyle = corPedra; n.strokeStyle = bordaPedra; n.lineWidth = strokeW*2;
+        n.beginPath(); n.moveTo(0, -raio*0.7); n.lineTo(raio*0.6, -raio*0.2); n.lineTo(raio*0.5, raio*0.5); n.lineTo(0, raio*0.7); n.lineTo(-raio*0.5, raio*0.5); n.lineTo(-raio*0.6, -raio*0.2); n.closePath(); n.fill(); n.stroke();
+
+        // 4. Cabeça do Golem
+        n.beginPath(); n.moveTo(-raio*0.3, -raio*0.6); n.lineTo(0, -raio*0.9); n.lineTo(raio*0.3, -raio*0.6); n.lineTo(raio*0.2, -raio*0.3); n.lineTo(-raio*0.2, -raio*0.3); n.closePath(); n.fill(); n.stroke();
+
+        // Olhos de Golem (Cristais azuis brilhantes)
+        n.fillStyle = isFainted ? "#000" : corCristal;
+        n.beginPath(); n.moveTo(-raio*0.15, -raio*0.5); n.lineTo(-raio*0.05, -raio*0.6); n.lineTo(-raio*0.05, -raio*0.5); n.fill();
+        n.beginPath(); n.moveTo(raio*0.15, -raio*0.5); n.lineTo(raio*0.05, -raio*0.6); n.lineTo(raio*0.05, -raio*0.5); n.fill();
+
+        // 5. O Peito de Diamante e a Marca do Tatá
+        let pulsoFogo = isFainted ? 0 : Math.sin(tempo*6)*15;
+        n.fillStyle = "rgba(224, 242, 254, 0.8)"; // Diamante semi-translúcido
+        n.strokeStyle = bordaCristal; n.lineWidth = strokeW*2;
+        n.beginPath(); n.moveTo(0, -raio*0.2); n.lineTo(raio*0.4, raio*0.2); n.lineTo(0, raio*0.6); n.lineTo(-raio*0.4, raio*0.2); n.closePath(); n.fill(); n.stroke();
+        // Facetas do diamante no peito
+        n.beginPath(); n.moveTo(0, -raio*0.2); n.lineTo(0, raio*0.6); n.stroke();
+        n.beginPath(); n.moveTo(-raio*0.4, raio*0.2); n.lineTo(raio*0.4, raio*0.2); n.stroke();
+
+        // O Coração da Marca (Fogo pulsante no centro)
+        if(!isFainted) {
+            n.fillStyle = corFogo; n.shadowColor = brilhoFogo; n.shadowBlur = 10 + pulsoFogo;
+            n.beginPath(); n.moveTo(0, raio*0.1); n.lineTo(raio*0.15, raio*0.2); n.lineTo(0, raio*0.35); n.lineTo(-raio*0.15, raio*0.2); n.closePath(); n.fill();
+            n.shadowBlur = 0;
+            // Ponto de luz intenso
+            n.fillStyle = brilhoFogo;
+            n.beginPath(); n.arc(0, raio*0.2, raio*0.04, 0, Math.PI*2); n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharEcoalma(n, u, r, l, o, f) {
+        // Ecoalma - A Pantera/Raposa Espiritual (Sombra)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let flutua = Math.sin(tempo * 4) * o * 0.05; // Levitação mística
+        n.save(); n.translate(r, l + flutua); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.45; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
+
+        let corEspirito = "#8b5cf6"; let corSombra = "#4c1d95";
+        let corAura = "rgba(139, 92, 246, 0.4)"; let brilhoOlho = "#fdf4ff";
+
+        // 1. Aura Espiritual Flutuante (Fundo)
+        if(!isFainted) {
+            n.fillStyle = corAura;
+            let pulso = Math.sin(tempo*8)*raio*0.05;
+            n.beginPath(); n.ellipse(0, 0, raio*0.8 + pulso, raio*0.7 + pulso, 0, 0, Math.PI*2); n.fill();
+        }
+
+        // 2. Caudas Gêmeas Etéreas (Bakeneko / Kitsune)
+        n.fillStyle = corSombra; n.strokeStyle = corEspirito; n.lineWidth = strokeW * 1.5;
+        let movCauda1 = Math.sin(tempo*3)*raio*0.2;
+        let movCauda2 = Math.cos(tempo*3.5)*raio*0.2;
+
+        // Cauda Direita
+        n.beginPath(); n.moveTo(raio*0.3, raio*0.2); n.quadraticCurveTo(raio*1.2, raio*0.5, raio*1.0+movCauda1, -raio*0.8); n.quadraticCurveTo(raio*0.5, -raio*0.5, raio*0.3, 0); n.fill(); n.stroke();
+        // Cauda Esquerda
+        n.beginPath(); n.moveTo(-raio*0.3, raio*0.2); n.quadraticCurveTo(-raio*1.2, raio*0.5, -raio*1.0+movCauda2, -raio*0.8); n.quadraticCurveTo(-raio*0.5, -raio*0.5, -raio*0.3, 0); n.fill(); n.stroke();
+
+        // 3. Corpo Felino/Místico
+        n.fillStyle = corEspirito; n.strokeStyle = corSombra; n.lineWidth = strokeW * 2;
+        n.beginPath(); n.ellipse(0, raio*0.1, raio*0.4, raio*0.5, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Marcas rúnicas no peito
+        n.strokeStyle = "#c4b5fd"; n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(0, raio*0.1); n.lineTo(raio*0.15, raio*0.3); n.lineTo(0, raio*0.4); n.lineTo(-raio*0.15, raio*0.3); n.closePath(); n.stroke();
+
+        // 4. Patas flutuantes escuras
+        n.fillStyle = corSombra; n.strokeStyle = "#2e1065";
+        n.beginPath(); n.ellipse(-raio*0.2, raio*0.6, raio*0.1, raio*0.15, 0, 0, Math.PI*2); n.fill(); n.stroke();
+        n.beginPath(); n.ellipse(raio*0.2, raio*0.6, raio*0.1, raio*0.15, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // 5. Cabeça Majestosa (Raposa/Pantera)
+        n.fillStyle = corEspirito; n.strokeStyle = corSombra; n.lineWidth = strokeW * 2;
+        n.beginPath(); n.ellipse(0, -raio*0.3, raio*0.45, raio*0.35, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Orelhas Longas Espirituais
+        n.beginPath(); n.moveTo(-raio*0.2, -raio*0.5); n.quadraticCurveTo(-raio*0.5, -raio*1.0, -raio*0.6, -raio*0.8); n.lineTo(-raio*0.4, -raio*0.4); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.2, -raio*0.5); n.quadraticCurveTo(raio*0.5, -raio*1.0, raio*0.6, -raio*0.8); n.lineTo(raio*0.4, -raio*0.4); n.fill(); n.stroke();
+
+        // Focinho
+        n.fillStyle = corSombra; n.beginPath(); n.arc(0, -raio*0.2, raio*0.05, 0, Math.PI*2); n.fill();
+
+        // Olhos Brancos Puros (Entidade Mística)
+        if(isFainted) {
+            n.strokeStyle = corSombra; n.lineWidth = strokeW*1.5;
+            n.beginPath(); n.moveTo(-raio*0.3, -raio*0.3); n.lineTo(-raio*0.1, -raio*0.25); n.stroke();
+            n.beginPath(); n.moveTo(raio*0.3, -raio*0.3); n.lineTo(raio*0.1, -raio*0.25); n.stroke();
+        } else {
+            n.fillStyle = brilhoOlho; n.shadowColor = brilhoOlho; n.shadowBlur = 15;
+            // Olho estilo fenda/felino, mas sem pupila (puramente mágico)
+            n.beginPath(); n.moveTo(-raio*0.3, -raio*0.3); n.quadraticCurveTo(-raio*0.2, -raio*0.4, -raio*0.1, -raio*0.3); n.quadraticCurveTo(-raio*0.2, -raio*0.25, -raio*0.3, -raio*0.3); n.fill();
+            n.beginPath(); n.moveTo(raio*0.3, -raio*0.3); n.quadraticCurveTo(raio*0.2, -raio*0.4, raio*0.1, -raio*0.3); n.quadraticCurveTo(raio*0.2, -raio*0.25, raio*0.3, -raio*0.3); n.fill();
+            n.shadowBlur = 0;
+        }
+
+        n.restore();
+      }
+
+      function desenharJacaruxa(n, u, r, l, o, f) {
+        // Jacaruxa (cuca) - A Jacaré Bruxa (Estilo Feiticeira Reptiliana)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 4) * 0.02; // Respiração
+
+        n.lineCap = "round"; n.lineJoin = "miter"; // Miter para escamas afiadas
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.06;
+
+        let corCorpo = "#a855f7"; let sombraCorpo = "#4c1d95"; // Tons de roxo/sombra
+        let corMagia = "#34d399"; let brilhoMagia = "#a7f3d0"; // Magia verde-pântano
+
+        n.save(); n.translate(r, l + flutua - (o * -0.01));
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45;
+
+        // 1. AURA MAGICA ORBITAL (Selo de Bruxa nas costas)
+        if (!isFainted) {
+            n.save();
+            n.rotate(tempo); // Roda lentamente
+            n.strokeStyle = corMagia; n.lineWidth = strokeW * 0.8;
+            n.beginPath(); n.arc(0, 0, raio*0.9, 0, Math.PI*2); n.stroke();
+            // Triângulo místico interior
+            n.beginPath();
+            for(let i=0; i<3; i++) {
+                let ang = (i * Math.PI * 2 / 3);
+                let px = Math.cos(ang) * raio*0.9; let py = Math.sin(ang) * raio*0.9;
+                if(i===0) n.moveTo(px, py); else n.lineTo(px, py);
+            }
+            n.closePath(); n.stroke();
+            n.restore();
+        }
+
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, corCorpo); gradCorpo.addColorStop(1, sombraCorpo);
+
+        // 2. CAUDA DE JACARÉ ESCAMADA (Enrola para a frente)
+        n.fillStyle = gradCorpo; n.strokeStyle = "#2e1065"; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio*0.2, raio*0.4);
+        n.bezierCurveTo(-raio*1.2, raio*0.6, -raio*1.0, raio*1.5, -raio*0.2, raio*1.2);
+        n.lineTo(-raio*0.4, raio*0.9);
+        n.bezierCurveTo(-raio*0.8, raio*0.9, -raio*0.6, raio*0.6, -raio*0.2, raio*0.6);
+        n.fill(); n.stroke();
+
+        // 3. CORPO / MANTO DE SOMBRAS (A "Roupa" da Feiticeira)
+        n.fillStyle = sombraCorpo; n.strokeStyle = "#2e1065";
+        n.beginPath();
+        n.moveTo(-raio*0.4, -raio*0.2); // Costas
+        n.quadraticCurveTo(-raio*0.6, raio*0.5, -raio*0.3, raio*0.8);
+        n.lineTo(raio*0.4, raio*0.8);
+        n.quadraticCurveTo(raio*0.5, raio*0.4, raio*0.2, 0);
+        n.closePath(); n.fill(); n.stroke();
+
+        // 4. CABEÇA / FOCINHO REPTILIANO (Jacaré)
+        n.fillStyle = gradCorpo; n.strokeStyle = "#2e1065"; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(-raio*0.3, -raio*0.1); // Base do pescoço
+        n.lineTo(-raio*0.2, -raio*0.6); // Topo da cabeça
+        n.lineTo(raio*0.3, -raio*0.5); // Sobrancelha afiada
+        n.lineTo(raio*0.8, -raio*0.2); // Ponta do focinho
+        n.lineTo(raio*0.7, 0); // Mandíbula inferior
+        n.lineTo(raio*0.2, 0.1*raio); // Garganta
+        n.closePath(); n.fill(); n.stroke();
+
+        // Escamas/Cristais nas Costas (Como uma coroa de bruxa)
+        n.fillStyle = sombraCorpo; n.strokeStyle = corCorpo;
+        let escamas = [[-raio*0.2, -raio*0.6], [0, -raio*0.55], [raio*0.2, -raio*0.5]];
+        escamas.forEach((pt, i) => {
+            n.beginPath(); n.moveTo(pt[0], pt[1]); n.lineTo(pt[0] - raio*0.15, pt[1] - raio*0.3); n.lineTo(pt[0] + raio*0.1, pt[1] - raio*0.05); n.fill(); n.stroke();
+        });
+
+        // 5. OLHO MÍSTICO (Fenda de Jacaré)
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW * 1.5;
+            n.beginPath(); n.moveTo(raio*0.1, -raio*0.3); n.lineTo(raio*0.3, -raio*0.2); n.stroke();
+        } else {
+            n.fillStyle = "#fff"; n.strokeStyle = "#2e1065";
+            n.beginPath(); n.moveTo(raio*0.1, -raio*0.2); n.lineTo(raio*0.25, -raio*0.35); n.lineTo(raio*0.35, -raio*0.2); n.lineTo(raio*0.25, -raio*0.15); n.closePath(); n.fill(); n.stroke();
+            // Pupila Reptiliana (Fenda mágica)
+            n.fillStyle = corMagia; n.beginPath(); n.ellipse(raio*0.25, -raio*0.22, raio*0.02, raio*0.06, Math.PI/4, 0, Math.PI*2); n.fill();
+        }
+
+        // 6. BRAÇO / ORBE MÁGICO (Conjurando feitiço)
+        n.fillStyle = gradCorpo; n.strokeStyle = "#2e1065";
+        n.beginPath(); n.moveTo(0, raio*0.2); n.lineTo(raio*0.4, raio*0.4); n.lineTo(raio*0.6, raio*0.3); n.lineTo(raio*0.3, raio*0.1); n.closePath(); n.fill(); n.stroke();
+
+        if (!isFainted) {
+            let pulso = Math.sin(tempo*10)*raio*0.05;
+            n.fillStyle = corMagia; n.shadowColor = brilhoMagia; n.shadowBlur = 15;
+            n.beginPath(); n.arc(raio*0.7, raio*0.2, raio*0.1 + pulso, 0, Math.PI*2); n.fill();
+            n.shadowBlur = 0;
+            n.fillStyle = "#fff"; n.beginPath(); n.arc(raio*0.68, raio*0.18, raio*0.03, 0, Math.PI*2); n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharJacaruxaMarca(n, u, r, l, o, f) {
+        // Jacaruxa da Marca (cuca-marca) - Feiticeira Milenar Sombria com o Selo do Tatá
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 4) * 0.02;
+
+        n.lineCap = "round"; n.lineJoin = "miter";
+        let strokeW = Math.max(1.8, o * 0.018);
+        let flutua = Math.sin(tempo * 3) * o * 0.06;
+
+        let corCorpo = "#1e1b4b"; let sombraCorpo = "#000000"; // Obsidiana mística
+        let corMagia = "#f43f5e"; let brilhoMagia = "#fb7185"; // Magia corrompida/rosa neon da imagem
+        let corSelo = "#fde047"; // Marca dourada na testa
+
+        n.save(); n.translate(r, l + flutua - (o * -0.01));
+        if (f.flip) n.scale(-1, 1); n.scale(esc, esc);
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45;
+
+        // 1. AURA MAGICA NEON (Formas geométricas)
+        if (!isFainted) {
+            n.save(); n.rotate(-tempo * 1.5); // Gira ao contrário
+            n.strokeStyle = corMagia; n.lineWidth = strokeW;
+            n.beginPath(); n.rect(-raio*0.7, -raio*0.7, raio*1.4, raio*1.4); n.stroke();
+            n.rotate(Math.PI/4);
+            n.beginPath(); n.rect(-raio*0.7, -raio*0.7, raio*1.4, raio*1.4); n.stroke();
+            n.restore();
+        }
+
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, "#4c1d95"); gradCorpo.addColorStop(1, sombraCorpo);
+
+        // 2. CAUDA ESCAMADA
+        n.fillStyle = gradCorpo; n.strokeStyle = "#1e1b4b"; n.lineWidth = strokeW * 1.5;
+        n.beginPath(); n.moveTo(-raio*0.2, raio*0.4); n.bezierCurveTo(-raio*1.3, raio*0.6, -raio*1.1, raio*1.6, -raio*0.2, raio*1.2); n.lineTo(-raio*0.4, raio*0.9); n.bezierCurveTo(-raio*0.8, raio*0.9, -raio*0.6, raio*0.6, -raio*0.2, raio*0.6); n.fill(); n.stroke();
+
+        // 3. MANTO Sombrio
+        n.fillStyle = sombraCorpo; n.strokeStyle = corMagia; // Borda do manto brilha com magia
+        n.beginPath(); n.moveTo(-raio*0.4, -raio*0.2); n.quadraticCurveTo(-raio*0.6, raio*0.5, -raio*0.3, raio*0.8); n.lineTo(raio*0.4, raio*0.8); n.quadraticCurveTo(raio*0.5, raio*0.4, raio*0.2, 0); n.closePath(); n.fill(); n.stroke();
+
+        // 4. CABEÇA E FOCINHO
+        n.fillStyle = gradCorpo; n.strokeStyle = "#1e1b4b"; n.lineWidth = strokeW * 1.5;
+        n.beginPath(); n.moveTo(-raio*0.3, -raio*0.1); n.lineTo(-raio*0.2, -raio*0.6); n.lineTo(raio*0.3, -raio*0.5); n.lineTo(raio*0.8, -raio*0.2); n.lineTo(raio*0.7, 0); n.lineTo(raio*0.2, 0.1*raio); n.closePath(); n.fill(); n.stroke();
+
+        // Coroa de Escamas Mágicas
+        n.fillStyle = corMagia; n.strokeStyle = brilhoMagia;
+        let escamas = [[-raio*0.2, -raio*0.6], [0, -raio*0.55], [raio*0.2, -raio*0.5]];
+        escamas.forEach((pt) => {
+            n.beginPath(); n.moveTo(pt[0], pt[1]); n.lineTo(pt[0] - raio*0.2, pt[1] - raio*0.4); n.lineTo(pt[0] + raio*0.1, pt[1] - raio*0.05); n.fill(); n.stroke();
+        });
+
+        // 5. O SELO DO TATÁ NA TESTA
+        if(!isFainted) {
+            n.strokeStyle = corSelo; n.lineWidth = strokeW * 1.5; n.shadowColor = corSelo; n.shadowBlur = 10;
+            n.beginPath(); n.moveTo(raio*0.2, -raio*0.4); n.lineTo(raio*0.3, -raio*0.2); n.lineTo(raio*0.4, -raio*0.4); n.stroke();
+            n.shadowBlur = 0;
+        }
+
+        // 6. OLHO MÍSTICO (Dourado/Fogo)
+        if (isFainted) {
+            n.strokeStyle = "#fff"; n.lineWidth = strokeW * 1.5;
+            n.beginPath(); n.moveTo(raio*0.1, -raio*0.3); n.lineTo(raio*0.3, -raio*0.2); n.stroke();
+        } else {
+            n.fillStyle = "#000"; n.strokeStyle = corSelo;
+            n.beginPath(); n.moveTo(raio*0.1, -raio*0.2); n.lineTo(raio*0.25, -raio*0.35); n.lineTo(raio*0.35, -raio*0.2); n.lineTo(raio*0.25, -raio*0.15); n.closePath(); n.fill(); n.stroke();
+            n.fillStyle = corSelo; n.beginPath(); n.arc(raio*0.25, -raio*0.22, raio*0.04, 0, Math.PI*2); n.fill();
+        }
+
+        // 7. ORBE CORROMPIDO
+        n.fillStyle = gradCorpo; n.strokeStyle = "#1e1b4b";
+        n.beginPath(); n.moveTo(0, raio*0.2); n.lineTo(raio*0.4, raio*0.4); n.lineTo(raio*0.6, raio*0.3); n.lineTo(raio*0.3, raio*0.1); n.closePath(); n.fill(); n.stroke();
+        if (!isFainted) {
+            n.fillStyle = corMagia; n.shadowColor = brilhoMagia; n.shadowBlur = 15;
+            n.beginPath(); n.arc(raio*0.7, raio*0.2, raio*0.12, 0, Math.PI*2); n.fill(); n.shadowBlur = 0;
+        }
+        n.restore();
+      }
+
+      function desenharLunauro(n, u, r, l, o, f) {
+        // Lunauro (lobisomem) - A Fera Brutal (Lobisomem com Espinhos Sombrios)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let esc = 1 + Math.sin(tempo * 5) * 0.03; // Respiração pesada da fera
+
+        n.lineCap = "round"; n.lineJoin = "miter"; // Miter crucial para os dentes e pelos afiados
+        let strokeW = Math.max(1.8, o * 0.018);
+
+        // Posição mais curvada e pesada, sem flutuação mágica
+        let agachar = isFainted ? 0 : Math.sin(tempo * 5) * o * 0.02;
+        n.save(); n.translate(r, l + agachar + (o * 0.05));
+        if (f.flip) n.scale(-1, 1);
+        n.scale(esc, esc);
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45;
+        let corPelo = "#4c1d95"; let sombraPelo = "#1e1b4b"; // Tons noturnos profundos
+        let corEspinho = "#c084fc"; let brilhoLunar = "#e9d5ff"; // O roxo brilhante da imagem
+
+        // 1. AURA LUNAR MÍSTICA (Lua minguante flutuando atrás)
+        if (!isFainted) {
+            n.fillStyle = "rgba(192, 132, 252, 0.2)";
+            n.beginPath(); n.arc(0, -raio*0.2, raio*1.2, 0, Math.PI*2); n.fill();
+            n.fillStyle = "rgba(233, 213, 255, 0.4)";
+            n.beginPath(); n.arc(-raio*0.2, -raio*0.4, raio*0.6, 0, Math.PI*2); n.fill();
+        }
+
+        // 2. ESPINHOS BRUTAIS NAS COSTAS (Como na imagem original)
+        n.fillStyle = corEspinho; n.strokeStyle = sombraPelo; n.lineWidth = strokeW * 1.5;
+        let espinhosX = [-raio*0.6, -raio*0.3, 0, raio*0.3, raio*0.6];
+        espinhosX.forEach((ex) => {
+            n.beginPath();
+            n.moveTo(ex - raio*0.1, -raio*0.5);
+            n.lineTo(ex, -raio*1.1 - Math.sin(tempo*10)*raio*0.05); // Espinhos vibram
+            n.lineTo(ex + raio*0.1, -raio*0.5);
+            n.closePath(); n.fill(); n.stroke();
+        });
+
+        // 3. PERNAS TRASEIRAS (Lobo agachado)
+        n.fillStyle = sombraPelo; n.strokeStyle = "#000";
+        n.beginPath(); n.moveTo(-raio*0.4, raio*0.5); n.lineTo(-raio*0.6, raio*0.9); n.lineTo(-raio*0.2, raio*0.9); n.closePath(); n.fill(); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.4, raio*0.5); n.lineTo(raio*0.6, raio*0.9); n.lineTo(raio*0.2, raio*0.9); n.closePath(); n.fill(); n.stroke();
+
+        let gradPelo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo = n.createLinearGradient(0, -raio, 0, raio); // Reutilizando a variável para segurança
+        gradPelo.addColorStop(0, corPelo); gradPelo.addColorStop(1, sombraPelo);
+
+        // 4. CORPO/TORSO MACIÇO (Com pelos afiados usando bezier e lineTo)
+        n.fillStyle = gradPelo; n.strokeStyle = sombraPelo; n.lineWidth = strokeW * 1.5;
+        n.beginPath();
+        n.moveTo(raio*0.6, raio*0.5); // Fundo direito
+        n.lineTo(raio*0.7, raio*0.2); n.lineTo(raio*0.6, 0); // Pelo espetado
+        n.lineTo(raio*0.8, -raio*0.3); n.lineTo(raio*0.5, -raio*0.5); // Ombro
+        n.lineTo(0, -raio*0.6); // Pescoço/Nuca
+        n.lineTo(-raio*0.5, -raio*0.5); // Ombro esq
+        n.lineTo(-raio*0.8, -raio*0.3); n.lineTo(-raio*0.6, 0); // Pelo esq
+        n.lineTo(-raio*0.7, raio*0.2); n.lineTo(-raio*0.6, raio*0.5);
+        n.quadraticCurveTo(0, raio*0.8, raio*0.6, raio*0.5); // Barriga
+        n.closePath(); n.fill(); n.stroke();
+
+        // 5. CABEÇA E FOCINHO DE LOBO (Brutal)
+        n.fillStyle = corPelo; n.strokeStyle = sombraPelo;
+        n.beginPath();
+        n.moveTo(-raio*0.3, -raio*0.1);
+        n.lineTo(0, -raio*0.5); // Topo da cabeça
+        n.lineTo(raio*0.5, -raio*0.4); // Sobrancelha franzida
+        n.lineTo(raio*0.9, -raio*0.1); // Ponta do focinho de lobo
+        n.lineTo(raio*0.7, raio*0.2); // Queixo
+        n.lineTo(-raio*0.2, raio*0.3); // Base do pescoço
+        n.closePath(); n.fill(); n.stroke();
+
+        // Orelhas de Fera
+        n.fillStyle = sombraPelo;
+        n.beginPath(); n.moveTo(-raio*0.1, -raio*0.4); n.lineTo(-raio*0.4, -raio*0.9); n.lineTo(raio*0.1, -raio*0.5); n.fill(); n.stroke();
+
+        // 6. OLHOS LUNARES (Feral e Brilhante)
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW * 2;
+            n.beginPath(); n.moveTo(raio*0.2, -raio*0.2); n.lineTo(raio*0.4, -raio*0.1); n.stroke();
+        } else {
+            n.fillStyle = brilhoLunar; n.shadowColor = brilhoLunar; n.shadowBlur = 10;
+            n.beginPath(); n.moveTo(raio*0.2, -raio*0.25); n.lineTo(raio*0.4, -raio*0.3); n.lineTo(raio*0.45, -raio*0.15); n.lineTo(raio*0.3, -raio*0.1); n.closePath(); n.fill();
+            n.shadowBlur = 0;
+            // Pupila rasgada
+            n.fillStyle = "#000"; n.beginPath(); n.ellipse(raio*0.35, -raio*0.2, raio*0.02, raio*0.06, Math.PI/6, 0, Math.PI*2); n.fill();
+        }
+
+        // 7. BRAÇOS E GARRAS (Destruidores)
+        n.fillStyle = gradPelo; n.strokeStyle = sombraPelo;
+        n.beginPath(); n.moveTo(-raio*0.2, raio*0.1); n.lineTo(raio*0.3, raio*0.5); n.lineTo(raio*0.5, raio*0.8); n.lineTo(0, raio*0.7); n.closePath(); n.fill(); n.stroke();
+
+        // Garras afiadas
+        n.fillStyle = corEspinho;
+        [raio*0.3, raio*0.4, raio*0.5].forEach((gx) => {
+            n.beginPath(); n.moveTo(gx, raio*0.75); n.lineTo(gx + raio*0.1, raio*1.0); n.lineTo(gx - raio*0.1, raio*0.8); n.fill(); n.stroke();
+        });
+
+        n.restore();
+      }
+
+      function desenharRochodonMarca(n, u, r, l, o, f) {
+        // Rochodon Rochoso da Marca (rochodon_20-marca) - A Fortaleza de Pedra com Espiral de Lava
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let respiracao = isFainted ? 1 : 1 + Math.sin(tempo * 3) * 0.02; // Respiração pesada
+
+        n.lineCap = "round"; n.lineJoin = "miter"; // Linhas duras para pedra
+        let strokeW = Math.max(1.8, o * 0.018);
+        n.save(); n.translate(r, l + o * 0.08);
+        if (f.flip) n.scale(-1, 1);
+        n.scale(1, respiracao);
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.45;
+        let corPedra = "#78350f"; let sombraPedra = "#451a03"; let luzPedra = "#a16207";
+        let corLava = "#facc15"; let brilhoLava = "#ef4444"; // O Fogo do Tatá
+
+        // 1. PATAS COLOSSAIS (Pilares de pedra)
+        n.fillStyle = sombraPedra; n.strokeStyle = "#29150b"; n.lineWidth = strokeW * 2;
+        [-raio*0.4, raio*0.3].forEach(px => {
+            n.beginPath(); n.moveTo(px, raio*0.2); n.lineTo(px - raio*0.1, raio*0.7); n.lineTo(px + raio*0.2, raio*0.7); n.lineTo(px + raio*0.1, raio*0.2); n.closePath(); n.fill(); n.stroke();
+            // Unhas
+            n.fillStyle = luzPedra; n.beginPath(); n.moveTo(px - raio*0.1, raio*0.7); n.lineTo(px, raio*0.6); n.lineTo(px + raio*0.1, raio*0.7); n.fill(); n.fillStyle = sombraPedra;
+        });
+
+        // 2. CAUDA DE CLAVA (Anquilossauro)
+        n.beginPath(); n.moveTo(-raio*0.5, 0); n.quadraticCurveTo(-raio*1.0, 0, -raio*1.1, raio*0.4); n.lineTo(-raio*0.9, raio*0.5); n.lineTo(-raio*0.5, raio*0.2); n.fill(); n.stroke();
+        n.fillStyle = luzPedra; n.beginPath(); n.arc(-raio*1.0, raio*0.45, raio*0.15, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // 3. COURAÇA BLINDADA (Corpo Principal Poliédrico)
+        let gradCorpo = n.createLinearGradient(0, -raio*0.8, 0, raio*0.4);
+        gradCorpo.addColorStop(0, luzPedra); gradCorpo.addColorStop(0.5, corPedra); gradCorpo.addColorStop(1, sombraPedra);
+
+        n.fillStyle = gradCorpo; n.strokeStyle = sombraPedra; n.lineWidth = strokeW * 2;
+        n.beginPath();
+        n.moveTo(-raio*0.7, raio*0.2);
+        n.lineTo(-raio*0.8, -raio*0.2); n.lineTo(-raio*0.4, -raio*0.7); // Dorso
+        n.lineTo(raio*0.3, -raio*0.8); n.lineTo(raio*0.7, -raio*0.3);
+        n.lineTo(raio*0.8, raio*0.2); // Frente
+        n.quadraticCurveTo(0, raio*0.4, -raio*0.7, raio*0.2); // Barriga
+        n.closePath(); n.fill(); n.stroke();
+
+        // Placas/Facetas da Carapaça
+        n.strokeStyle = sombraPedra; n.lineWidth = strokeW;
+        n.beginPath(); n.moveTo(-raio*0.4, -raio*0.7); n.lineTo(0, 0); n.lineTo(-raio*0.7, raio*0.2); n.stroke();
+        n.beginPath(); n.moveTo(raio*0.3, -raio*0.8); n.lineTo(0, 0); n.lineTo(raio*0.8, raio*0.2); n.stroke();
+
+        // 4. A ESPIRAL DO TATÁ (Rachaduras Magmáticas Alinhadas)
+        if (!isFainted) {
+            n.strokeStyle = corLava; n.lineWidth = strokeW * 1.5;
+            n.shadowColor = brilhoLava; n.shadowBlur = 10 + Math.sin(tempo*8)*5;
+            // Espiral poligonal nas rachaduras
+            n.beginPath();
+            n.moveTo(raio*0.1, -raio*0.1); n.lineTo(-raio*0.2, -raio*0.2); n.lineTo(-raio*0.3, 0);
+            n.lineTo(-raio*0.1, raio*0.2); n.lineTo(raio*0.2, raio*0.1); n.lineTo(raio*0.3, -raio*0.3);
+            n.lineTo(-raio*0.1, -raio*0.5);
+            n.stroke();
+            n.shadowBlur = 0;
+        }
+
+        // 5. CABEÇA BLINDADA
+        n.fillStyle = corPedra; n.strokeStyle = sombraPedra; n.lineWidth = strokeW * 2;
+        n.beginPath(); n.moveTo(raio*0.6, -raio*0.2); n.lineTo(raio*1.0, -raio*0.1); n.lineTo(raio*1.1, raio*0.3); n.lineTo(raio*0.7, raio*0.4); n.closePath(); n.fill(); n.stroke();
+
+        // Chifre/Espinho
+        n.fillStyle = luzPedra;
+        n.beginPath(); n.moveTo(raio*0.8, -raio*0.15); n.lineTo(raio*0.9, -raio*0.4); n.lineTo(raio*1.0, -raio*0.1); n.fill(); n.stroke();
+
+        // Olho
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.beginPath(); n.moveTo(raio*0.75, 0); n.lineTo(raio*0.9, 0.1*raio); n.stroke();
+        } else {
+            n.fillStyle = corLava; n.beginPath(); n.arc(raio*0.85, raio*0.05, raio*0.06, 0, Math.PI*2); n.fill();
+            n.fillStyle = "#000"; n.beginPath(); n.arc(raio*0.87, raio*0.05, raio*0.03, 0, Math.PI*2); n.fill();
+        }
+
+        n.restore();
+      }
+
+      function desenharRosalfinMarca(n, u, r, l, o, f) {
+        // Rosalfin da Marca (boto-marca) - O Guia Mágico (Rosado Profundo + Ouro)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let salto = isFainted ? 0 : Math.sin(tempo * 4) * o * 0.06;
+
+        n.lineCap = "round"; n.lineJoin = "round";
+        let strokeW = Math.max(1.8, o * 0.018);
+        n.save(); n.translate(r, l - salto);
+        if (f.flip) n.scale(-1, 1);
+        if (isFainted) n.globalAlpha = 0.55;
+
+        let raio = o * 0.42;
+        let corBoto = "#db2777"; let sombraBoto = "#831843"; let luzBoto = "#fbcfe8"; // Rosa Magente/Raro
+        let corTatá = "#fde047"; let brilhoTatá = "#eab308"; // Dourado mágico
+
+        // Rotação de Nado
+        n.rotate(Math.cos(tempo * 3) * 0.1);
+
+        let gradCorpo = n.createLinearGradient(0, -raio, 0, raio);
+        gradCorpo.addColorStop(0, luzBoto); gradCorpo.addColorStop(0.4, corBoto); gradCorpo.addColorStop(1, sombraBoto);
+
+        // Cauda e Barbatanas
+        n.fillStyle = sombraBoto; n.strokeStyle = "#4c0519"; n.lineWidth = strokeW * 1.5;
+        n.beginPath(); n.moveTo(-raio*0.8, raio*0.2); n.quadraticCurveTo(-raio*1.3, raio*0.6, -raio*1.2, raio*0.9); n.quadraticCurveTo(-raio*0.9, raio*0.6, -raio*0.8, raio*0.4); n.quadraticCurveTo(-raio*0.4, raio*0.8, -raio*0.4, raio*0.4); n.fill(); n.stroke();
+
+        n.beginPath(); n.moveTo(-raio*0.2, -raio*0.4); n.quadraticCurveTo(-raio*0.3, -raio*0.8, 0.1*raio, -raio*0.6); n.fill(); n.stroke(); // Dorsal mais longa
+        n.beginPath(); n.moveTo(-raio*0.1, raio*0.4); n.lineTo(-raio*0.2, raio*0.8); n.lineTo(0.1*raio, raio*0.5); n.fill(); n.stroke();
+
+        // Corpo Principal
+        n.fillStyle = gradCorpo; n.strokeStyle = "#4c0519";
+        n.beginPath();
+        n.moveTo(raio*0.6, 0); n.bezierCurveTo(raio*0.4, -raio*0.6, -raio*0.5, -raio*0.6, -raio*0.8, raio*0.2); n.quadraticCurveTo(-raio*0.3, raio*0.6, raio*0.4, raio*0.3); n.quadraticCurveTo(raio*0.8, raio*0.3, raio*0.9, 0.1*raio); n.quadraticCurveTo(raio*0.8, -0.1*raio, raio*0.6, 0);
+        n.closePath(); n.fill(); n.stroke();
+
+        // Barbatana Peitoral Frontal
+        n.fillStyle = corBoto;
+        n.beginPath(); n.moveTo(raio*0.2, raio*0.3); n.quadraticCurveTo(raio*0.4, raio*0.8, raio*0.1, raio*0.9); n.quadraticCurveTo(0, raio*0.6, 0.1*raio, raio*0.4); n.fill(); n.stroke();
+
+        // A MARCA DO TATÁ (Redemoinho Dourado no Dorso)
+        if (!isFainted) {
+            n.strokeStyle = corTatá; n.lineWidth = strokeW * 1.5; n.shadowColor = corTatá; n.shadowBlur = 15;
+            n.beginPath();
+            n.arc(-raio*0.2, -raio*0.1, raio*0.15, Math.PI, Math.PI*2.5);
+            n.arc(-raio*0.2, -raio*0.1, raio*0.05, Math.PI*2.5, Math.PI*4);
+            n.stroke();
+            n.shadowBlur = 0;
+
+            // Fagulhas d'água douradas (Guia de viajantes)
+            n.fillStyle = corTatá;
+            for(let i=0; i<2; i++) {
+                n.beginPath(); n.arc(raio*0.6 + i*raio*0.3, -raio*0.4 + Math.sin(tempo*5+i)*raio*0.1, raio*0.03, 0, Math.PI*2); n.fill();
+            }
+        }
+
+        // Rosto
+        if (isFainted) {
+            n.strokeStyle = "#000"; n.beginPath(); n.moveTo(raio*0.3, -raio*0.1); n.lineTo(raio*0.5, 0); n.stroke();
+        } else {
+            n.fillStyle = "#fff"; n.strokeStyle = "#4c0519";
+            n.beginPath(); n.ellipse(raio*0.4, -raio*0.1, raio*0.08, raio*0.12, Math.PI/8, 0, Math.PI*2); n.fill(); n.stroke();
+
+            // Pupila Dourada (A Marca do Tatá)
+            n.fillStyle = brilhoTatá; n.beginPath(); n.ellipse(raio*0.42, -raio*0.08, raio*0.05, raio*0.08, Math.PI/8, 0, Math.PI*2); n.fill();
+            n.fillStyle = "#fff"; n.beginPath(); n.arc(raio*0.43, -raio*0.12, raio*0.02, 0, Math.PI*2); n.fill();
+
+            n.strokeStyle = "#4c0519"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(raio*0.5, 0.1*raio); n.quadraticCurveTo(raio*0.6, 0.15*raio, raio*0.7, 0.05*raio); n.stroke();
+
+            n.fillStyle = corTatá; n.globalAlpha = 0.5;
+            n.beginPath(); n.ellipse(raio*0.25, 0.05*raio, raio*0.08, raio*0.04, -Math.PI/8, 0, Math.PI*2); n.fill();
+            n.globalAlpha = 1;
+        }
+
+        n.restore();
+      }
+
       function So(n, u, r, l, o, f = {}) {
         let { flip: $, t: _ = 0, fainted: v } = f,
           Z = On[u.types[0]].color,
@@ -21710,6 +22879,10 @@
         let original_o = o;
         // Ajusta o zoom com base na evolução para não bater nas bordas
         o = o * (u.stage === 2 ? 0.65 : (u.stage === 1 ? 0.8 : 0.95));
+
+
+
+
 
         if (u.silhouette === "aquaroch") {
           desenharAquaroch(n, u, r, l, o, f);
@@ -21819,10 +22992,7 @@
             desenharBrasalma(n, u, r, l, o, f);
             return;
           }
-          if (u.silhouette === "iara" || u.silhouette === "iara-marca") {
-            desenharCantamar(n, u, r, l, o, f);
-            return;
-          }
+
           if (u.silhouette === "curupira-evo2") {
             desenharCapoeirao(n, u, r, l, o, f);
             return;
@@ -21882,6 +23052,10 @@
           if (u.silhouette === "saci-evo2" || u.silhouette === "furacaozinho") {
             desenharFuracaozinho(n, u, r, l, o, f);
             return;
+          }
+          if (u.silhouette === "saci" || u.id === "saci" || u.feature === "saci") {
+              desenharSaci(n, u, r, l, o, f);
+              return;
           }
           if (u.silhouette === "galvombra_20") {
             desenharGalvombra20(n, u, r, l, o, f);
@@ -22033,6 +23207,82 @@
           }
           if (u.silhouette === "voltsombra_20") {
             desenharVoltsombra20(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "curupira" || u.id === "curupira" || u.feature === "curupira") {
+            desenharCurupira(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "curupira-marca" || u.id === "curupira-marca" || u.feature === "curupira-marca") {
+            desenharCurupiraMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "brasalma" || u.id === "brasalma" || u.feature === "brasalma") {
+            desenharBrasalma(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "iara" || u.id === "iara" || u.feature === "iara" || u.silhouette === "cantamar") {
+            desenharCantamar(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "iara-marca" || u.id === "iara-marca" || u.feature === "iara-marca" || u.silhouette === "cantamar-marca") {
+            desenharCantamarMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "curupira-evo2" || u.id === "curupira-evo2" || u.feature === "curupira-evo2" || u.silhouette === "capoeirao") {
+            desenharCapoeirao(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "verdente-3-marca" || u.id === "verdente-3-marca" || u.feature === "verdente-3-marca" || u.silhouette === "devorasselva-marca") {
+            desenharDevorasselvaMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "cristalito-3-marca" || u.id === "cristalito-3-marca" || u.feature === "cristalito-3-marca") {
+            desenharDiamangolemMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "ecoalma" || u.id === "ecoalma" || u.feature === "ecoalma") {
+            desenharEcoalma(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "mula" || u.id === "mula" || u.feature === "mula" || u.silhouette === "galopim") {
+            desenharGalopim(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "mula-marca" || u.id === "mula-marca" || u.feature === "mula-marca" || u.silhouette === "galopim-marca") {
+            desenharGalopimMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "boitata" || u.id === "boitata" || u.feature === "boitata" || u.silhouette === "ignira") {
+            desenharIgnira(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "boitata-marca" || u.id === "boitata-marca" || u.feature === "boitata-marca" || u.silhouette === "ignira-marca") {
+            desenharIgniraMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "cuca" || u.id === "cuca" || u.feature === "cuca" || u.silhouette === "jacaruxa") {
+            desenharJacaruxa(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "cuca-marca" || u.id === "cuca-marca" || u.feature === "cuca-marca" || u.silhouette === "jacaruxa-marca") {
+            desenharJacaruxaMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "lobisomem" || u.id === "lobisomem" || u.feature === "lobisomem" || u.silhouette === "lunauro") {
+            desenharLunauro(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "rochodon_20-marca" || u.id === "rochodon_20-marca" || u.feature === "rochodon_20-marca" || u.silhouette === "rochodon-marca") {
+            desenharRochodonMarca(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "boto" || u.id === "boto" || u.feature === "boto" || u.silhouette === "rosalfin") {
+            desenharRosalfin(n, u, r, l, o, f);
+            return;
+          }
+          if (u.silhouette === "boto-marca" || u.id === "boto-marca" || u.feature === "boto-marca" || u.silhouette === "rosalfin-marca") {
+            desenharRosalfinMarca(n, u, r, l, o, f);
             return;
           }
           if (u.silhouette) {
@@ -31639,119 +32889,95 @@
               n.fill());
           });
       }
-      function desenharSaci(n, u, r, l, o, f, $, _, v, Z) {
-        let isFainted = Z;
-        let strokeW = v;
-        let tempo = l;
-        let esc = 1 + Math.sin(tempo * 4) * 0.02;
+      function desenharSaci(n, u, r, l, o, f) {
+        // Redemoin (saci) - Base Nv1 - Animal: Jerboa do Vento (Rato-Canguru / Kamaitachi)
+        let isFainted = f.fainted; let tempo = f.t || 0;
+        let pular = isFainted ? 0 : Math.sin(tempo * 6) * o * 0.05;
+        n.save(); n.translate(r, l - pular + o * 0.05); n.scale(f.flip?-1:1, 1);
+        let raio = o * 0.4; let strokeW = Math.max(2, o*0.018);
+        n.lineCap="round"; n.lineJoin="round";
+        if(isFainted) n.globalAlpha = 0.55;
 
-        n.lineCap = "round";
-        n.lineJoin = "round";
+        let corPelo = "#facc15"; let bordaPelo = "#a16207"; // Amarelo Faísca
+        let corOrelha = "#fbcfe8"; // Interior da orelha rosa
+        let corGorro = "#ef4444"; let bordaGorro = "#991b1b";
 
-        if (isFainted) n.globalAlpha = 0.55;
-
-        let flutua = Math.sin(tempo * 6) * u * 0.06 - u * 0.05;
-
-        n.save();
-        n.translate(0, flutua);
-        n.scale(1, esc);
-
-        n.strokeStyle = $;
-        n.lineWidth = strokeW;
-        n.fillStyle = f;
-        for (let i = 0; i < 3; i++) {
-          n.save();
-          let yOffset = u * 0.35 + i * u * 0.15;
-          let w = u * 0.35 - i * u * 0.08;
-          let h = u * 0.12 - i * u * 0.02;
-          let sway = Math.sin(tempo * 12 + i * 2) * u * 0.06;
-          n.translate(sway, yOffset);
-          n.beginPath();
-          n.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
-          n.fill();
-          n.stroke();
-          n.restore();
+        // 1. Redemoinho (Tornado de Faíscas e Vento)
+        if(!isFainted) {
+            n.strokeStyle = "#ca8a04"; n.lineWidth = strokeW * 1.5;
+            for(let i=0; i<3; i++) {
+                n.beginPath();
+                n.ellipse(0, raio*0.6 - i*raio*0.12, raio*0.4 - i*raio*0.08, raio*0.1, tempo*5 + i, 0, Math.PI*2);
+                n.stroke();
+            }
         }
 
-        n.fillStyle = o;
+        // 2. A "Uma Perna" (Uma pata traseira forte de salto estilo Jerboa)
+        n.fillStyle = corPelo; n.strokeStyle = bordaPelo; n.lineWidth = strokeW * 1.5;
         n.beginPath();
-        n.ellipse(0, u * 0.1, u * 0.28, u * 0.32, 0, 0, Math.PI * 2);
-        n.fill();
-        n.stroke();
+        n.moveTo(-raio*0.1, raio*0.2);
+        n.quadraticCurveTo(-raio*0.2, raio*0.5, 0, raio*0.7); // Perna desce até ao tornado
+        n.quadraticCurveTo(raio*0.2, raio*0.5, raio*0.1, raio*0.2);
+        n.fill(); n.stroke();
 
-        n.fillStyle = o;
-        [-1, 1].forEach((lado) => {
-          n.beginPath();
-          n.ellipse(lado * u * 0.18, u * 0.18, u * 0.1, u * 0.06, lado * -0.3, 0, Math.PI * 2);
-          n.fill();
-          n.stroke();
-        });
+        // Pé único do animalzinho
+        n.beginPath(); n.ellipse(0, raio*0.7, raio*0.15, raio*0.08, 0, 0, Math.PI*2); n.fill(); n.stroke();
 
-        n.fillStyle = "#ef4444";
-        n.strokeStyle = $;
-        n.lineWidth = strokeW;
+        // 3. Orelhas de Feneco/Jerboa (Grandes e animaiscas)
+        n.fillStyle = corPelo; n.strokeStyle = bordaPelo;
+        // Orelha Esquerda
+        n.beginPath(); n.moveTo(-raio*0.15, -raio*0.2); n.lineTo(-raio*0.7, -raio*0.6); n.lineTo(-raio*0.4, 0); n.closePath(); n.fill(); n.stroke();
+        n.fillStyle = corOrelha; n.beginPath(); n.moveTo(-raio*0.25, -raio*0.2); n.lineTo(-raio*0.6, -raio*0.5); n.lineTo(-raio*0.4, -raio*0.1); n.fill(); n.stroke();
+        // Orelha Direita
+        n.fillStyle = corPelo; n.beginPath(); n.moveTo(raio*0.15, -raio*0.2); n.lineTo(raio*0.7, -raio*0.6); n.lineTo(raio*0.4, 0); n.closePath(); n.fill(); n.stroke();
+        n.fillStyle = corOrelha; n.beginPath(); n.moveTo(raio*0.25, -raio*0.2); n.lineTo(raio*0.6, -raio*0.5); n.lineTo(raio*0.4, -raio*0.1); n.fill(); n.stroke();
+
+        // 4. Corpo e Cabeça (Peludinhos e unidos)
+        n.fillStyle = corPelo; n.strokeStyle = bordaPelo;
+        n.beginPath(); n.ellipse(0, 0, raio*0.45, raio*0.4, 0, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // Patinhas dianteiras de roedor encolhidas no peito
+        n.beginPath(); n.ellipse(-raio*0.25, raio*0.15, raio*0.08, raio*0.12, -Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+        n.beginPath(); n.ellipse(raio*0.25, raio*0.15, raio*0.08, raio*0.12, Math.PI/4, 0, Math.PI*2); n.fill(); n.stroke();
+
+        // 5. Gorro do Saci (Caído elegantemente entre as orelhas)
+        n.fillStyle = corGorro; n.strokeStyle = bordaGorro;
         n.beginPath();
-        n.moveTo(-u * 0.25, -u * 0.1);
-        n.quadraticCurveTo(0, -u * 0.2, u * 0.25, -u * 0.1);
-        n.quadraticCurveTo(u * 0.15, -u * 0.6, u * 0.35, -u * 0.65);
-        n.quadraticCurveTo(0, -u * 0.8, -u * 0.25, -u * 0.1);
-        n.fill();
-        n.stroke();
-        n.beginPath();
-        n.arc(u * 0.35, -u * 0.65, u * 0.05, 0, Math.PI * 2);
-        n.fill();
-        n.stroke();
+        n.moveTo(-raio*0.25, -raio*0.3);
+        n.quadraticCurveTo(0, -raio*0.5, raio*0.25, -raio*0.3); // Base do gorro
+        n.quadraticCurveTo(raio*0.4, -raio*0.8, 0, -raio*1.0); // Sobe
+        n.quadraticCurveTo(-raio*0.6, -raio*0.7, -raio*0.25, -raio*0.3); // Cai de lado
+        n.fill(); n.stroke();
+        // Borda do gorro
+        n.beginPath(); n.moveTo(-raio*0.25, -raio*0.3); n.quadraticCurveTo(0, -raio*0.4, raio*0.25, -raio*0.3); n.stroke();
 
-        n.fillStyle = "rgba(255, 100, 150, 0.4)";
-        [-1, 1].forEach((lado) => {
-          n.beginPath();
-          n.ellipse(lado * u * 0.18, u * 0.05, u * 0.06, u * 0.04, 0, 0, Math.PI * 2);
-          n.fill();
-        });
-
-        if (isFainted) {
-          n.strokeStyle = "#1e293b";
-          n.lineWidth = Math.max(2, r * 0.028);
-          [-1, 1].forEach((H) => {
-            let K = H * u * 0.15, V = -u * 0.02;
-            n.beginPath();
-            n.moveTo(K - u * 0.06, V - u * 0.06); n.lineTo(K + u * 0.06, V + u * 0.06);
-            n.moveTo(K + u * 0.06, V - u * 0.06); n.lineTo(K - u * 0.06, V + u * 0.06);
-            n.stroke();
-          });
+        // 6. Rosto Animalesco Fofo (Focinho e focinho de raposa/rato)
+        if(isFainted) {
+            n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.moveTo(-raio*0.2, 0); n.lineTo(-raio*0.05, 0.1*raio); n.stroke();
+            n.beginPath(); n.moveTo(raio*0.2, 0); n.lineTo(raio*0.05, 0.1*raio); n.stroke();
         } else {
-          n.fillStyle = "#1e293b";
-          [-1, 1].forEach((lado) => {
-            n.beginPath(); n.arc(lado * u * 0.1, -u * 0.02, u * 0.07, 0, Math.PI * 2); n.fill();
-          });
-          n.fillStyle = "#ffffff";
-          [-1, 1].forEach((lado) => {
-            n.beginPath(); n.arc(lado * u * 0.1 - u * 0.02, -u * 0.02 - u * 0.02, u * 0.025, 0, Math.PI * 2); n.fill();
-          });
-        }
+            // Olhos
+            n.fillStyle = "#fff"; n.strokeStyle = "#000"; n.lineWidth = strokeW;
+            n.beginPath(); n.arc(-raio*0.18, -raio*0.05, raio*0.1, 0, Math.PI*2); n.fill(); n.stroke();
+            n.beginPath(); n.arc(raio*0.18, -raio*0.05, raio*0.1, 0, Math.PI*2); n.fill(); n.stroke();
 
-        n.strokeStyle = "#1e293b";
-        n.lineWidth = strokeW * 0.8;
-        n.beginPath();
-        n.moveTo(-u * 0.02, u * 0.1);
-        n.quadraticCurveTo(u * 0.08, u * 0.15, u * 0.12, u * 0.05);
-        n.stroke();
+            n.fillStyle = "#000";
+            n.beginPath(); n.arc(-raio*0.15, -raio*0.05, raio*0.05, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.15, -raio*0.05, raio*0.05, 0, Math.PI*2); n.fill();
 
-        n.strokeStyle = "#854d0e";
-        n.lineWidth = strokeW * 0.6;
-        n.beginPath(); n.moveTo(u * 0.08, u * 0.08); n.lineTo(u * 0.22, u * 0.12); n.stroke();
-        n.fillStyle = "#4ade80"; n.strokeStyle = $; n.lineWidth = strokeW * 0.4;
-        n.beginPath(); n.ellipse(u * 0.24, u * 0.13, u * 0.04, u * 0.02, Math.PI / 6, 0, Math.PI * 2); n.fill(); n.stroke();
+            n.fillStyle = "#fff";
+            n.beginPath(); n.arc(-raio*0.16, -raio*0.07, raio*0.02, 0, Math.PI*2); n.fill();
+            n.beginPath(); n.arc(raio*0.14, -raio*0.07, raio*0.02, 0, Math.PI*2); n.fill();
 
-        if (!isFainted) {
-          n.fillStyle = _;
-          for (let i = 0; i < 3; i++) {
-            let angle = tempo * 8 + i * 2.1;
-            let px = Math.cos(angle) * u * 0.45;
-            let py = Math.sin(angle) * u * 0.15 + u * 0.4;
-            n.save(); n.translate(px, py); n.rotate(tempo * 5 + i);
-            n.beginPath(); n.ellipse(0, 0, u * 0.03, u * 0.015, 0, 0, Math.PI * 2); n.fill(); n.restore();
-          }
+            // Focinho de animalzinho
+            n.fillStyle = "#000";
+            n.beginPath(); n.ellipse(0, raio*0.1, raio*0.04, raio*0.03, 0, 0, Math.PI*2); n.fill();
+
+            // Boquinha de animal (estilo gatinho/raposa)
+            n.strokeStyle = "#000"; n.lineWidth = strokeW*0.8;
+            n.beginPath(); n.moveTo(0, raio*0.13); n.quadraticCurveTo(-raio*0.08, raio*0.2, -raio*0.15, raio*0.15); n.stroke();
+            n.beginPath(); n.moveTo(0, raio*0.13); n.quadraticCurveTo(raio*0.08, raio*0.2, raio*0.15, raio*0.15); n.stroke();
         }
         n.restore();
       }
