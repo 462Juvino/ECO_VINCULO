@@ -1,0 +1,105 @@
+{
+  "source": "/home/ubuntu/upload/index(1).html",
+  "originalScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
+  "reconstructedScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
+  "cssBytes": 61127,
+  "originalHtmlBytes": 1811847,
+  "modularHtmlBytes": 984,
+  "files": [
+    {
+      "file": "js/01-runtime-react.js",
+      "title": "Runtime React e ReactDOM",
+      "originalScriptLines": "3-9490",
+      "statements": "0-367",
+      "bytes": 299405
+    },
+    {
+      "file": "js/02-icons-foundation.js",
+      "title": "Ícones, afinidades e fundamentos",
+      "originalScriptLines": "9492-10746",
+      "statements": "368-418",
+      "bytes": 43564
+    },
+    {
+      "file": "js/03-creature-data.js",
+      "title": "Dados dos Pats, técnicas e regras",
+      "originalScriptLines": "10748-12514",
+      "statements": "419-457",
+      "bytes": 60129
+    },
+    {
+      "file": "js/04-creature-art-a.js",
+      "title": "Arte dos Pats — parte A",
+      "originalScriptLines": "12517-18809",
+      "statements": "458-516",
+      "bytes": 230738
+    },
+    {
+      "file": "js/05-creature-art-b.js",
+      "title": "Arte dos Pats — parte B",
+      "originalScriptLines": "18812-29093",
+      "statements": "517-577",
+      "bytes": 368463
+    },
+    {
+      "file": "js/06-world-data.js",
+      "title": "Mapas, cavernas, NPCs e estado do jogo",
+      "originalScriptLines": "29095-35277",
+      "statements": "578-645",
+      "bytes": 202042
+    },
+    {
+      "file": "js/07-ui-systems.js",
+      "title": "Sprites, inventário, loja e áudio",
+      "originalScriptLines": "35279-36801",
+      "statements": "646-687",
+      "bytes": 57867
+    },
+    {
+      "file": "js/08-overworld.js",
+      "title": "Tela principal, exploração e menus",
+      "originalScriptLines": "36803-39865",
+      "statements": "688-698",
+      "bytes": 126743
+    },
+    {
+      "file": "js/09-battle.js",
+      "title": "Batalhas e efeitos visuais",
+      "originalScriptLines": "39867-45630",
+      "statements": "699-712",
+      "bytes": 221626
+    },
+    {
+      "file": "js/10-online-app.js",
+      "title": "Toast, Firebase, online, Dex e inicialização",
+      "originalScriptLines": "45632-49284",
+      "statements": "713-779",
+      "bytes": 154779
+    },
+    {
+      "file": "js/11-signature-attacks.js",
+      "title": "Golpes assinatura e identidade visual das fusões",
+      "bytes": 12358
+    },
+    {
+      "file": "js/external-links.js",
+      "title": "Ajuste original para links externos",
+      "bytes": 1019
+    }
+  ],
+  "verificationScope": "Os hashes originalScriptSha256 e reconstructedScriptSha256 atestam a divisão inicial do bundle antes das novas funcionalidades abaixo. As diferenças atuais são alterações intencionais de jogabilidade/arte solicitadas pelo usuário.",
+  "signatureFeatures": {
+    "catalogSpecies": 150,
+    "speciesWithUniqueSignatureMove": 150,
+    "uniquePetSignatureNames": 150,
+    "canonicalFusionArchetypes": 15,
+    "signatureMovesPerFusion": 2,
+    "tests": [
+      "Todos os 150 registros do catálogo receberam um golpe assinatura, sem nomes repetidos.",
+      "Dois golpes de fusão foram gerados e mantêm potência 55/precisão 100, como os ataques genéricos substituídos.",
+      "Desenho de teste da fusão VoltPup + Aquaffin executado no canvas sem erro.",
+      "Tela inicial comparada no Chromium com o original: pixels idênticos.",
+      "Arquivos JavaScript validados com node --check."
+    ]
+  }
+}
