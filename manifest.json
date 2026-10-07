@@ -4,7 +4,7 @@
   "reconstructedScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
   "cssBytes": 61127,
   "originalHtmlBytes": 1811847,
-  "modularHtmlBytes": 984,
+  "modularHtmlBytes": 1101,
   "files": [
     {
       "file": "js/01-runtime-react.js",
@@ -36,70 +36,140 @@
     },
     {
       "file": "js/05-creature-art-b.js",
-      "title": "Arte dos Pats — parte B",
+      "title": "Arte dos Pats — parte B e suporte aos híbridos",
       "originalScriptLines": "18812-29093",
       "statements": "517-577",
       "bytes": 368463
     },
     {
       "file": "js/06-world-data.js",
-      "title": "Mapas, cavernas, NPCs e estado do jogo",
+      "title": "Mapas, cavernas, NPCs, migração e estado do jogo",
       "originalScriptLines": "29095-35277",
       "statements": "578-645",
-      "bytes": 202042
+      "bytes": 202412
     },
     {
       "file": "js/07-ui-systems.js",
-      "title": "Sprites, inventário, loja e áudio",
+      "title": "Sprites, inventário, loja, áudio regional e jingle da mochila",
       "originalScriptLines": "35279-36801",
       "statements": "646-687",
-      "bytes": 57867
+      "bytes": 58359
+    },
+    {
+      "file": "js/audio-manager.js",
+      "title": "Seleção contextual de trilhas e áudio de interface",
+      "bytes": 3263
     },
     {
       "file": "js/08-overworld.js",
-      "title": "Tela principal, exploração e menus",
+      "title": "Exploração, mundos, mapa e menus de campo",
       "originalScriptLines": "36803-39865",
       "statements": "688-698",
-      "bytes": 126743
+      "bytes": 131602
     },
     {
       "file": "js/09-battle.js",
-      "title": "Batalhas e efeitos visuais",
+      "title": "Batalhas, animações e efeitos visuais",
       "originalScriptLines": "39867-45630",
       "statements": "699-712",
-      "bytes": 221626
+      "bytes": 221991
     },
     {
       "file": "js/10-online-app.js",
-      "title": "Toast, Firebase, online, Dex e inicialização",
+      "title": "Online, Dex, título, save e inicialização",
       "originalScriptLines": "45632-49284",
       "statements": "713-779",
-      "bytes": 154779
+      "bytes": 155233
     },
     {
       "file": "js/11-signature-attacks.js",
       "title": "Golpes assinatura e identidade visual das fusões",
-      "bytes": 12358
+      "bytes": 12750
+    },
+    {
+      "file": "js/12-postgame-worlds.js",
+      "title": "Saga pós-jogo, biomas, espécies, encontros, NPCs e chefes",
+      "bytes": 19002
     },
     {
       "file": "js/external-links.js",
       "title": "Ajuste original para links externos",
       "bytes": 1019
+    },
+    {
+      "file": "assets/audio/menu-theme.mp3",
+      "title": "Trilha do menu",
+      "bytes": 1562813,
+      "durationSeconds": 64.9
+    },
+    {
+      "file": "assets/audio/battle-common.mp3",
+      "title": "Trilha de batalha comum",
+      "bytes": 1685066,
+      "durationSeconds": 70.0
+    },
+    {
+      "file": "assets/audio/battle-boss.mp3",
+      "title": "Trilha de chefes e guardiões",
+      "bytes": 1763433,
+      "durationSeconds": 73.2
+    },
+    {
+      "file": "assets/audio/battle-pvp.mp3",
+      "title": "Trilha PvP online",
+      "bytes": 2082545,
+      "durationSeconds": 86.5
     }
   ],
-  "verificationScope": "Os hashes originalScriptSha256 e reconstructedScriptSha256 atestam a divisão inicial do bundle antes das novas funcionalidades abaixo. As diferenças atuais são alterações intencionais de jogabilidade/arte solicitadas pelo usuário.",
+  "verificationScope": "Os hashes originalScriptSha256 e reconstructedScriptSha256 atestam a divisão inicial do bundle. As alterações descritas abaixo são adições solicitadas; o HTML original permanece intacto.",
   "signatureFeatures": {
-    "catalogSpecies": 150,
-    "speciesWithUniqueSignatureMove": 150,
-    "uniquePetSignatureNames": 150,
+    "originalCatalogSpecies": 150,
+    "newPostgameSpeciesWithSignatureMoves": 13,
     "canonicalFusionArchetypes": 15,
     "signatureMovesPerFusion": 2,
     "tests": [
-      "Todos os 150 registros do catálogo receberam um golpe assinatura, sem nomes repetidos.",
-      "Dois golpes de fusão foram gerados e mantêm potência 55/precisão 100, como os ataques genéricos substituídos.",
-      "Desenho de teste da fusão VoltPup + Aquaffin executado no canvas sem erro.",
-      "Tela inicial comparada no Chromium com o original: pixels idênticos.",
-      "Arquivos JavaScript validados com node --check."
+      "Cada registro original recebeu uma técnica assinatura sem substituir os golpes existentes.",
+      "As 13 espécies novas recebem golpes assinatura associados à própria espécie.",
+      "Os dois golpes da Fusão mantêm potência 55 e precisão 100, como os ataques genéricos substituídos.",
+      "A fórmula de dano e as regras de custo/uso da Fusão permanecem inalteradas."
     ]
+  },
+  "postgameSaga": {
+    "name": "Terras do Grande Eco",
+    "worlds": 3,
+    "biomes": [
+      "Mata Ancestral",
+      "Ruínas do Sol",
+      "Serra Cristalina",
+      "Vale das Nuvens",
+      "Mangue Lunar",
+      "Abismo das Marés"
+    ],
+    "newSpecies": 13,
+    "worldMapSize": "64x44 cada",
+    "route": ["Arquipélago do Tatá", "Selva Ancestral", "Serra dos Ecos", "Delta Lunar"],
+    "saveCompatibility": "Migração automática de saves antigos, com worldId e posições independentes por mapa.",
+    "trainerProgress": "Vitórias de treinador registradas no save para esconder NPCs vencidos e abrir portais.",
+    "finalReward": "Eco Supremo Nv 78 e 10.000 ecos após a vitória final e conversa com o Arquivista."
+  },
+  "music": {
+    "loopingTracks": [
+      {"mode": "menu", "file": "assets/audio/menu-theme.mp3", "durationSeconds": 64.9},
+      {"mode": "common", "file": "assets/audio/battle-common.mp3", "durationSeconds": 70.0},
+      {"mode": "boss", "file": "assets/audio/battle-boss.mp3", "durationSeconds": 73.2},
+      {"mode": "pvp", "file": "assets/audio/battle-pvp.mp3", "durationSeconds": 86.5}
+    ],
+    "exploration": "Trilhas regionais sintetizadas existentes foram preservadas.",
+    "backpack": "Jingle sintetizado de abrir/fechar, sem uma faixa MP3 separada.",
+    "githubPagesPaths": "Caminhos relativos a index.html."
+  },
+  "validation": {
+    "allJavaScriptSyntaxChecks": "pass",
+    "chromiumSmokeTest": "pass; 29 assertions; no JavaScript errors; app and postgame exploration component mounted",
+    "mapsAndBiomes": "pass; three maps, six zone IDs, NPCs in bounds",
+    "encountersAndEvolutionLinks": "pass; NQ returned valid species/levels for each new biome; all new evolution IDs resolve",
+    "oldSaveMigration": "pass; main and Tata expansion save formats migrated",
+    "audioFiles": "pass; four MP3 files returned HTTP 200",
+    "githubPagesRelativeReferences": "pass; all index script/style references exist"
   }
 }

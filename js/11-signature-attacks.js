@@ -328,9 +328,19 @@
     added += 1;
   }
 
+  function registerSpecies(species) {
+    if (!species || !species.id || !Array.isArray(species.moves)) return false;
+    if (species.moves.some((move) => move?.signaturePetId === species.id)) return false;
+    species.moves.push(makeSignatureMove(species));
+    added += 1;
+    if (window.EV_SIGNATURES) window.EV_SIGNATURES.addedPetMoves = added;
+    return true;
+  }
+
   window.EV_SIGNATURES = {
     version: 1,
     addedPetMoves: added,
+    registerSpecies,
     fusionVisual,
     makeFusionMoves,
     drawFusionTraits,

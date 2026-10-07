@@ -1564,6 +1564,11 @@
           L = P?.[E ?? 0],
           Y = !!q && q.hp <= 0 && B?.status === "ongoing",
           G = B?.turn ?? 1;
+        iu.useEffect(() => {
+          if (B?.status !== "ongoing") return;
+          window.EV_MUSIC?.enterPvP?.();
+          return () => window.EV_MUSIC?.leaveBattle?.();
+        }, [B?.status]);
         (iu.useEffect(() => {
           if (H.current) return;
           ((H.current = !0), o_(n, u, r, l, ze()));
@@ -3563,7 +3568,11 @@
                   ),
                   Jr("info", "Derrota... seus pets foram curados na vila."));
               else if (b.captured) Jr("success", "Pet capturado!");
-              else if (b.won) Jr("success", "Vitória na batalha!");
+              else if (b.won) {
+                if (f?.kind === "trainer" && f.npcId && !z.defeated.includes(f.npcId))
+                  z.defeated.push(f.npcId);
+                Jr("success", "Vitória na batalha!");
+              }
               else if (b.fled) Jr("info", "Você fugiu da batalha.");
               ml(I0, z);
             }
@@ -3578,6 +3587,9 @@
             window.addEventListener("beforeunload", b),
             () => window.removeEventListener("beforeunload", b)
           );
+        }, [n]);
+        fu.useEffect(() => {
+          window.EV_MUSIC?.setScreen?.(n);
         }, [n]);
         let Y = o,
           G = o.current,

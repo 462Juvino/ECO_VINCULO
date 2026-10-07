@@ -257,6 +257,10 @@
             () => window.removeEventListener("resize", X)
           );
         }, []);
+        Un.useEffect(() => {
+          window.EV_MUSIC?.enterBattle?.(u);
+          return () => window.EV_MUSIC?.leaveBattle?.();
+        }, []);
         let [Bu, pu] = Un.useState(0);
         Un.useEffect(() => {
           let X = 0,
@@ -2623,7 +2627,10 @@
           },
           children: [
             N("button", {
-              onClick: () => B(!0),
+              onClick: () => {
+                window.EV_MUSIC?.playBagCue?.(true);
+                B(!0);
+              },
               "aria-label": "Abrir mochila",
               style: {
                 position: "absolute",
@@ -3475,7 +3482,13 @@
                   }),
                 ],
               }),
-            W && N(Vf, { gs: n, onClose: () => B(!1) }),
+            W && N(Vf, {
+              gs: n,
+              onClose: () => {
+                window.EV_MUSIC?.playBagCue?.(false);
+                B(!1);
+              },
+            }),
             N("style", {
               children: `@keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-14deg)} 75%{transform:rotate(14deg)} }
   @keyframes dmgfloat { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(-48px);opacity:0} }

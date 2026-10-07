@@ -1449,6 +1449,7 @@
             ));
       }
       function SQ(n) {
+        window.EV_MUSIC?.rememberWorldTrack?.(n);
         if (n === Uf) return;
         Ze();
         let u = ve[n];
@@ -1499,6 +1500,22 @@
               Or.gain.exponentialRampToValueAtTime(0.0001, n + 0.35));
           } catch {}
       }
+      window.EV_AUDIO_BRIDGE = {
+        stopAmbient: () => Ze(),
+        playAmbient: (n) => SQ(n),
+        playBagCue: (n) => {
+          let u = n ? [523.25, 659.25, 783.99, 1046.5] : [880, 659.25, 523.25];
+          u.forEach((r, l) =>
+            ju({
+              type: "triangle",
+              f0: r,
+              dur: 0.14,
+              vol: 0.12,
+              delay: l * 0.055,
+            }),
+          );
+        },
+      };
       var t = 32,
         G0 = (n) => new Promise((u) => setTimeout(u, n)),
         Ne = {

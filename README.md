@@ -1,43 +1,85 @@
 # Eco Vínculo — versão modular
 
-Esta pasta contém a versão organizada do jogo e as novas técnicas assinatura. O HTML original enviado pelo usuário continua preservado em `/home/ubuntu/upload/index(1).html`.
+Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas espécies e trilhas musicais. O HTML original enviado permanece preservado em `/home/ubuntu/upload/index(1).html`.
 
-## Como abrir
+## Como abrir e publicar no GitHub Pages
 
-Abra `index.html` no navegador. Para hospedar no GitHub Pages, publique a pasta inteira mantendo a estrutura e a ordem dos scripts.
+- Para testar localmente, abra `index.html` em um navegador. Se o navegador bloquear áudio ao abrir como arquivo, sirva a pasta por um servidor local.
+- Para publicar, envie **o projeto inteiro**, preservando `index.html`, `css/`, `js/` e `assets/`. O arquivo `index.html` deve ficar na raiz que o GitHub Pages publica, ou na pasta escolhida nas configurações do Pages.
+- Os caminhos de scripts e músicas são relativos ao `index.html`, portanto funcionam em páginas estáticas como GitHub Pages.
+- Não envie somente `index.html`: ele referencia os outros arquivos e as trilhas MP3.
 
 ## Organização
 
-| Arquivo | Conteúdo |
+| Arquivo/pasta | Conteúdo |
 |---|---|
+| `index.html` | Página que carrega o jogo e os módulos, na ordem necessária. |
 | `css/game.css` | Estilos do jogo. |
+| `assets/audio/` | Trilhas originais do menu, batalhas comuns, chefes e PvP. |
 | `js/01-runtime-react.js` | Runtime React/ReactDOM incluído no jogo. |
 | `js/02-icons-foundation.js` | Ícones, afinidades, catálogo inicial, golpes e fundamentos. |
 | `js/03-creature-data.js` | Dados dos Pats, evoluções, técnicas e regras. |
 | `js/04-creature-art-a.js` | Desenhos dos Pats — primeira parte. |
 | `js/05-creature-art-b.js` | Desenhos dos Pats — segunda parte e suporte ao desenho híbrido. |
-| `js/06-world-data.js` | Mapas, cavernas, NPCs e estado do jogo. |
-| `js/07-ui-systems.js` | Sprites, inventário, loja e áudio. |
-| `js/08-overworld.js` | Exploração, tela principal e menus de campo. |
-| `js/09-battle.js` | Batalhas, animações de golpes, prévia e execução da Fusão. |
-| `js/10-online-app.js` | Toasts, Firebase/online, Dex, título e inicialização. |
-| `js/11-signature-attacks.js` | Golpe assinatura por criatura/evolução; catálogo e cores dos golpes híbridos; traços visuais dos dois pais na fusão. |
+| `js/06-world-data.js` | Mapas existentes, cavernas, NPCs, saves e estado do jogo. |
+| `js/07-ui-systems.js` | Sprites, inventário, loja, áudio regional e jingle da mochila. |
+| `js/audio-manager.js` | Troca de música conforme tela, tipo de batalha e retorno à exploração. |
+| `js/08-overworld.js` | Exploração, troca de mundos, telas e menus de campo. |
+| `js/09-battle.js` | Batalhas, animações dos golpes, Fusão e transições de música. |
+| `js/10-online-app.js` | Firebase/online, Dex, título, save e inicialização. |
+| `js/11-signature-attacks.js` | Golpes assinatura do catálogo e identidade visual das fusões. |
+| `js/12-postgame-worlds.js` | Dados da nova saga, mapas, biomas, espécies, encontros, NPCs e chefes. |
 | `js/external-links.js` | Ajuste original para links externos. |
+
+**Preserve a ordem dos `<script>` em `index.html`.** O módulo `12-postgame-worlds.js` deve continuar depois de `11-signature-attacks.js`.
+
+## Saga pós-jogo: Terras do Grande Eco
+
+A campanha e os mapas existentes foram mantidos. Depois de vencer o Tatá Alfa, fale com a **Navegadora Cora**, no Arquipélago do Tatá, para iniciar a nova rota:
+
+1. **Mata Ancestral e Ruínas do Sol** — biomas Mata Ancestral e Ruínas do Sol; guardiã Araci, níveis 57–60.
+2. **Serra dos Ecos** — Serra Cristalina e Vale das Nuvens; titã Oruã, níveis 66–68.
+3. **Delta Lunar** — Mangue Lunar e Abismo das Marés; guardião Aruanã, níveis 75–78.
+
+Cada mundo tem mapa próprio de 64×44, encontros e personagens. Os guardiões vencidos abrem as rotas seguintes. Há **13 espécies novas**: seis Pets-base, seis evoluções e o lendário Eco Supremo. O Arquivista do Grande Eco entrega a recompensa final depois da vitória contra Aruanã.
+
+O progresso usa `worldId` e posições salvas por mundo. Saves antigos são migrados automaticamente: saves do continente continuam no continente; saves que já estavam na expansão continuam no Arquipélago do Tatá. As vitórias de treinadores agora também são registradas no save, habilitando o desaparecimento de treinadores vencidos e os portões da nova saga.
+
+## Música e áudio
+
+- `menu-theme.mp3`: tema retrô do menu.
+- `battle-common.mp3`: batalhas comuns, incluindo encontros selvagens e treinadores sem marcação de chefe.
+- `battle-boss.mp3`: confrontos contra chefes e guardiões.
+- `battle-pvp.mp3`: batalhas online entre jogadores.
+
+As faixas de batalha e menu repetem em loop. Na exploração continuam as trilhas regionais sintetizadas que o jogo já possuía. A mochila conserva o jingle sintetizado de abrir/fechar — não é uma faixa longa separada. Os volumes das trilhas usam nível moderado e os caminhos relativos foram testados por HTTP.
 
 ## Golpes assinatura e Fusão
 
-`11-signature-attacks.js` percorre o catálogo já montado e acrescenta uma técnica com nome e animação assinatura para cada espécie/evolução. A animação usa a afinidade, a forma, o estágio e uma variação determinística por criatura. As técnicas existentes continuam no catálogo.
+`11-signature-attacks.js` acrescenta uma técnica com nome e animação assinatura para cada espécie/evolução. A animação usa afinidade, forma, estágio e uma variação determinística por criatura. As técnicas existentes continuam no catálogo.
 
-A Fusão segue os 15 arquétipos já definidos pelas combinações de afinidade. Cada híbrido recebe dois golpes com nomes e efeitos próprios. A arte mistura os traços visuais das criaturas escolhidas; a prévia mostra os dois pais e o resultado. Os dois golpes de Fusão mantêm potência 55 e precisão 100, como os dois golpes genéricos anteriores. A fórmula de dano e as regras de custo/uso da Fusão não foram alteradas.
+A Fusão mantém os 15 arquétipos pelas combinações de afinidade. Cada híbrido recebe dois golpes com nomes e efeitos próprios; a arte mistura traços dos dois pais. Os golpes conservam potência 55 e precisão 100, como os dois ataques genéricos que substituíram. A fórmula de dano e as regras de custo/uso da Fusão não foram alteradas.
 
-## Como pedir alterações a outra IA
+## Onde pedir mudanças a outra IA
 
-Envie `index.html` e o arquivo específico que deseja alterar. Para esta nova parte:
+Envie `index.html` **e** o módulo da funcionalidade que pretende alterar. Para uma tarefa que cruza vários sistemas, envie a pasta inteira ou o ZIP do projeto; o jogo não pode rodar com apenas um módulo isolado.
 
-- Criar ou ajustar nomes, paletas, estilos e golpes assinatura: `js/11-signature-attacks.js`.
-- Ajustar a sequência/efeito visual dos golpes na arena: `js/09-battle.js`.
-- Ajustar dados de espécies, afinidades e golpes já existentes: `js/02-icons-foundation.js` ou `js/03-creature-data.js`.
-- Ajustar desenhos dos Pats e elementos visuais da mistura: `js/04-creature-art-a.js` e `js/05-creature-art-b.js`.
-- Ajustar cores, fontes ou espaçamentos: `css/game.css`.
+- Criar regiões, encontros, espécies ou chefes pós-jogo: `js/12-postgame-worlds.js`.
+- Alterar rotas, movimentação ou telas dos mapas: `js/08-overworld.js`.
+- Alterar a migração e os campos do save: `js/06-world-data.js` e, para vitórias de treinador, `js/10-online-app.js`.
+- Alterar seleção de músicas: `js/audio-manager.js`.
+- Alterar a síntese de áudio/jingle da mochila: `js/07-ui-systems.js`.
+- Ajustar nomes e animações de golpes assinatura/fusão: `js/11-signature-attacks.js`.
+- Ajustar a sequência visual na arena: `js/09-battle.js`.
+- Alterar os dados das espécies existentes: `js/02-icons-foundation.js` ou `js/03-creature-data.js`.
+- Ajustar desenhos: `js/04-creature-art-a.js` e `js/05-creature-art-b.js`.
+- Ajustar estilos: `css/game.css`.
 
-Peça para preservar a ordem das tags `<script>` no `index.html` e manter todos os arquivos no repositório.
+Peça à outra IA para preservar os saves existentes, os caminhos relativos, a ordem de carregamento dos scripts e os arquivos não relacionados à mudança.
+
+## Validação desta versão
+
+- `node --check` passou em todos os módulos JavaScript.
+- Teste em Chromium carregou a página sem erros de JavaScript e montou a tela do jogo.
+- Testes confirmaram os três mapas, seis biomas, encontros, as 13 espécies, os links de evolução e a migração dos dois tipos de save antigo.
+- Os quatro arquivos de áudio responderam com HTTP 200.

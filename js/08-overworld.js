@@ -19,15 +19,22 @@
         let _ = $n.useRef(null),
           v = $n.useRef(null);
         if (!v.current) v.current = _f();
+        let initialWorldId = n.current.worldId || (n.current.inExpansion ? "tata" : "main"),
+          worldMaps = $n.useRef(null);
+        if (!worldMaps.current) worldMaps.current = { main: v.current, tata: T3() };
+        if (!worldMaps.current[initialWorldId]) {
+          let definition = window.EV_POSTGAME_WORLDS?.[initialWorldId];
+          worldMaps.current[initialWorldId] = definition?.createMap?.() || v.current;
+        }
         let Z = $n.useRef(null);
         if (!Z.current)
-          Z.current = n.current.inExpansion
-            ? T3()
-            : f?.caveId
+          Z.current = initialWorldId === "main"
+            ? f?.caveId
               ? k3(f.caveId)
               : f?.inside != null
                 ? h3()
-                : v.current;
+                : worldMaps.current.main
+            : worldMaps.current[initialWorldId];
         let J = Z.current,
           [e, Q] = $n.useState(() => f?.inside ?? null),
           M = $n.useRef(f?.inside ?? null),
@@ -42,6 +49,7 @@
           A = $n.useRef(f?.caveId ?? null),
           P = $n.useRef(n.current.expHome ?? null),
           [U, E] = $n.useState(() => !!n.current.inExpansion),
+          [worldId, setWorldId] = $n.useState(() => initialWorldId),
           q = $n.useRef({
             x: ($.px + 0.5) * t,
             y: ($.py + 0.5) * t,
@@ -190,16 +198,32 @@
             g
               .replace("{nome}", $.playerName)
               .replace("{affs}", $.affinities.join(" e ")),
-          Ef = (g, S) => $.boulders.findIndex((p) => p.x === g && p.y === S),
+          Ef = (g, S) => worldId === "main"
+            ? $.boulders.findIndex((p) => p.x === g && p.y === S)
+            : -1,
+          getWorldNpcs = () =>
+            worldId === "main"
+              ? Nf
+              : worldId === "tata"
+                ? V8
+                : window.EV_POSTGAME_WORLDS?.[worldId]?.npcs ?? [],
+          getWorldChests = () =>
+            worldId === "main"
+              ? W8
+              : window.EV_POSTGAME_WORLDS?.[worldId]?.chests ?? [],
+          getWorldBoulders = () =>
+            worldId === "main"
+              ? $.boulders
+              : window.EV_POSTGAME_WORLDS?.[worldId]?.boulders ?? [],
           Lf = (g, S) =>
-            (n.current.inExpansion ? V8 : Nf).find(
+            getWorldNpcs().find(
               (p) =>
                 p.x === g &&
                 p.y === S &&
                 !(p.kind === "trainer" && $.defeated.includes(p.id)) &&
                 !(p.id === "ramiro" && !($.items["carta-nautica"] > 0)),
             ),
-          Xf = (g, S) => W8.find((p) => p.x === g && p.y === S);
+          Xf = (g, S) => getWorldChests().find((p) => p.x === g && p.y === S);
         function Bf(g, S) {
           let p = Sr(J, g, S),
             x = `${g},${S}`;
@@ -254,7 +278,7 @@
           }
           if (Ef(g, S) >= 0) return !0;
           if (Lf(g, S)) return !0;
-          if (U8.some((x) => x.x === g && x.y === S)) return !0;
+          if (worldId === "main" && U8.some((x) => x.x === g && x.y === S)) return !0;
           let p = Xf(g, S);
           if (p && !$.openedChests.includes(p.id)) return !0;
           return !1;
@@ -264,7 +288,7 @@
             ? y3[M.current].find((p) => p.x === g && p.y === S)
             : void 0;
         async function w8(g) {
-          if (K || M.current !== null) return;
+          if (K || M.current !== null || worldId !== "main") return;
           let S = ho[g];
           ((H.current = { x: S.x, y: S.y + 1 }),
             V(!0),
@@ -279,7 +303,7 @@
         }
         async function j0() {
           if (K || M.current === null) return;
-          (V(!0), await G0(300), (M.current = null), (Z.current = v.current));
+          (V(!0), await G0(300), (M.current = null), (Z.current = worldMaps.current[worldId] ?? v.current));
           let g = H.current;
           ((q.current = { x: (g.x + 0.5) * t, y: (g.y + 0.5) * t, dir: 2 }),
             Vr(),
@@ -318,34 +342,49 @@
             q.current = { x: (g.x + 0.5) * t, y: (g.y + 1 + 0.5) * t, dir: 2 };
           (Vr(), D(null), B(null), V(!1), Df());
         }
-        async function i8() {
-          if (K || n.current.inExpansion) return;
-          let g = {
+        async function travelToWorld(g) {
+          if (K || M.current !== null || A.current) return;
+          if (g !== "main" && g !== "tata" && !window.EV_POSTGAME_WORLDS?.[g]) return;
+          if (!worldMaps.current[g]) {
+            let spec = window.EV_POSTGAME_WORLDS?.[g];
+            worldMaps.current[g] = spec?.createMap?.() || v.current;
+          }
+          let S = {
             x: Math.floor(q.current.x / t),
             y: Math.floor(q.current.y / t),
             dir: q.current.dir,
           };
-          ((P.current = g),
-            (n.current.expHome = g),
-            V(!0),
-            await G0(300),
-            (Z.current = T3()),
-            (q.current = { x: (G3.x + 0.5) * t, y: (G3.y + 0.5) * t, dir: 2 }),
-            Vr(),
-            (n.current.inExpansion = !0),
-            (n.current.visitedExpansion = !0),
-            D(null),
-            E(!0),
-            V(!1),
-            Df());
+          $.worldPositions ||= {};
+          $.worldPositions[worldId] = S;
+          if (worldId === "main") {
+            ((P.current = S), ($.expHome = S), ($.worldPositions.main = S));
+          }
+          let p = $.worldPositions[g];
+          if (!p) {
+            p = g === "main"
+              ? $.expHome ?? { x: 8, y: 9, dir: 2 }
+              : g === "tata"
+                ? G3
+                : window.EV_POSTGAME_WORLDS[g].start;
+          }
+          let x = { x: p.x, y: p.y, dir: p.dir ?? 2 };
+          (V(!0), await G0(300), (Z.current = worldMaps.current[g]), (M.current = null), (A.current = null));
+          q.current = { x: (x.x + 0.5) * t, y: (x.y + 0.5) * t, dir: x.dir };
+          (($.px = x.x), ($.py = x.y), ($.dir = x.dir), (n.current.worldId = g));
+          n.current.inExpansion = g !== "main";
+          if (g !== "main") n.current.visitedExpansion = !0;
+          ml(I0, n.current);
+          (setWorldId(g), E(g !== "main"), (hr.current = null), Vr(), D(null), V(!1), Df());
+          let spec = window.EV_POSTGAME_WORLDS?.[g];
+          if (spec) yn(`Novo destino: ${spec.name}`);
+        }
+        async function i8() {
+          if (K || worldId !== "main") return;
+          await travelToWorld("tata");
         }
         async function $l() {
-          if (K || !n.current.inExpansion) return;
-          (V(!0), await G0(300), (Z.current = v.current));
-          let g = P.current;
-          if (g)
-            q.current = { x: (g.x + 0.5) * t, y: (g.y + 0.5) * t, dir: g.dir };
-          (Vr(), (n.current.inExpansion = !1), D(null), E(!1), V(!1), Df());
+          if (K || worldId !== "tata") return;
+          await travelToWorld("main");
         }
         async function y0() {
           if (Mn) return;
@@ -358,12 +397,16 @@
             qn = x + S,
             Yn = Xn + p;
           if (A.current === null) {
-            let X = g0.find((j) => j.x === qn && j.y === Yn);
+            let X = worldId === "main" || worldId === "tata"
+              ? g0.find((j) => j.x === qn && j.y === Yn)
+              : null;
             if (X) {
               Pf(X.id);
               return;
             }
-            let w = Qo.find((j) => j.x === qn && j.y === Yn);
+            let w = worldId === "main" || worldId === "tata"
+              ? Qo.find((j) => j.x === qn && j.y === Yn)
+              : null;
             if (w) {
               if (!jr($, w.type)) {
                 hn(w.name, [
@@ -394,7 +437,9 @@
             return;
           }
           if (M.current === null) {
-            let X = ho.findIndex((w) => w.x === qn && w.y === Yn);
+            let X = worldId === "main"
+              ? ho.findIndex((w) => w.x === qn && w.y === Yn)
+              : -1;
             if (X >= 0) {
               w8(X);
               return;
@@ -421,7 +466,7 @@
             gf(wu);
             return;
           }
-          if (M.current === null) {
+          if (M.current === null && worldId === "main") {
             let X = U8.find((w) => w.x === qn && w.y === Yn);
             if (X) {
               if (!$.villageSwitches.includes(X.id))
@@ -637,6 +682,39 @@
             });
             return;
           }
+          if (g.worldTravel) {
+            let route = g.worldTravel;
+            if (
+              route.requiresTataAlfa &&
+              !($.tataAlfaDefeated || $.defeated.includes("dona-cuca"))
+            ) {
+              hn(g.name, [route.locked || "Esta rota ainda está selada."]);
+              return;
+            }
+            if (route.requiresDefeated && !$.defeated.includes(route.requiresDefeated)) {
+              hn(g.name, [route.locked || "Vença o guardião desta região para abrir a rota."]);
+              return;
+            }
+            hn(g.name, [route.dialogue || "A rota está livre. Vamos viajar?"], () => {
+              travelToWorld(route.target);
+            });
+            return;
+          }
+          if (g.id === "arquivista-eco" && $.defeated.includes("guardiao-grande-eco")) {
+            if ($.sagaFinalReward) {
+              hn(g.name, ["O Grande Eco agora ressoa em você. Os três mundos estão em equilíbrio."]);
+              return;
+            }
+            let pet = Vl("eco-supremo", 78);
+            ($.sagaFinalReward = !0,
+              ($.ecos = ($.ecos ?? 0) + 10000),
+              $.party.length < 3 ? $.party.push(pet) : $.box.push(pet),
+              rl($, pet.sp),
+              Yl($, pet.sp),
+              gn((x) => x + 1),
+              hn(g.name, ["Você completou a saga das Terras do Grande Eco! Recebeu Eco Supremo Nv 78 e 10.000 ecos."]));
+            return;
+          }
           if (g.id === "lia") {
             let S = Date.now() - ($.nurseLastHealAt || 0);
             if (S < 300000) {
@@ -715,13 +793,14 @@
                 kind: "trainer",
                 trainerName: g.name,
                 npcId: g.id,
+                isBoss: !!g.isBoss,
                 foeSp: S.sp,
                 foeLevel: S.level,
                 team: g.team,
                 bg:
                   p === "caverna" || p === "profunda"
                     ? "cave"
-                    : p === "lago"
+                    : p === "lago" || p === "abismo-das-mares" || p === "mangue-lunar"
                       ? "water"
                       : "grass",
               });
@@ -773,6 +852,7 @@
             Uo());
         }
         function Uo() {
+          if (worldId !== "main" && worldId !== "tata") return;
           let g = Math.floor(q.current.x / t),
             S = Math.floor(q.current.y / t),
             p = m0(J, g, S),
@@ -965,13 +1045,13 @@
                     rn = $.px,
                     Tn = $.py;
                   if (!A.current) {
-                    for (let pn of [...g0, ...Qo])
+                    for (let pn of worldId === "main" || worldId === "tata" ? [...g0, ...Qo] : [])
                       if (Math.hypot(rn - pn.x, Tn - pn.y) < 2.6) {
                         let Qu = "cave-" + pn.id;
                         if (!eu.current[Qu] || fn - eu.current[Qu] > 9000)
                           ((eu.current[Qu] = fn), yn(pn.name));
                       }
-                    for (let pn of n.current.inExpansion ? V8 : Nf) {
+                    for (let pn of getWorldNpcs()) {
                       if (!pn.name) continue;
                       if (pn.id === "ramiro" && !($.items["carta-nautica"] > 0))
                         continue;
@@ -1041,7 +1121,7 @@
                     An = Math.floor(q.current.y / t) + vu,
                     hu = null;
                   if (M.current === null) {
-                    if (ho.some((Wr) => Wr.x === Qu && Wr.y === An))
+                    if (worldId === "main" && ho.some((Wr) => Wr.x === Qu && Wr.y === An))
                       hu = "Entrar [A]";
                   } else if (Qu === yo.x && An === yo.y) hu = "Sair [A]";
                   D((Wr) => (Wr === hu ? Wr : hu));
@@ -1096,7 +1176,7 @@
                       );
                     }));
                 } else if (!tn)
-                  (W8.forEach((rn) => {
+                  (getWorldChests().forEach((rn) => {
                     if (rn.x < Bn || rn.x > $u || rn.y < bn || rn.y > ru)
                       return;
                     i3(
@@ -1107,7 +1187,7 @@
                       $.openedChests.includes(rn.id),
                     );
                   }),
-                    $.boulders.forEach((rn) => {
+                    getWorldBoulders().forEach((rn) => {
                       if (rn.x < Bn || rn.x > $u || rn.y < bn || rn.y > ru)
                         return;
                       $f(
@@ -1121,7 +1201,7 @@
                         rn.y,
                       );
                     }),
-                    ($.inExpansion ? V8 : Nf).forEach((rn) => {
+                    getWorldNpcs().forEach((rn) => {
                       if (rn.kind === "trainer" && $.defeated.includes(rn.id))
                         return;
                       if (rn.id === "ramiro" && !($.items["carta-nautica"] > 0))
@@ -1137,7 +1217,7 @@
                         rn.kind,
                       );
                     }),
-                    U8.forEach((rn) => {
+                    (worldId === "main" ? U8 : []).forEach((rn) => {
                       if (rn.x < Bn || rn.x > $u || rn.y < bn || rn.y > ru)
                         return;
                       let Tn = rn.x * t + t / 2 - on,
@@ -1236,7 +1316,7 @@
                   window.removeEventListener("keyup", wu));
               }
             );
-          }, [Ml, Gn, Mn, e, W, $.inExpansion]),
+          }, [Ml, Gn, Mn, e, W, $.inExpansion, worldId]),
           $n.useEffect(() => {
             if (!mu.current) {
               if (
@@ -1534,6 +1614,7 @@
                         }),
                         N("button", {
                           onClick: () => {
+                            window.EV_MUSIC?.playBagCue?.(true);
                             (Ul("items"), fl(!0));
                           },
                           "aria-label": "Abrir mochila",
@@ -1700,7 +1781,10 @@
                                 children: ["Mochila de ", $.playerName],
                               }),
                               N("button", {
-                                onClick: () => Pn(!1),
+                                onClick: () => {
+                                  window.EV_MUSIC?.playBagCue?.(false);
+                                  Pn(!1);
+                                },
                                 className:
                                   "bg-white/20 text-white rounded-xl p-2 active:scale-90",
                                 children: N(Mu, { size: 20 }),
@@ -2840,11 +2924,15 @@
           $n.useEffect(() => {
             let l = r.current,
               o = l.getContext("2d"),
-              f = 64,
-              $ = 48,
-              _ = 5;
-            ((l.width = 320), (l.height = 240));
-            let v = _f(),
+              _ = 5,
+              worldId = u.worldId || (u.inExpansion ? "tata" : "main"),
+              worldInfo = window.EV_POSTGAME_WORLDS?.[worldId],
+              v = worldId === "main" ? _f() : worldId === "tata" ? T3() : worldInfo?.createMap?.() || _f(),
+              f = v.w,
+              $ = v.h,
+              chests = worldId === "main" ? W8 : worldInfo?.chests ?? [];
+            ((l.width = f * _), (l.height = $ * _));
+            let
               Z = {
                 [F.GRASS]: "#5cab46",
                 [F.TALL]: "#2c6e28",
@@ -2862,31 +2950,39 @@
                 [F.DOOR]: "#a06a35",
                 [F.HOUSE]: "#b08968",
                 [F.SAND]: "#ecd9a8",
+                [F.ROCK]: "#929398",
+                [F.MOSS]: "#47734b",
+                [F.BOG]: "#526b4b",
+                [F.ASH]: "#827c82",
               };
-            for (let J = 0; J < 48; J++)
-              for (let e = 0; e < 64; e++)
+            for (let J = 0; J < $; J++)
+              for (let e = 0; e < f; e++)
                 ((o.fillStyle = Z[Sr(v, e, J)] ?? "#000"),
-                  o.fillRect(e * 5, J * 5, 5, 5));
+                  o.fillRect(e * _, J * _, _, _));
             ((o.fillStyle = "#fff"),
               (o.strokeStyle = "#000"),
               (o.lineWidth = 1.5),
               o.beginPath(),
-              o.arc(u.px * 5, u.py * 5, 4, 0, Math.PI * 2),
+              o.arc(u.px * _, u.py * _, 4, 0, Math.PI * 2),
               o.fill(),
               o.stroke(),
-              W8.forEach((J) => {
+              chests.forEach((J) => {
                 if (u.openedChests.includes(J.id)) return;
                 ((o.fillStyle = "#fbbf24"),
-                  o.fillRect(J.x * 5 - 2, J.y * 5 - 2, 4, 4));
+                  o.fillRect(J.x * _ - 2, J.y * _ - 2, 4, 4));
               }),
               (o.fillStyle = "#1e293b"),
-              (o.font = "bold 11px sans-serif"),
-              o.fillText("Vila", 15, 7),
-              o.fillText("Bosque", 220, 20),
-              o.fillText("Lago", 120, 95),
-              o.fillText("Caverna", 50, 175),
-              o.fillText("Abismo", 50, 210));
-          }, []),
+              (o.font = "bold 11px sans-serif"));
+            if (worldId === "main") {
+              o.fillText("Vila", 15, 7);
+              o.fillText("Bosque", 220, 20);
+              o.fillText("Lago", 120, 95);
+              o.fillText("Caverna", 50, 175);
+              o.fillText("Abismo", 50, 210);
+            } else {
+              o.fillText(worldInfo?.name || "Arquipélago do Tatá", 8, 14);
+            }
+          }, [u.worldId, u.inExpansion]),
           O("div", {
             children: [
               N("canvas", {

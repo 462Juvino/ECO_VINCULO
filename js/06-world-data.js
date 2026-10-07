@@ -5958,6 +5958,13 @@
         if (u.inExpansion === void 0) u.inExpansion = !1;
         if (u.visitedExpansion === void 0) u.visitedExpansion = !1;
         if (u.expHome === void 0) u.expHome = null;
+        if (typeof u.worldId !== "string")
+          u.worldId = u.inExpansion ? "tata" : "main";
+        if (!u.worldPositions || typeof u.worldPositions !== "object")
+          u.worldPositions = {};
+        if (!u.worldPositions.main && u.expHome)
+          u.worldPositions.main = { ...u.expHome };
+        if (u.sagaFinalReward === void 0) u.sagaFinalReward = !1;
         if (u.nurseFreeUsed === void 0) u.nurseFreeUsed = !1;
         if (u.nurseLastHealAt === void 0) u.nurseLastHealAt = 0;
         if (!u.caveCaptures || typeof u.caveCaptures !== "object")
