@@ -4,7 +4,7 @@
   "reconstructedScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
   "cssBytes": 61127,
   "originalHtmlBytes": 1811847,
-  "modularHtmlBytes": 1101,
+  "modularHtmlBytes": 1168,
   "files": [
     {
       "file": "js/01-runtime-react.js",
@@ -39,7 +39,7 @@
       "title": "Arte dos Pats — parte B e suporte aos híbridos",
       "originalScriptLines": "18812-29093",
       "statements": "517-577",
-      "bytes": 368463
+      "bytes": 368535
     },
     {
       "file": "js/06-world-data.js",
@@ -90,6 +90,11 @@
       "file": "js/12-postgame-worlds.js",
       "title": "Saga pós-jogo, biomas, espécies, encontros, NPCs e chefes",
       "bytes": 19002
+    },
+    {
+      "file": "js/13-postgame-creature-art.js",
+      "title": "Silhuetas exclusivas das 13 espécies da saga pós-jogo",
+      "bytes": 25209
     },
     {
       "file": "js/external-links.js",
@@ -166,6 +171,7 @@
   "validation": {
     "allJavaScriptSyntaxChecks": "pass",
     "chromiumSmokeTest": "pass; 29 assertions; no JavaScript errors; app and postgame exploration component mounted",
+    "newCreatureArt": "pass; 13 postgame species rendered through the actual So sprite dispatcher; no runtime errors",
     "mapsAndBiomes": "pass; three maps, six zone IDs, NPCs in bounds",
     "encountersAndEvolutionLinks": "pass; NQ returned valid species/levels for each new biome; all new evolution IDs resolve",
     "oldSaveMigration": "pass; main and Tata expansion save formats migrated",

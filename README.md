@@ -18,9 +18,9 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `assets/audio/` | Trilhas originais do menu, batalhas comuns, chefes e PvP. |
 | `js/01-runtime-react.js` | Runtime React/ReactDOM incluído no jogo. |
 | `js/02-icons-foundation.js` | Ícones, afinidades, catálogo inicial, golpes e fundamentos. |
-| `js/03-creature-data.js` | Dados dos Pats, evoluções, técnicas e regras. |
-| `js/04-creature-art-a.js` | Desenhos dos Pats — primeira parte. |
-| `js/05-creature-art-b.js` | Desenhos dos Pats — segunda parte e suporte ao desenho híbrido. |
+| `js/03-creature-data.js` | Dados dos Pets, evoluções, técnicas e regras. |
+| `js/04-creature-art-a.js` | Desenhos dos Pets — primeira parte. |
+| `js/05-creature-art-b.js` | Desenhos dos Pets — segunda parte e suporte ao desenho híbrido. |
 | `js/06-world-data.js` | Mapas existentes, cavernas, NPCs, saves e estado do jogo. |
 | `js/07-ui-systems.js` | Sprites, inventário, loja, áudio regional e jingle da mochila. |
 | `js/audio-manager.js` | Troca de música conforme tela, tipo de batalha e retorno à exploração. |
@@ -29,9 +29,10 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/10-online-app.js` | Firebase/online, Dex, título, save e inicialização. |
 | `js/11-signature-attacks.js` | Golpes assinatura do catálogo e identidade visual das fusões. |
 | `js/12-postgame-worlds.js` | Dados da nova saga, mapas, biomas, espécies, encontros, NPCs e chefes. |
+| `js/13-postgame-creature-art.js` | Silhuetas exclusivas dos 13 Pets da saga, com anatomias e paletas próprias. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** O módulo `12-postgame-worlds.js` deve continuar depois de `11-signature-attacks.js`.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo e antes de a aplicação renderizar.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -60,6 +61,10 @@ As faixas de batalha e menu repetem em loop. Na exploração continuam as trilha
 
 A Fusão mantém os 15 arquétipos pelas combinações de afinidade. Cada híbrido recebe dois golpes com nomes e efeitos próprios; a arte mistura traços dos dois pais. Os golpes conservam potência 55 e precisão 100, como os dois ataques genéricos que substituíram. A fórmula de dano e as regras de custo/uso da Fusão não foram alteradas.
 
+## Arte exclusiva dos Pets da saga
+
+Os 13 Pets da expansão agora passam por `js/13-postgame-creature-art.js` antes do fallback genérico. Cada espécie tem uma silhueta corporal própria: réptil de raízes e guardiã-arbórea; filhote de cristal e aríete; cerva aquática e cervo de coral; falcão e fênix tempestuosa; morcego lunar e touro de eclipse; ave de brasa, fênix solar e dragão primordial. As evoluções e o lendário ganham proporção maior e detalhes de estágio, com paleta, rosto, extremidades e adornos desenhados para a sua afinidade.
+
 ## Onde pedir mudanças a outra IA
 
 Envie `index.html` **e** o módulo da funcionalidade que pretende alterar. Para uma tarefa que cruza vários sistemas, envie a pasta inteira ou o ZIP do projeto; o jogo não pode rodar com apenas um módulo isolado.
@@ -71,6 +76,7 @@ Envie `index.html` **e** o módulo da funcionalidade que pretende alterar. Para 
 - Alterar a síntese de áudio/jingle da mochila: `js/07-ui-systems.js`.
 - Ajustar nomes e animações de golpes assinatura/fusão: `js/11-signature-attacks.js`.
 - Ajustar a sequência visual na arena: `js/09-battle.js`.
+- Redesenhar as 13 espécies da saga pós-jogo: `js/13-postgame-creature-art.js`.
 - Alterar os dados das espécies existentes: `js/02-icons-foundation.js` ou `js/03-creature-data.js`.
 - Ajustar desenhos: `js/04-creature-art-a.js` e `js/05-creature-art-b.js`.
 - Ajustar estilos: `css/game.css`.
@@ -82,4 +88,5 @@ Peça à outra IA para preservar os saves existentes, os caminhos relativos, a o
 - `node --check` passou em todos os módulos JavaScript.
 - Teste em Chromium carregou a página sem erros de JavaScript e montou a tela do jogo.
 - Testes confirmaram os três mapas, seis biomas, encontros, as 13 espécies, os links de evolução e a migração dos dois tipos de save antigo.
+- Os 13 Pets novos foram renderizados pelo dispatcher real de sprites, cada um com silhueta própria; nenhum cai mais no corpo genérico de gosma.
 - Os quatro arquivos de áudio responderam com HTTP 200.

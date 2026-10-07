@@ -2024,6 +2024,7 @@
             desenharRosalfinMarca(n, u, r, l, o, f);
             return;
           }
+          if (window.EV_POSTGAME_ART?.draw?.(n, u, r, l, o, f)) return;
           if (u.silhouette) {
             vJ(n, u, r, l, o, f);
             return;
