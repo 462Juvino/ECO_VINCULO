@@ -2652,13 +2652,13 @@
                   children: [
                     O("div", {
                       className:
-                        "bg-white/90 rounded-2xl px-3 py-2 shadow-lg w-[46%] max-w-[260px]",
+                        "battle-status-opponent rounded-2xl px-3 py-2 shadow-lg w-[46%] max-w-[260px]",
                       children: [
                         O("div", {
                           className: "flex items-center justify-between gap-1",
                           children: [
                             N("span", {
-                              className: "font-extrabold text-sm truncate",
+                              className: "battle-nameplate-opponent font-extrabold text-sm truncate",
                               children: jn.current?.sp.name,
                             }),
                             O("span", {
@@ -2759,13 +2759,13 @@
                     }),
                     O("div", {
                       className:
-                        "bg-white/90 rounded-2xl px-3 py-2 shadow-lg w-[46%] max-w-[260px]",
+                        "battle-status-player rounded-2xl px-3 py-2 shadow-lg w-[46%] max-w-[260px]",
                       children: [
                         O("div", {
                           className: "flex items-center justify-between gap-1",
                           children: [
                             N("span", {
-                              className: "font-extrabold text-sm truncate",
+                              className: "battle-nameplate-player font-extrabold text-sm truncate",
                               children: Dn.current?.sp.name,
                             }),
                             O("span", {

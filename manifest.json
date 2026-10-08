@@ -2,7 +2,7 @@
   "source": "/home/ubuntu/upload/index(1).html",
   "originalScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
   "reconstructedScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
-  "cssBytes": 61127,
+  "cssBytes": 63574,
   "originalHtmlBytes": 1811847,
   "modularHtmlBytes": 1168,
   "files": [
@@ -58,7 +58,7 @@
     {
       "file": "js/audio-manager.js",
       "title": "Seleção contextual de trilhas e áudio de interface",
-      "bytes": 3263
+      "bytes": 3387
     },
     {
       "file": "js/08-overworld.js",
@@ -72,14 +72,14 @@
       "title": "Batalhas, animações e efeitos visuais",
       "originalScriptLines": "39867-45630",
       "statements": "699-712",
-      "bytes": 221991
+      "bytes": 222061
     },
     {
       "file": "js/10-online-app.js",
       "title": "Online, Dex, título, save e inicialização",
       "originalScriptLines": "45632-49284",
       "statements": "713-779",
-      "bytes": 155233
+      "bytes": 172495
     },
     {
       "file": "js/11-signature-attacks.js",
@@ -152,30 +152,60 @@
     ],
     "newSpecies": 13,
     "worldMapSize": "64x44 cada",
-    "route": ["Arquipélago do Tatá", "Selva Ancestral", "Serra dos Ecos", "Delta Lunar"],
+    "route": [
+      "Arquipélago do Tatá",
+      "Selva Ancestral",
+      "Serra dos Ecos",
+      "Delta Lunar"
+    ],
     "saveCompatibility": "Migração automática de saves antigos, com worldId e posições independentes por mapa.",
     "trainerProgress": "Vitórias de treinador registradas no save para esconder NPCs vencidos e abrir portais.",
     "finalReward": "Eco Supremo Nv 78 e 10.000 ecos após a vitória final e conversa com o Arquivista."
   },
   "music": {
     "loopingTracks": [
-      {"mode": "menu", "file": "assets/audio/menu-theme.mp3", "durationSeconds": 64.9},
-      {"mode": "common", "file": "assets/audio/battle-common.mp3", "durationSeconds": 70.0},
-      {"mode": "boss", "file": "assets/audio/battle-boss.mp3", "durationSeconds": 73.2},
-      {"mode": "pvp", "file": "assets/audio/battle-pvp.mp3", "durationSeconds": 86.5}
+      {
+        "mode": "menu",
+        "file": "assets/audio/menu-theme.mp3",
+        "durationSeconds": 64.9
+      },
+      {
+        "mode": "common",
+        "file": "assets/audio/battle-common.mp3",
+        "durationSeconds": 70.0
+      },
+      {
+        "mode": "boss",
+        "file": "assets/audio/battle-boss.mp3",
+        "durationSeconds": 73.2
+      },
+      {
+        "mode": "pvp",
+        "file": "assets/audio/battle-pvp.mp3",
+        "durationSeconds": 86.5
+      }
     ],
     "exploration": "Trilhas regionais sintetizadas existentes foram preservadas.",
     "backpack": "Jingle sintetizado de abrir/fechar, sem uma faixa MP3 separada.",
-    "githubPagesPaths": "Caminhos relativos a index.html."
+    "githubPagesPaths": "Caminhos relativos a index.html.",
+    "volumeLevels": {
+      "menu": 0.34,
+      "common": 0.11,
+      "boss": 0.13,
+      "pvp": 0.11
+    }
   },
   "validation": {
-    "allJavaScriptSyntaxChecks": "pass",
-    "chromiumSmokeTest": "pass; 29 assertions; no JavaScript errors; app and postgame exploration component mounted",
+    "allJavaScriptSyntaxChecks": "pass; node --check passou em todos os módulos JavaScript finais",
+    "chromiumSmokeTest": "pass; index completo montou a tela principal; QA isolado do Dex renderizou projétil normal e golpe assinatura sem erros JavaScript",
     "newCreatureArt": "pass; 13 postgame species rendered through the actual So sprite dispatcher; no runtime errors",
     "mapsAndBiomes": "pass; three maps, six zone IDs, NPCs in bounds",
     "encountersAndEvolutionLinks": "pass; NQ returned valid species/levels for each new biome; all new evolution IDs resolve",
     "oldSaveMigration": "pass; main and Tata expansion save formats migrated",
     "audioFiles": "pass; four MP3 files returned HTTP 200",
-    "githubPagesRelativeReferences": "pass; all index script/style references exist"
+    "githubPagesRelativeReferences": "pass; all index script/style references exist",
+    "dexAttackLab": "pass; Chromium móvel abriu o Dex, listou cinco ataques de Embercub e exibiu projéteis normal e assinatura sem batalha/dano/save",
+    "battleStatusContrast": "pass; caixas e plaquetas têm seletores dedicados, fundos diferentes e texto escuro explícito",
+    "battleMusicVolumes": "pass; teste com Audio mock confirmou menu 0.34, comum 0.11, chefe 0.13 e PvP 0.11"
   }
 }

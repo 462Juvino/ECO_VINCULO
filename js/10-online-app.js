@@ -2692,6 +2692,9 @@
           [o, f] = fu.useState("todos"),
           [$, _] = fu.useState("todos"),
           [v, Z] = fu.useState(null),
+          [testModeOpen, setTestModeOpen] = fu.useState(false),
+          [testMove, setTestMove] = fu.useState(null),
+          [testRun, setTestRun] = fu.useState(0),
           J = fu.useMemo(() => {
             return u.filter((M) => {
               if (o !== "todos" && !M.types.includes(o)) return !1;
@@ -2716,6 +2719,65 @@
             for (let [H, K] of Object.entries(Kr))
               if (K.includes(M.id)) return nu[H] ?? null;
             return null;
+          };
+        const testProjectileId = (move) => {
+            const anim = move?.anim;
+            if (anim?.kind === "signature")
+              return `signature-${anim.form || "flare"}`;
+            const kind = typeof anim === "string" ? anim : anim?.kind;
+            const projectileByKind = {
+              "spinning-leaf": "spinning-leaf",
+              "multi-seed": "seed-small",
+              "spark-crackle": "crackle",
+              "speed-bolt": "signature-bolt",
+              "wind-blades": "wind-blade",
+              "ember-spark": "ember-spark",
+              "flame-burst": "flame-cone",
+              "fire-mushroom": "fireball",
+              "water-jet": "water-jet",
+              "bubble-beam": "bubble-small",
+              tsunami: "water-jet",
+              "stone-arc": "stone-arc",
+              avalanche: "stone-arc",
+              quake: "stone-arc",
+              "tectonic-fury": "stone-arc",
+              abyss: "signature-veil",
+              eruption: "fireball",
+              "night-veil": "signature-veil",
+              "cold-breath": "frost-mist",
+              "floral-vortex": "petal-vortex",
+              "sweet-mist": "drain-orb",
+              "glow-dust": "signature-orb",
+              "prism-beam": "prism-beam",
+              "fairy-dance": "signature-bloom",
+              flash: "signature-prism",
+              "petal-storm": "signature-leafstorm",
+              "volt-judgment": "signature-bolt",
+              bite: "drain-orb",
+              "shadow-bite": "signature-veil",
+              "shadow-claw": "signature-eclipse",
+              "vine-whip": "spinning-leaf",
+              charge: "stone-arc",
+              "tail-slam": "stone-arc",
+              "magma-punch": "fireball",
+              "pyrothion-inferno": "fireball",
+              "pyrothion-claws": "embercub-flame",
+            };
+            const byType = {
+              Brasa: "fireball",
+              Maré: "water-jet",
+              Flora: "petal-vortex",
+              Faísca: "signature-bolt",
+              Pedra: "stone-arc",
+              Sombra: "signature-veil",
+            };
+            return projectileByKind[kind] || byType[move?.type] || "signature-orb";
+          },
+          testPalette = (move) => {
+            if (move?.anim?.kind === "signature" && move.anim.palette?.length)
+              return move.anim.palette;
+            const color = On[move?.type]?.color || "#a78bfa";
+            return [color, color, "#ffffff", color, color];
           };
         return O("div", {
           className: "min-h-dvh w-full bg-[#0b1f16] text-white flex flex-col",
@@ -2855,7 +2917,11 @@
                     return O(
                       "button",
                       {
-                        onClick: () => Z(M),
+                        onClick: () => {
+                          Z(M);
+                          setTestModeOpen(false);
+                          setTestMove(null);
+                        },
                         className:
                           "group text-left rounded-[18px] bg-white/[0.06] border border-white/10 hover:border-white/20 hover:bg-white/[0.08] p-3 sm:p-4 transition flex flex-col",
                         children: [
@@ -3219,12 +3285,30 @@
                         O("div", {
                           className: "mt-5",
                           children: [
-                            N("p", {
-                              className:
-                                "text-[10px] font-black tracking-widest text-white/40 mb-2",
-                              children: "GOLPES EXCLUSIVOS",
+                            O("div", {
+                              className: "flex items-center justify-between gap-2 mb-2",
+                              children: [
+                                N("p", {
+                                  className:
+                                    "text-[10px] font-black tracking-widest text-white/40",
+                                  children: "GOLPES EXCLUSIVOS",
+                                }),
+                                N("button", {
+                                  type: "button",
+                                  onClick: () => {
+                                    setTestModeOpen((open) => !open);
+                                    setTestMove(null);
+                                  },
+                                  className:
+                                    "rounded-xl bg-amber-400 text-amber-950 font-black text-[10px] px-3 py-2 active:scale-95 transition",
+                                  children: testModeOpen
+                                    ? "FECHAR ENSAIO"
+                                    : "TESTAR GOLPES",
+                                }),
+                              ],
                             }),
-                            N("div", {
+                            !testModeOpen &&
+                              N("div", {
                               className:
                                 "grid grid-cols-1 sm:grid-cols-2 gap-2",
                               children: v.moves.map((M, H) =>
@@ -3264,6 +3348,230 @@
                                 ),
                               ),
                             }),
+                            testModeOpen &&
+                              O("div", {
+                                className:
+                                  "mt-3 rounded-xl bg-black/30 border border-white/10 p-3",
+                                children: [
+                                  O("div", {
+                                    className:
+                                      "flex items-center justify-between gap-2",
+                                    children: [
+                                      N("p", {
+                                        className:
+                                          "text-[10px] font-black tracking-widest text-amber-200",
+                                        children: "MODO DE ENSAIO",
+                                      }),
+                                      N("span", {
+                                        className:
+                                          "text-[9px] font-bold text-white/45",
+                                        children: "SEM EFEITOS NO SAVE",
+                                      }),
+                                    ],
+                                  }),
+                                  N("p", {
+                                    className:
+                                      "mt-1 text-[11px] leading-relaxed text-white/60",
+                                    children:
+                                      "Escolha um golpe para ver seu efeito visual. Não inicia uma batalha, aplica dano, gasta usos nem altera o save.",
+                                  }),
+                                  O("div", {
+                                    className:
+                                      "mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2",
+                                    children: v.moves.map((M, H) =>
+                                      O(
+                                        "button",
+                                        {
+                                          type: "button",
+                                          "aria-label": `Testar o golpe ${M.name}`,
+                                          onClick: () => {
+                                            setTestMove(M);
+                                            setTestRun((run) => run + 1);
+                                          },
+                                          className:
+                                            "w-full rounded-xl border px-3 py-2 text-left transition",
+                                          style:
+                                            testMove === M
+                                              ? {
+                                                  borderColor:
+                                                    On[M.type]?.color ||
+                                                    "#fbbf24",
+                                                  background: `${On[M.type]?.color || "#fbbf24"}33`,
+                                                }
+                                              : {
+                                                  borderColor:
+                                                    "rgba(255,255,255,.1)",
+                                                  background:
+                                                    "rgba(255,255,255,.04)",
+                                                },
+                                          children: [
+                                            O("div", {
+                                              className:
+                                                "flex items-center justify-between gap-2",
+                                              children: [
+                                                N("span", {
+                                                  className:
+                                                    "font-extrabold text-[11px] text-white truncate",
+                                                  children: M.name,
+                                                }),
+                                                N("span", {
+                                                  className:
+                                                    "shrink-0 text-[9px] font-black text-amber-100",
+                                                  children: "▶ TESTAR",
+                                                }),
+                                              ],
+                                            }),
+                                            N("span", {
+                                              className:
+                                                "mt-1 block text-[9px] font-bold text-white/50",
+                                              children: [
+                                                M.type,
+                                                " • Poder ",
+                                                M.power,
+                                                " • Precisão ",
+                                                M.acc,
+                                                "%",
+                                              ],
+                                            }),
+                                          ],
+                                        },
+                                        `${v.id}-dex-test-${H}`,
+                                      ),
+                                    ),
+                                  }),
+                                  testMove &&
+                                    O("div", {
+                                      className:
+                                        "relative mt-3 h-36 rounded-xl border border-white/10 overflow-hidden",
+                                      key: `dex-preview-${testRun}`,
+                                      style: {
+                                        height: 144,
+                                        background:
+                                          "radial-gradient(ellipse at center, #1b3027, #07130d)",
+                                      },
+                                      children: [
+                                        N("div", {
+                                          className:
+                                            "absolute left-0 right-0 top-1/2 h-px bg-white/10",
+                                        }),
+                                        O("div", {
+                                          className:
+                                            "absolute bottom-0 left-2 flex flex-col items-center",
+                                          style: { zIndex: 2 },
+                                          children: [
+                                            N(In, {
+                                              sp: v.id,
+                                              size: 64,
+                                              bob: !0,
+                                              battleMode: !0,
+                                              tScale: 1.2,
+                                            }),
+                                            N("span", {
+                                              className:
+                                                "text-[8px] font-black text-white/70 truncate",
+                                              style: { maxWidth: 80 },
+                                              children: v.name,
+                                            }),
+                                          ],
+                                        }),
+                                        O("div", {
+                                          className:
+                                            "absolute flex flex-col items-center gap-1",
+                                          style: {
+                                            right: 14,
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            zIndex: 2,
+                                          },
+                                          children: [
+                                            O("div", {
+                                              className:
+                                                "relative flex items-center justify-center rounded-full",
+                                              style: {
+                                                width: 54,
+                                                height: 54,
+                                                color:
+                                                  On[testMove.type]?.color ||
+                                                  "#fbbf24",
+                                                border: `2px solid ${On[testMove.type]?.color || "#fbbf24"}`,
+                                                background: `${On[testMove.type]?.color || "#fbbf24"}22`,
+                                                boxShadow: `0 0 18px ${On[testMove.type]?.color || "#fbbf24"}66`,
+                                              },
+                                              children: [
+                                                N("span", {
+                                                  className:
+                                                    "text-3xl font-black",
+                                                  children: "◎",
+                                                }),
+                                                N("div", {
+                                                  className:
+                                                    "absolute inset-2 rounded-full border border-dashed",
+                                                  style: {
+                                                    borderColor:
+                                                      On[testMove.type]?.color ||
+                                                      "#fbbf24",
+                                                  },
+                                                }),
+                                              ],
+                                            }),
+                                            N("span", {
+                                              className:
+                                                "text-[8px] font-black tracking-widest text-white/65",
+                                              children: "ALVO DE TREINO",
+                                            }),
+                                          ],
+                                        }),
+                                        N("div", {
+                                          key: `dex-shot-${testRun}`,
+                                          className: "ev-dex-shot",
+                                          children: N(Le, {
+                                            id: testProjectileId(testMove),
+                                            size: 44,
+                                            palette: testPalette(testMove),
+                                          }),
+                                        }),
+                                        N("div", {
+                                          key: `dex-hit-${testRun}`,
+                                          className: "ev-dex-hit",
+                                          style: {
+                                            "--ev-dex-hit":
+                                              On[testMove.type]?.color ||
+                                              "#fbbf24",
+                                          },
+                                        }),
+                                      ],
+                                    }),
+                                  testMove &&
+                                    O("div", {
+                                      className:
+                                        "mt-2 flex items-center justify-between gap-2",
+                                      children: [
+                                        N("span", {
+                                          className:
+                                            "text-[10px] font-extrabold text-white/85 truncate",
+                                          children: testMove.name,
+                                        }),
+                                        N("span", {
+                                          className:
+                                            "text-[9px] font-black shrink-0",
+                                          style: {
+                                            color:
+                                              On[testMove.type]?.color ||
+                                              "#fbbf24",
+                                          },
+                                          children: [
+                                            testMove.type,
+                                            " • Poder ",
+                                            testMove.power,
+                                            " • Acc ",
+                                            testMove.acc,
+                                            "%",
+                                          ],
+                                        }),
+                                      ],
+                                    }),
+                                ],
+                              }),
                           ],
                         }),
                         (() => {
