@@ -2,9 +2,9 @@
   "source": "/home/ubuntu/upload/index(1).html",
   "originalScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
   "reconstructedScriptSha256": "e79b92c59f0c62ad39a16a6ac09c7025d0f053b9cadf4f988c724c4d0a7a57d7",
-  "cssBytes": 63574,
+  "cssBytes": 75342,
   "originalHtmlBytes": 1811847,
-  "modularHtmlBytes": 1168,
+  "modularHtmlBytes": 1233,
   "files": [
     {
       "file": "js/01-runtime-react.js",
@@ -72,14 +72,14 @@
       "title": "Batalhas, animações e efeitos visuais",
       "originalScriptLines": "39867-45630",
       "statements": "699-712",
-      "bytes": 222061
+      "bytes": 224054
     },
     {
       "file": "js/10-online-app.js",
       "title": "Online, Dex, título, save e inicialização",
       "originalScriptLines": "45632-49284",
       "statements": "713-779",
-      "bytes": 172495
+      "bytes": 179928
     },
     {
       "file": "js/11-signature-attacks.js",
@@ -95,6 +95,11 @@
       "file": "js/13-postgame-creature-art.js",
       "title": "Silhuetas exclusivas das 13 espécies da saga pós-jogo",
       "bytes": 25209
+    },
+    {
+      "file": "js/14-attack-choreography.js",
+      "title": "Planejador e renderer compartilhado das coreografias de ataque",
+      "bytes": 18057
     },
     {
       "file": "js/external-links.js",
@@ -192,7 +197,7 @@
       "menu": 0.34,
       "common": 0.11,
       "boss": 0.13,
-      "pvp": 0.11
+      "pvp": 0.04
     }
   },
   "validation": {
@@ -206,6 +211,30 @@
     "githubPagesRelativeReferences": "pass; all index script/style references exist",
     "dexAttackLab": "pass; Chromium móvel abriu o Dex, listou cinco ataques de Embercub e exibiu projéteis normal e assinatura sem batalha/dano/save",
     "battleStatusContrast": "pass; caixas e plaquetas têm seletores dedicados, fundos diferentes e texto escuro explícito",
-    "battleMusicVolumes": "pass; teste com Audio mock confirmou menu 0.34, comum 0.11, chefe 0.13 e PvP 0.11"
+    "battleMusicVolumes": "pass; Audio mock confirmou menu 0.34, comum 0.11, chefe 0.13 e PvP 0.04",
+    "attackChoreographies": "pass; harness Node renderizou as 10 famílias por meio do View, e galeria Chromium não registrou exceções",
+    "pvpVisualHealthSync": "revisão e checagem sintática confirmam eventos por ataque e HP no impacto; não foi realizada partida online real"
+  },
+  "attackChoreography": {
+    "families": [
+      "rush",
+      "volley",
+      "spit",
+      "skyfall",
+      "eruption",
+      "flood",
+      "beam",
+      "roots",
+      "cyclone",
+      "eclipse"
+    ],
+    "newAttacksAdded": 0,
+    "sharedBy": [
+      "batalha comum",
+      "PvP",
+      "Modo de Ensaio do Dex"
+    ],
+    "healthTiming": "barra visual muda no impacto; desmaio acompanha o HP zero",
+    "criticalHits": "sinalização visual dourada com o dano calculado"
   }
 }

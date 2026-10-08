@@ -1542,6 +1542,20 @@
           [v, Z] = iu.useState(null),
           [J, e] = iu.useState(2),
           [Q, M] = iu.useState(!1),
+          [visualHp, setVisualHp] = iu.useState(null),
+          [pvpBusy, setPvpBusy] = iu.useState(!1),
+          [pvpScene, setPvpScene] = iu.useState(null),
+          [pvpMotion, setPvpMotion] = iu.useState(null),
+          pvpAreaRef = iu.useRef(null),
+          opponentPetRef = iu.useRef(null),
+          playerPetRef = iu.useRef(null),
+          visualHpRef = iu.useRef(null),
+          latestBattleRef = iu.useRef(null),
+          seenBattleEventsRef = iu.useRef(new Set()),
+          pendingBattleEventsRef = iu.useRef([]),
+          animationQueueActiveRef = iu.useRef(!1),
+          pvpRunRef = iu.useRef(1),
+          pvpAliveRef = iu.useRef(!0),
           H = iu.useRef(!1),
           K = iu.useRef(!1),
           V = iu.useRef(l);
@@ -1562,8 +1576,34 @@
           E = C && B ? B.active[C] : 0,
           q = A?.[U],
           L = P?.[E ?? 0],
-          Y = !!q && q.hp <= 0 && B?.status === "ongoing",
+          Y = !!q && (visualHp?.[`${l}:${U}`] ?? q.hp) <= 0 && B?.status === "ongoing",
           G = B?.turn ?? 1;
+        latestBattleRef.current = B;
+        function makeVisibleHp(state) {
+          let result = {};
+          for (let [teamId, team] of Object.entries(state?.teams || {}))
+            team.forEach((pet, index) => {
+              result[`${teamId}:${index}`] = pet.hp;
+            });
+          return result;
+        }
+        function shownHp(teamId, index, pet) {
+          return visualHp?.[`${teamId}:${index}`] ?? pet?.hp ?? 0;
+        }
+        function pvpMotionStyle(side) {
+          let motion = pvpMotion?.side === side ? pvpMotion : null;
+          return {
+            transform: motion
+              ? `translate3d(${motion.x}px,${motion.y}px,0) scale(1.08)`
+              : "translate3d(0,0,0) scale(1)",
+            transition: "transform 260ms cubic-bezier(.2,.72,.16,1)",
+            position: "relative",
+            zIndex: motion ? 5 : 1,
+          };
+        }
+        const hasPendingBattleEvents = (B?.fxEvents || []).some(
+          (event) => event?.id && !seenBattleEventsRef.current.has(event.id),
+        );
         iu.useEffect(() => {
           if (B?.status !== "ongoing") return;
           window.EV_MUSIC?.enterPvP?.();
@@ -1606,6 +1646,7 @@
               log: [
                 `A batalha PvP começou! ${$.players.A.name} vs ${$.players.B.name}`,
               ],
+              fxEvents: [],
               status: "ongoing",
             };
             k0(n, u, r, { state: mn, status: "ongoing" });
@@ -1643,10 +1684,149 @@
           iu.useEffect(() => {
             (Z(null), M(!1));
           }, [G]));
+        iu.useEffect(() => {
+          if (!B?.teams) return;
+          if (!visualHpRef.current) {
+            let initial = makeVisibleHp(B);
+            visualHpRef.current = initial;
+            setVisualHp(initial);
+            (B.fxEvents || []).forEach((event) => {
+              if (event?.id) seenBattleEventsRef.current.add(event.id);
+            });
+            return;
+          }
+          let pending = (B.fxEvents || []).filter(
+            (event) => event?.id && !seenBattleEventsRef.current.has(event.id),
+          );
+          if (!pending.length) {
+            if (!animationQueueActiveRef.current) {
+              let synced = makeVisibleHp(B);
+              visualHpRef.current = synced;
+              setVisualHp(synced);
+            }
+            return;
+          }
+          pending.forEach((event) => {
+            seenBattleEventsRef.current.add(event.id);
+            pendingBattleEventsRef.current.push(event);
+          });
+          if (!animationQueueActiveRef.current) void runPvpAnimationQueue();
+        }, [B]);
+        iu.useEffect(() => () => {
+          pvpAliveRef.current = !1;
+        }, []);
+        async function playPvpEvent(event) {
+          const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+          const engine = window.EV_ATTACK_CHOREOGRAPHY;
+          const isPlayer = event.attackerId === l;
+          const targetRef = event.targetId === l ? playerPetRef : opponentPetRef;
+          const sourceRef = isPlayer ? playerPetRef : opponentPetRef;
+          const area = pvpAreaRef.current?.getBoundingClientRect();
+          const center = (ref, fallback) => {
+            const rect = ref.current?.getBoundingClientRect();
+            if (!rect || !area || !area.width || !area.height) return fallback;
+            return {
+              x: (rect.left + rect.width / 2 - area.left) / area.width,
+              y: (rect.top + rect.height / 2 - area.top) / area.height,
+            };
+          };
+          const from = center(sourceRef, isPlayer ? { x: 0.16, y: 0.72 } : { x: 0.16, y: 0.24 });
+          const to = center(targetRef, isPlayer ? { x: 0.82, y: 0.28 } : { x: 0.82, y: 0.70 });
+          const species = window.nu?.[event.attackerSp] || {
+            id: event.attackerSp || "unknown-pet",
+            name: event.attackerName || "Pet",
+            types: [event.type].filter(Boolean),
+            stage: 0,
+          };
+          const catalogMove = Array.isArray(species.moves)
+            ? species.moves.find((move) => move.name === event.moveName)
+            : null;
+          const move = {
+            ...(catalogMove || {}),
+            name: event.moveName || "Golpe",
+            type: event.type || catalogMove?.type || species.types?.[0],
+            power: event.power ?? catalogMove?.power ?? 0,
+            anim: catalogMove?.anim,
+          };
+          const commitHp = () => {
+            if (!event.hit) return;
+            const key = `${event.targetId}:${event.targetIndex}`;
+            const next = {
+              ...(visualHpRef.current || {}),
+              [key]: event.targetHpAfter,
+            };
+            visualHpRef.current = next;
+            setVisualHp(next);
+          };
+          if (!engine?.plan || !area) {
+            await wait(650);
+            commitHp();
+            await wait(260);
+            return;
+          }
+          const scene = engine.plan({
+            attacker: species,
+            move,
+            attackerIsPlayer: isPlayer,
+            x0: from.x,
+            y0: from.y,
+            x1: to.x,
+            y1: to.y,
+            width: area.width,
+            height: area.height,
+            runId: `pvp-${pvpRunRef.current++}`,
+            hit: event.hit,
+            damage: event.damage,
+            crit: event.crit,
+            showDamage: true,
+          });
+          setPvpScene(scene);
+          if (scene.family === "rush")
+            setPvpMotion({
+              side: isPlayer ? "player" : "opponent",
+              x: (to.x - from.x) * area.width * 0.72,
+              y: (to.y - from.y) * area.height * 0.72,
+            });
+          await wait(scene.impactAtMs);
+          if (!pvpAliveRef.current) return;
+          commitHp();
+          if (scene.family === "rush") {
+            await wait(160);
+            setPvpMotion(null);
+          }
+          await wait(Math.max(0, scene.durationMs - scene.impactAtMs));
+          setPvpScene(null);
+        }
+        async function runPvpAnimationQueue() {
+          if (animationQueueActiveRef.current) return;
+          animationQueueActiveRef.current = !0;
+          setPvpBusy(!0);
+          try {
+            while (pendingBattleEventsRef.current.length && pvpAliveRef.current) {
+              let event = pendingBattleEventsRef.current.shift();
+              await playPvpEvent(event);
+            }
+          } catch (error) {
+            console.warn("Falha ao apresentar animação PvP:", error);
+          } finally {
+            setPvpScene(null);
+            setPvpMotion(null);
+            let latest = latestBattleRef.current;
+            if (latest?.teams) {
+              let synced = makeVisibleHp(latest);
+              visualHpRef.current = synced;
+              setVisualHp(synced);
+            }
+            animationQueueActiveRef.current = !1;
+            setPvpBusy(!1);
+          }
+        }
         function d(k, a) {
           let un = JSON.parse(JSON.stringify(k.teams)),
             mn = { ...k.active },
             en = [...k.log],
+            fxEvents = [...(k.fxEvents || [])],
+            eventSequence = 0,
             sn = Object.keys(un),
             [Gu, Mn] = sn,
             yr = [...sn].sort((Pn, uu) => {
@@ -1677,7 +1857,26 @@
             let Sn = wn.moves[Nu.moveIdx] ?? wn.moves[0];
             if (!Sn) continue;
             if (!(Math.random() * 100 < Sn.acc)) {
-              en.push(`${wn.name} usou ${Sn.name}… errou!`);
+              let missLine = `${wn.name} usou ${Sn.name}… errou!`;
+              en.push(missLine);
+              fxEvents.push({
+                id: `${k.turn}:${eventSequence++}:${Pn}`,
+                turn: k.turn,
+                attackerId: Pn,
+                targetId: uu,
+                attackerIndex: mn[Pn],
+                targetIndex: mn[uu],
+                attackerSp: wn.sp,
+                attackerName: wn.name,
+                moveName: Sn.name,
+                type: Sn.type,
+                power: Sn.power,
+                hit: !1,
+                damage: 0,
+                crit: !1,
+                targetHpAfter: tu.hp,
+                logLines: [missLine],
+              });
               continue;
             }
             let Lu = wn.types.includes(Sn.type),
@@ -1685,13 +1884,32 @@
               Xu = _8(wn.atk, tu.def, Sn.power, Sn.type, tu.types, Lu, !1, fl);
             tu.hp = Math.max(0, tu.hp - Xu);
             let Ul = P0(Sn.type, tu.types);
-            if (
-              (en.push(
-                `${wn.name} usou ${Sn.name} em ${tu.name} (-${Xu}).${fl ? " CRÍTICO!" : ""} ${Z8(Ul)}`.trim(),
-              ),
-              tu.hp <= 0)
-            )
-              en.push(`${tu.name} desmaiou!`);
+            let attackLine = `${wn.name} usou ${Sn.name} em ${tu.name} (-${Xu}).${fl ? " CRÍTICO!" : ""} ${Z8(Ul)}`.trim(),
+              logLines = [attackLine];
+            en.push(attackLine);
+            if (tu.hp <= 0) {
+              let faintLine = `${tu.name} desmaiou!`;
+              en.push(faintLine);
+              logLines.push(faintLine);
+            }
+            fxEvents.push({
+              id: `${k.turn}:${eventSequence++}:${Pn}`,
+              turn: k.turn,
+              attackerId: Pn,
+              targetId: uu,
+              attackerIndex: mn[Pn],
+              targetIndex: mn[uu],
+              attackerSp: wn.sp,
+              attackerName: wn.name,
+              moveName: Sn.name,
+              type: Sn.type,
+              power: Sn.power,
+              hit: !0,
+              damage: Xu,
+              crit: fl,
+              targetHpAfter: tu.hp,
+              logLines,
+            });
           }
           let Er,
             Gn = "ongoing";
@@ -1709,6 +1927,7 @@
             active: mn,
             teams: un,
             log: en.slice(-30),
+            fxEvents: fxEvents.slice(-32),
             status: Gn,
             winner: Er,
           };
@@ -1718,7 +1937,7 @@
           return $.players.A.id === k ? $.players.A.name : $.players.B.name;
         }
         let i = (k) => {
-            if (!B || B.status !== "ongoing" || v) return;
+            if (!B || B.status !== "ongoing" || v || animationQueueActiveRef.current) return;
             if (Y && k.kind !== "switch") return;
             if ((Z(k), f_(n, u, r, B.turn, l, k), k.kind === "item"))
               e((a) => Math.max(0, a - 1));
@@ -1770,7 +1989,7 @@
             ],
           });
         }
-        if (B.status === "finished") {
+        if (B.status === "finished" && !pvpBusy && !hasPendingBattleEvents) {
           let k = B.winner === l;
           return O("div", {
             className:
@@ -1832,6 +2051,8 @@
                 O("div", {
                   className:
                     "landscape:flex-1 landscape:min-w-0 landscape:min-h-0 landscape:overflow-y-auto landscape:pl-4 landscape:pr-1 landscape:pb-3",
+                  ref: pvpAreaRef,
+                  style: { position: "relative" },
                   children: [
                     N("div", {
                       className: "px-4 landscape:px-0 mb-1",
@@ -1839,7 +2060,12 @@
                         className:
                           "bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-3",
                         children: [
-                          L && N(In, { sp: L.sp, size: 64 }),
+                          L && O("div", {
+                            ref: opponentPetRef,
+                            className: "shrink-0",
+                            style: pvpMotionStyle("opponent"),
+                            children: N(In, { sp: L.sp, size: 64, fainted: shownHp(C, E, L) <= 0 }),
+                          }),
                           O("div", {
                             className: "flex-1",
                             children: [
@@ -1866,11 +2092,11 @@
                                   }),
                                 ],
                               }),
-                              L && N(V_, { hp: L.hp, max: L.maxHp }),
+                              L && N(V_, { hp: shownHp(C, E, L), max: L.maxHp }),
                               N("div", {
                                 className:
                                   "text-white/50 text-[11px] font-bold mt-0.5",
-                                children: L ? `${L.hp}/${L.maxHp} HP` : "",
+                                children: L ? `${shownHp(C, E, L)}/${L.maxHp} HP` : "",
                               }),
                             ],
                           }),
@@ -1883,7 +2109,12 @@
                         className:
                           "bg-white/5 border border-emerald-300/30 rounded-2xl p-3 flex items-center gap-3",
                         children: [
-                          q && N(In, { sp: q.sp, size: 72 }),
+                          q && O("div", {
+                            ref: playerPetRef,
+                            className: "shrink-0",
+                            style: pvpMotionStyle("player"),
+                            children: N(In, { sp: q.sp, size: 72, fainted: shownHp(l, U, q) <= 0 }),
+                          }),
                           O("div", {
                             className: "flex-1",
                             children: [
@@ -1910,11 +2141,11 @@
                                   }),
                                 ],
                               }),
-                              q && N(V_, { hp: q.hp, max: q.maxHp }),
+                              q && N(V_, { hp: shownHp(l, U, q), max: q.maxHp }),
                               N("div", {
                                 className:
                                   "text-white/50 text-[11px] font-bold mt-0.5",
-                                children: q ? `${q.hp}/${q.maxHp} HP` : "",
+                                children: q ? `${shownHp(l, U, q)}/${q.maxHp} HP` : "",
                               }),
                             ],
                           }),
@@ -1938,14 +2169,26 @@
                           ),
                         ),
                     }),
+                    pvpScene && window.EV_ATTACK_CHOREOGRAPHY?.View &&
+                      N(
+                        window.EV_ATTACK_CHOREOGRAPHY.View,
+                        { scene: pvpScene },
+                        `pvp-vfx-${pvpScene.runId}`,
+                      ),
                   ],
                 }),
                 O("div", {
                   className:
                     "px-4 pb-6 mt-auto landscape:mt-0 landscape:px-0 landscape:pr-4 landscape:pb-3 landscape:w-72 landscape:shrink-0 landscape:min-h-0 landscape:overflow-y-auto",
                   children: [
-                    Y
-                      ? O("div", {
+                    pvpBusy
+                      ? N("p", {
+                          className:
+                            "text-center text-amber-300 font-extrabold animate-pulse py-4",
+                          children: "O golpe está acontecendo…",
+                        })
+                      : Y
+                        ? O("div", {
                           className:
                             "bg-red-500/15 border border-red-300/40 rounded-2xl p-3",
                           children: [
@@ -1960,7 +2203,7 @@
                                 O(
                                   "button",
                                   {
-                                    disabled: k.hp <= 0 || a === U,
+                                    disabled: shownHp(l, a, k) <= 0 || a === U,
                                     onClick: () =>
                                       i({ kind: "switch", toIndex: a }),
                                     className:
@@ -1970,7 +2213,7 @@
                                       N("br", {}),
                                       O("span", {
                                         className: "text-white/50",
-                                        children: [k.hp, "/", k.maxHp],
+                                        children: [shownHp(l, a, k), "/", k.maxHp],
                                       }),
                                     ],
                                   },
@@ -2074,7 +2317,7 @@
                                         O(
                                           "button",
                                           {
-                                            disabled: k.hp <= 0 || a === U,
+                                            disabled: shownHp(l, a, k) <= 0 || a === U,
                                             onClick: () =>
                                               i({ kind: "switch", toIndex: a }),
                                             className:
@@ -2084,7 +2327,7 @@
                                               N("br", {}),
                                               O("span", {
                                                 className: "text-white/50",
-                                                children: [k.hp, "/", k.maxHp],
+                                                children: [shownHp(l, a, k), "/", k.maxHp],
                                               }),
                                             ],
                                           },
@@ -2720,65 +2963,19 @@
               if (K.includes(M.id)) return nu[H] ?? null;
             return null;
           };
-        const testProjectileId = (move) => {
-            const anim = move?.anim;
-            if (anim?.kind === "signature")
-              return `signature-${anim.form || "flare"}`;
-            const kind = typeof anim === "string" ? anim : anim?.kind;
-            const projectileByKind = {
-              "spinning-leaf": "spinning-leaf",
-              "multi-seed": "seed-small",
-              "spark-crackle": "crackle",
-              "speed-bolt": "signature-bolt",
-              "wind-blades": "wind-blade",
-              "ember-spark": "ember-spark",
-              "flame-burst": "flame-cone",
-              "fire-mushroom": "fireball",
-              "water-jet": "water-jet",
-              "bubble-beam": "bubble-small",
-              tsunami: "water-jet",
-              "stone-arc": "stone-arc",
-              avalanche: "stone-arc",
-              quake: "stone-arc",
-              "tectonic-fury": "stone-arc",
-              abyss: "signature-veil",
-              eruption: "fireball",
-              "night-veil": "signature-veil",
-              "cold-breath": "frost-mist",
-              "floral-vortex": "petal-vortex",
-              "sweet-mist": "drain-orb",
-              "glow-dust": "signature-orb",
-              "prism-beam": "prism-beam",
-              "fairy-dance": "signature-bloom",
-              flash: "signature-prism",
-              "petal-storm": "signature-leafstorm",
-              "volt-judgment": "signature-bolt",
-              bite: "drain-orb",
-              "shadow-bite": "signature-veil",
-              "shadow-claw": "signature-eclipse",
-              "vine-whip": "spinning-leaf",
-              charge: "stone-arc",
-              "tail-slam": "stone-arc",
-              "magma-punch": "fireball",
-              "pyrothion-inferno": "fireball",
-              "pyrothion-claws": "embercub-flame",
-            };
-            const byType = {
-              Brasa: "fireball",
-              Maré: "water-jet",
-              Flora: "petal-vortex",
-              Faísca: "signature-bolt",
-              Pedra: "stone-arc",
-              Sombra: "signature-veil",
-            };
-            return projectileByKind[kind] || byType[move?.type] || "signature-orb";
-          },
-          testPalette = (move) => {
-            if (move?.anim?.kind === "signature" && move.anim.palette?.length)
-              return move.anim.palette;
-            const color = On[move?.type]?.color || "#a78bfa";
-            return [color, color, "#ffffff", color, color];
-          };
+        const testScene = testMove && window.EV_ATTACK_CHOREOGRAPHY?.plan
+          ? window.EV_ATTACK_CHOREOGRAPHY.plan({
+              attacker: v,
+              move: testMove,
+              x0: 0.16,
+              y0: 0.67,
+              x1: 0.81,
+              y1: 0.51,
+              width: 340,
+              height: 144,
+              runId: testRun,
+            })
+          : null;
         return O("div", {
           className: "min-h-dvh w-full bg-[#0b1f16] text-white flex flex-col",
           children: [
@@ -3455,9 +3652,12 @@
                                             "absolute left-0 right-0 top-1/2 h-px bg-white/10",
                                         }),
                                         O("div", {
-                                          className:
-                                            "absolute bottom-0 left-2 flex flex-col items-center",
-                                          style: { zIndex: 2 },
+                                          key: `dex-attacker-${testRun}`,
+                                          className: `absolute bottom-0 left-2 flex flex-col items-center ev-dex-attacker ${testScene?.family === "rush" ? "ev-dex-rush" : ""}`,
+                                          style: {
+                                            zIndex: 2,
+                                            "--ev-dex-lunge-x": `${Math.max(28, Math.min(175, testScene?.lungeX || 44))}px`,
+                                          },
                                           children: [
                                             N(In, {
                                               sp: v.id,
@@ -3521,24 +3721,12 @@
                                             }),
                                           ],
                                         }),
-                                        N("div", {
-                                          key: `dex-shot-${testRun}`,
-                                          className: "ev-dex-shot",
-                                          children: N(Le, {
-                                            id: testProjectileId(testMove),
-                                            size: 44,
-                                            palette: testPalette(testMove),
-                                          }),
-                                        }),
-                                        N("div", {
-                                          key: `dex-hit-${testRun}`,
-                                          className: "ev-dex-hit",
-                                          style: {
-                                            "--ev-dex-hit":
-                                              On[testMove.type]?.color ||
-                                              "#fbbf24",
-                                          },
-                                        }),
+                                        testScene && window.EV_ATTACK_CHOREOGRAPHY?.View &&
+                                          N(
+                                            window.EV_ATTACK_CHOREOGRAPHY.View,
+                                            { scene: testScene },
+                                            `dex-vfx-${testRun}`,
+                                          ),
                                       ],
                                     }),
                                   testMove &&

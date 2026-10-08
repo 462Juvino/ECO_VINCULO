@@ -14,7 +14,7 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | Arquivo/pasta | Conteúdo |
 |---|---|
 | `index.html` | Página que carrega o jogo e os módulos, na ordem necessária. |
-| `css/game.css` | Estilos do jogo, contraste das placas de batalha e animações do laboratório de golpes. |
+| `css/game.css` | Estilos do jogo, contraste e keyframes das novas coreografias. |
 | `assets/audio/` | Trilhas originais do menu, batalhas comuns, chefes e PvP. |
 | `js/01-runtime-react.js` | Runtime React/ReactDOM incluído no jogo. |
 | `js/02-icons-foundation.js` | Ícones, afinidades, catálogo inicial, golpes e fundamentos. |
@@ -25,14 +25,15 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/07-ui-systems.js` | Sprites, inventário, loja, áudio regional e jingle da mochila. |
 | `js/audio-manager.js` | Troca de música conforme tela, tipo de batalha e retorno à exploração. |
 | `js/08-overworld.js` | Exploração, troca de mundos, telas e menus de campo. |
-| `js/09-battle.js` | Batalhas, placas de status, animações dos golpes, Fusão e transições de música. |
-| `js/10-online-app.js` | Firebase/online, Dex com Modo de Ensaio, título, save e inicialização. |
+| `js/09-battle.js` | Batalhas, placas de status, coreografias, Fusão e sincronismo de impacto/HP. |
+| `js/10-online-app.js` | Firebase/online, fila visual PvP, Dex com Modo de Ensaio, título e save. |
 | `js/11-signature-attacks.js` | Golpes assinatura do catálogo e identidade visual das fusões. |
 | `js/12-postgame-worlds.js` | Dados da nova saga, mapas, biomas, espécies, encontros, NPCs e chefes. |
 | `js/13-postgame-creature-art.js` | Silhuetas exclusivas dos 13 Pets da saga, com anatomias e paletas próprias. |
+| `js/14-attack-choreography.js` | Planejador/renderer compartilhado das coreografias por Pet e golpe. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo e antes de a aplicação renderizar.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js` deve carregar antes dos módulos de batalha e da aplicação.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -53,7 +54,7 @@ O progresso usa `worldId` e posições salvas por mundo. Saves antigos são migr
 - `battle-boss.mp3`: confrontos contra chefes e guardiões.
 - `battle-pvp.mp3`: batalhas online entre jogadores.
 
-As faixas de batalha e menu repetem em loop. Na exploração continuam as trilhas regionais sintetizadas que o jogo já possuía. A mochila conserva o jingle sintetizado de abrir/fechar — não é uma faixa longa separada. O menu permanece em 34%; as músicas de batalha comum e PvP ficam em 11%, e a trilha de chefes em 13%, como fundo para os efeitos e falas. Os caminhos relativos foram testados por HTTP.
+As faixas de batalha e menu repetem em loop. Na exploração continuam as trilhas regionais sintetizadas que o jogo já possuía. A mochila conserva o jingle sintetizado de abrir/fechar — não é uma faixa longa separada. O menu permanece em 34%; batalha comum em 11%, chefes em 13% e PvP em **4%**, bem abaixo dos efeitos e falas. Os caminhos relativos foram testados por HTTP.
 
 ## Golpes assinatura e Fusão
 
@@ -63,9 +64,17 @@ A Fusão mantém os 15 arquétipos pelas combinações de afinidade. Cada híbri
 
 ## Modo de Ensaio no Dex
 
-Abra os detalhes de um Pet no Dex e escolha **TESTAR GOLPES**. O painel permite reproduzir os projéteis de cada ataque — inclusive os golpes assinatura — contra um alvo de treino. É uma prévia visual, sem iniciar combate, causar dano, gastar usos, dar experiência ou alterar o save. O seletor fica em `js/10-online-app.js`; os projéteis reutilizam o renderer de `js/09-battle.js`, e a trajetória/impacto de teste está em `css/game.css`.
+Abra os detalhes de um Pet no Dex e escolha **TESTAR GOLPES**. A prévia usa a mesma coreografia de batalha contra um alvo de treino, sem iniciar combate, causar dano, gastar usos, dar experiência ou alterar o save. A seleção fica em `js/10-online-app.js`; o planejador compartilhado está em `js/14-attack-choreography.js`.
 
 Na batalha, as placas de status agora têm fundos distintos para o adversário e o Pet do jogador, com plaquetas de nome em texto escuro de alto contraste.
+
+## Coreografias dos ataques
+
+As animações foram reformuladas sem adicionar técnicas, mudar seus nomes, potência, precisão ou regras. A família visual varia de forma determinística por espécie, afinidade, estágio e golpe; combinações diferentes podem selecionar coreografias distintas e recebem tamanho, cor e silhueta adaptados ao atacante.
+
+O repertório visual inclui investida do próprio Pet até o alvo, múltiplos projéteis, cuspe em sequência, pedras caindo do céu, espinhos/raízes que emergem do chão, onda que varre e colore a arena, feixe, ciclone orbital e eclipse elemental. Batalha normal, PvP e Ensaio do Dex usam o mesmo planejador. Nos combates locais, o HP só é descontado no impacto e o desmaio acontece depois; no PvP, cada cliente recebe os eventos do turno, reproduz a coreografia e segura a barra antiga até o impacto correspondente.
+
+Edite o mapeamento e as formas visuais em `js/14-attack-choreography.js` e `css/game.css`; ajuste a integração de impacto/HP em `js/09-battle.js` e `js/10-online-app.js`. O volume da trilha PvP está em `js/audio-manager.js`.
 
 ## Arte exclusiva dos Pets da saga
 
@@ -80,6 +89,7 @@ Envie `index.html` **e** o módulo da funcionalidade que pretende alterar. Para 
 - Alterar a migração e os campos do save: `js/06-world-data.js` e, para vitórias de treinador, `js/10-online-app.js`.
 - Alterar seleção de músicas: `js/audio-manager.js`.
 - Ajustar o Modo de Ensaio do Dex: `js/10-online-app.js`; o visual dos projéteis fica em `js/09-battle.js` e `css/game.css`.
+- Ajustar famílias, paletas, formas e ritmo das coreografias: `js/14-attack-choreography.js` e `css/game.css`.
 - Ajustar cores/contraste das placas de batalha: `js/09-battle.js` e `css/game.css`.
 - Alterar a síntese de áudio/jingle da mochila: `js/07-ui-systems.js`.
 - Ajustar nomes e animações de golpes assinatura/fusão: `js/11-signature-attacks.js`.
@@ -95,8 +105,10 @@ Peça à outra IA para preservar os saves existentes, os caminhos relativos, a o
 
 - `node --check` passou em todos os módulos JavaScript.
 - Teste em Chromium carregou a página sem erros de JavaScript e montou a tela do jogo.
+- Galeria isolada em Chromium renderizou as 10 famílias: investida, rajada, cuspe, chuva de pedras, erupção, inundação, feixe, raízes, ciclone e eclipse.
+- Revisão do fluxo e checagem sintática confirmaram HP local no impacto e fila PvP antes da atualização visual; não foi iniciada uma partida online real de ponta a ponta.
 - Testes confirmaram os três mapas, seis biomas, encontros, as 13 espécies, os links de evolução e a migração dos dois tipos de save antigo.
 - Os 13 Pets novos foram renderizados pelo dispatcher real de sprites, cada um com silhueta própria; nenhum cai mais no corpo genérico de gosma.
 - Os quatro arquivos de áudio responderam com HTTP 200.
 - O Modo de Ensaio foi testado no Chromium em tamanho móvel: abriu o Dex, exibiu os cinco golpes de Embercub e renderizou um projétil comum e o golpe assinatura sem iniciar batalha.
-- Os volumes foram verificados em teste isolado: menu 34%, batalha comum 11%, chefe 13% e PvP 11%.
+- Os volumes foram verificados em teste isolado: menu 34%, batalha comum 11%, chefe 13% e PvP 4%.

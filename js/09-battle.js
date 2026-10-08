@@ -245,6 +245,7 @@
           [Ul, s] = Un.useState(null),
           [ln, Zn] = Un.useState(null),
           [Kn, Ku] = Un.useState([]),
+          [attackScene, setAttackScene] = Un.useState(null),
           Hn = Un.useRef(1),
           [yu, Tu] = Un.useState(
             () =>
@@ -1876,6 +1877,73 @@
               await S0(X, w, j, y);
           }
         }
+        async function runUniqueAttack(move, attackerIsPlayer, damage, crit, attacker, onImpact) {
+          let engine = window.EV_ATTACK_CHOREOGRAPHY,
+            coords = Nn(attackerIsPlayer),
+            arena = mn.current?.getBoundingClientRect();
+          if (!engine?.plan || !coords || !arena) {
+            onImpact();
+            await S0(move, attackerIsPlayer, damage, crit);
+            return;
+          }
+          let scene = engine.plan({
+              attacker,
+              move,
+              attackerIsPlayer,
+              x0: coords.x0 / Math.max(1, arena.width),
+              y0: coords.y0 / Math.max(1, arena.height),
+              x1: coords.x1 / Math.max(1, arena.width),
+              y1: coords.y1 / Math.max(1, arena.height),
+              width: arena.width,
+              height: arena.height,
+              runId: Hn.current++,
+              hit: !0,
+              damage,
+              crit,
+              showDamage: !0,
+            }),
+            motionSetter = attackerIsPlayer ? s : Zn,
+            committed = !1;
+          const commit = () => {
+            if (committed) return;
+            committed = !0;
+            onImpact();
+          };
+          try {
+            setAttackScene(scene);
+            if (scene.family === "rush")
+              motionSetter({ x: scene.lungeX, y: scene.lungeY });
+            await Cn(scene.impactAtMs);
+            if (!o.current) return;
+            commit();
+            let impact = eu({
+              x: coords.x1,
+              y: coords.y1,
+              attackerIsPlayer,
+              dmg: damage,
+              crit,
+              impact: {
+                shapes: [scene.glyph, "spark", "circle"],
+                colors: scene.colors,
+                count: 12 + scene.stage * 2,
+                ring: scene.colors[1],
+              },
+            });
+            if (scene.family === "rush") {
+              await Cn(170);
+              motionSetter(null);
+            }
+            await impact;
+            await Cn(Math.max(0, scene.durationMs - scene.impactAtMs - 960));
+            if (!o.current) return;
+            setAttackScene(null);
+            motionSetter(null);
+            await Cn(250);
+          } finally {
+            setAttackScene(null);
+            motionSetter(null);
+          }
+        }
         async function j0(X, w, j) {
           let y = !X.pat || X === Dn.current,
             T = L.current,
@@ -1929,41 +1997,26 @@
               ((Mo = Math.floor(Vu / 2)), h("Instinto ativado: Espelho!"));
             }
           }
-          let k8 = X.pat?.hybridId,
-            fn = k8 ? Object.values(Y0).find((An) => An.id === k8) : void 0,
-            Tn = (vn ? T.fighter.sp.id : _n(X.pat.sp).id) === "embercub";
-          if (j.anim?.kind === "signature")
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)),
-              gn(),
-              await w8(j, y, Vu, ru));
-          else if (fn) {
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)), gn());
-            let An = On[fn.types[0]].color,
-              hu = On[fn.types[1] ?? fn.types[0]].color;
-            await V9(y, j, Vu, ru, An, hu);
-          } else if (Tn && N3(j))
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)),
-              gn(),
-              await il(y, j, Vu, ru));
-          else if (Tn)
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)),
-              gn(),
-              await Af(y, j, Vu, ru));
-          else if (N3(j))
-            (await Bf(y, j, ru), (w.pat.hp = Math.max(0, w.pat.hp - Vu)), gn());
-          else if (j.anim && Ff.has(j.anim.kind))
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)),
-              gn(),
-              await w8(j, y, Vu, ru));
-          else
-            ((w.pat.hp = Math.max(0, w.pat.hp - Vu)),
-              gn(),
-              await S0(j, y, Vu, ru));
+          let attackerSpecies = vn ? T.fighter.sp : _n(X.pat.sp);
+          if (X.pat?.hybridId) {
+            let hybrid = Object.values(Y0).find((entry) => entry.id === X.pat.hybridId);
+            if (hybrid)
+              attackerSpecies = {
+                ...hybrid,
+                stage: attackerSpecies?.stage ?? 2,
+                feature: hybrid.sprite || hybrid.feature,
+                fusionVisual: X.pat.fusionVisual,
+              };
+          }
+          await runUniqueAttack(j, y, Vu, ru, attackerSpecies, () => {
+            w.pat.hp = Math.max(0, w.pat.hp - Vu);
+            if (Mo > 0 && X.pat.hp > 0)
+              X.pat.hp = Math.max(0, X.pat.hp - Mo);
+            gn();
+          });
           try {
             navigator.vibrate?.(25);
           } catch {}
-          if (Mo > 0 && X.pat.hp > 0)
-            ((X.pat.hp = Math.max(0, X.pat.hp - Mo)), gn());
           let pn = P0(j.type, on, tn),
             vu = Z8(pn),
             Qu = vu
@@ -2804,6 +2857,12 @@
               className: "absolute inset-0 pointer-events-none overflow-hidden",
               style: { zIndex: 40 },
               children: [
+                attackScene && window.EV_ATTACK_CHOREOGRAPHY?.View &&
+                  N(
+                    window.EV_ATTACK_CHOREOGRAPHY.View,
+                    { scene: attackScene },
+                    `battle-vfx-${attackScene.runId}`,
+                  ),
                 Pn &&
                   (() => {
                     let X = yQ[Pn.type],
