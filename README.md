@@ -23,7 +23,7 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/05-creature-art-b.js` | Desenhos dos Pets — segunda parte e suporte ao desenho híbrido. |
 | `js/06-world-data.js` | Mapas existentes, cavernas, NPCs, saves e estado do jogo. |
 | `js/07-ui-systems.js` | Sprites, inventário, loja, áudio regional e jingle da mochila. |
-| `js/audio-manager.js` | Troca de música conforme tela, tipo de batalha e retorno à exploração. |
+| `js/audio-manager.js` | Música contextual, crossfade entre telas e cue de Ressonância. |
 | `js/08-overworld.js` | Exploração, troca de mundos, telas e menus de campo. |
 | `js/09-battle.js` | Batalhas, placas de status, coreografias, Fusão e sincronismo de impacto/HP. |
 | `js/10-online-app.js` | Firebase/online, fila visual PvP, Dex com Modo de Ensaio, título e save. |
@@ -31,9 +31,11 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/12-postgame-worlds.js` | Dados da nova saga, mapas, biomas, espécies, encontros, NPCs e chefes. |
 | `js/13-postgame-creature-art.js` | Silhuetas exclusivas dos 13 Pets da saga, com anatomias e paletas próprias. |
 | `js/14-attack-choreography.js` | Planejador/renderer compartilhado das coreografias por Pet e golpe. |
+| `js/15-bond-resonance.js` | Regras compartilhadas de alinhamento, carga e bônus de Ressonância. |
+| `tests/bond-resonance.test.js` | Testes automatizados do núcleo de alinhamento, carga e dano. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js` deve carregar antes dos módulos de batalha e da aplicação.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js` e `15-bond-resonance.js` devem carregar antes dos módulos de batalha e da aplicação.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -101,6 +103,14 @@ Envie `index.html` **e** o módulo da funcionalidade que pretende alterar. Para 
 
 Peça à outra IA para preservar os saves existentes, os caminhos relativos, a ordem de carregamento dos scripts e os arquivos não relacionados à mudança.
 
+## Ressonância do Vínculo e sinais de chefe
+
+`js/15-bond-resonance.js` concentra as regras da mecânica e é carregado antes dos módulos de batalha. Golpes alinhados ao tipo do Pet ou à afinidade do jogador acumulam carga no HUD; ao completar 100%, o próximo golpe alinhado consome a carga e recebe **+18% de dano**, com um acorde curto e uma luz de impacto dedicados. A carga existe apenas durante a batalha local; não altera nem migra dados de save.
+
+No PvP, a carga é armazenada por ID de participante dentro do estado sincronizado da partida, replicada nos dois clientes e exibida nos dois medidores. Partidas antigas sem esse campo começam em zero e recebem o campo na próxima resolução de turno. Os sinais prévios dos chefes avisam o nome e a afinidade do golpe antes da animação de ataque; esse aviso é informativo e não muda precisão, dano ou regras dos golpes.
+
+Os testes de regras não exigem dependências externas: `node --test tests/bond-resonance.test.js`.
+
 ## Validação desta versão
 
 - `node --check` passou em todos os módulos JavaScript.
@@ -112,3 +122,8 @@ Peça à outra IA para preservar os saves existentes, os caminhos relativos, a o
 - Os quatro arquivos de áudio responderam com HTTP 200.
 - O Modo de Ensaio foi testado no Chromium em tamanho móvel: abriu o Dex, exibiu os cinco golpes de Embercub e renderizou um projétil comum e o golpe assinatura sem iniciar batalha.
 - Os volumes foram verificados em teste isolado: menu 34%, batalha comum 11%, chefe 13% e PvP 4%.
+- Nesta integração, `node --test tests/bond-resonance.test.js` aprovou seis testes de alinhamento, carga, limite, retenção, consumo e dano; `node --check` passou em todos os módulos, e as referências HTML/MP3 foram conferidas.
+- Smoke test no navegador Chromium via HTTP confirmou carregamento da página, montagem do menu/mapa, runtime de coreografias, núcleo da Ressonância e gerenciador de áudio; a coreografia teste marcou corretamente a cena como ressonante.
+- Em batalha local real no Chromium (Embercub Nv 5 contra Leafit Nv 4), quatro golpes alinhados preencheram a barra até 100%; o golpe seguinte consumiu a carga, aplicou o multiplicador e zerou o medidor, com HP atualizado após o impacto.
+- Em desafio local real contra o Guardião do Bosque, o HUD mostrou “SINAL DO CHEFE” e anunciou “Leafit prepara Chicote Vinha (Flora)!” antes da resposta inimiga.
+- Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.

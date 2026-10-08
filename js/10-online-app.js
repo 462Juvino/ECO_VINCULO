@@ -1465,8 +1465,11 @@
       }
       var iu = Du(Pu(), 1);
       function ze() {
+        let trainerAffinities = [];
         try {
-          let l = D8(1)?.party;
+          let save = D8(1),
+            l = save?.party;
+          trainerAffinities = Array.isArray(save?.affinities) ? [...save.affinities] : [];
           if (l && l.length > 0)
             return l.slice(0, 3).map((o) => {
               let f = _n(o.sp),
@@ -1487,6 +1490,7 @@
                     acc: _.acc,
                   })),
                 types: f?.types ?? [],
+                affinities: trainerAffinities,
                 atk: $.atk,
                 def: $.def,
                 vel: $.vel,
@@ -1512,6 +1516,7 @@
                 acc: r.acc,
               })),
             types: n.types,
+            affinities: trainerAffinities,
             atk: u.atk,
             def: u.def,
             vel: u.vel,
@@ -1590,6 +1595,38 @@
         function shownHp(teamId, index, pet) {
           return visualHp?.[`${teamId}:${index}`] ?? pet?.hp ?? 0;
         }
+        function shownResonance(playerId) {
+          return Math.max(0, Math.min(100, Number(B?.resonanceCharge?.[playerId]) || 0));
+        }
+        function resonanceMeter(playerId, label) {
+          const value = shownResonance(playerId);
+          return O("div", {
+            className: "mt-1",
+            role: "meter",
+            "aria-label": `Ressonância de ${label}`,
+            "aria-valuemin": 0,
+            "aria-valuemax": 100,
+            "aria-valuenow": value,
+            children: [
+              O("div", {
+                className: "flex justify-between text-[9px] font-black tracking-wide text-white/55",
+                children: [N("span", { children: `RESSONÂNCIA · ${label}` }), N("span", { children: value >= 100 ? "PRONTA · +18%" : `${value}%` })],
+              }),
+              O("div", {
+                className: "h-1.5 w-full overflow-hidden rounded-full bg-black/40",
+                children: N("div", {
+                  className: "h-full rounded-full transition-[width] duration-300",
+                  style: {
+                    width: `${value}%`,
+                    background: value >= 100 ? "linear-gradient(90deg,#fde68a,#34d399)" : "linear-gradient(90deg,#34d399,#a3e635)",
+                    boxShadow: value >= 100 ? "0 0 8px #34d399" : "none",
+                  },
+                }),
+              }),
+            ],
+          });
+        }
+        const opponentPlayerId = $?.players?.A?.id === l ? $?.players?.B?.id : $?.players?.A?.id;
         function pvpMotionStyle(side) {
           let motion = pvpMotion?.side === side ? pvpMotion : null;
           return {
@@ -1647,6 +1684,7 @@
                 `A batalha PvP começou! ${$.players.A.name} vs ${$.players.B.name}`,
               ],
               fxEvents: [],
+              resonanceCharge: Object.fromEntries(k.map((en) => [en, 0])),
               status: "ongoing",
             };
             k0(n, u, r, { state: mn, status: "ongoing" });
@@ -1750,6 +1788,7 @@
           };
           const commitHp = () => {
             if (!event.hit) return;
+            if (event.resonant) window.EV_MUSIC?.playResonanceCue?.();
             const key = `${event.targetId}:${event.targetIndex}`;
             const next = {
               ...(visualHpRef.current || {}),
@@ -1778,6 +1817,7 @@
             hit: event.hit,
             damage: event.damage,
             crit: event.crit,
+            resonant: event.resonant === true,
             showDamage: true,
           });
           setPvpScene(scene);
@@ -1826,6 +1866,7 @@
             mn = { ...k.active },
             en = [...k.log],
             fxEvents = [...(k.fxEvents || [])],
+            resonanceCharge = { ...(k.resonanceCharge || {}) },
             eventSequence = 0,
             sn = Object.keys(un),
             [Gu, Mn] = sn,
@@ -1882,9 +1923,20 @@
             let Lu = wn.types.includes(Sn.type),
               fl = Math.random() < 0.1,
               Xu = _8(wn.atk, tu.def, Sn.power, Sn.type, tu.types, Lu, !1, fl);
+            let resonance = { charge: Number(resonanceCharge[Pn]) || 0, resonant: false, gained: 0 };
+            if (Xu > 0 && window.EV_RESONANCE) {
+              const affinities = Array.isArray(wn.affinities) ? wn.affinities : Array.isArray(wn.afinidades) ? wn.afinidades : [];
+              resonance = window.EV_RESONANCE.step({
+                charge: resonanceCharge[Pn] ?? 0,
+                aligned: window.EV_RESONANCE.qualifies(Sn.type, wn.types || [], affinities),
+                bond: wn.bondLevel ?? wn.vinculo ?? 0,
+              });
+              if (resonance.resonant) Xu = window.EV_RESONANCE.applyDamage(Xu, true);
+              if (resonance.gained > 0 || resonance.resonant) resonanceCharge[Pn] = resonance.charge;
+            }
             tu.hp = Math.max(0, tu.hp - Xu);
             let Ul = P0(Sn.type, tu.types);
-            let attackLine = `${wn.name} usou ${Sn.name} em ${tu.name} (-${Xu}).${fl ? " CRÍTICO!" : ""} ${Z8(Ul)}`.trim(),
+            let attackLine = `${wn.name} usou ${Sn.name} em ${tu.name} (-${Xu}).${fl ? " CRÍTICO!" : ""}${resonance.resonant ? " RESSONÂNCIA! +18%" : ""} ${Z8(Ul)}`.trim(),
               logLines = [attackLine];
             en.push(attackLine);
             if (tu.hp <= 0) {
@@ -1907,6 +1959,7 @@
               hit: !0,
               damage: Xu,
               crit: fl,
+              resonant: resonance.resonant,
               targetHpAfter: tu.hp,
               logLines,
             });
@@ -1926,6 +1979,7 @@
             turn: k.turn + 1,
             active: mn,
             teams: un,
+            resonanceCharge,
             log: en.slice(-30),
             fxEvents: fxEvents.slice(-32),
             status: Gn,
@@ -2098,6 +2152,7 @@
                                   "text-white/50 text-[11px] font-bold mt-0.5",
                                 children: L ? `${shownHp(C, E, L)}/${L.maxHp} HP` : "",
                               }),
+                              resonanceMeter(opponentPlayerId, "OPONENTE"),
                             ],
                           }),
                         ],
@@ -2147,6 +2202,7 @@
                                   "text-white/50 text-[11px] font-bold mt-0.5",
                                 children: q ? `${shownHp(l, U, q)}/${q.maxHp} HP` : "",
                               }),
+                              resonanceMeter(l, "VOCÊ"),
                             ],
                           }),
                         ],

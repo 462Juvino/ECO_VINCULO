@@ -162,6 +162,7 @@
       damage: Math.max(0, Number(options.damage) || 0),
       showDamage: options.showDamage === true,
       crit: options.crit === true,
+      resonant: options.resonant === true,
       lungeX: (x1 - x0) * width * 0.76,
       lungeY: (y1 - y0) * height * 0.76,
     };
@@ -200,7 +201,7 @@
 
   function impactNode(scene) {
     return O("div", {
-      className: `ev-vfx-impact-wrap ${scene.crit ? "ev-vfx-critical" : ""}`,
+      className: `ev-vfx-impact-wrap ${scene.crit ? "ev-vfx-critical" : ""} ${scene.resonant ? "ev-vfx-resonant" : ""}`,
       style: {
         left: percent(scene.hit ? scene.x1 : scene.x1 + (scene.attackerIsPlayer ? 0.08 : -0.08)),
         top: percent(scene.y1),
@@ -219,6 +220,9 @@
         scene.crit && scene.hit
           ? N("div", { className: "ev-vfx-crit-text", children: "CRÍTICO!" })
           : null,
+        scene.resonant && scene.hit
+          ? N("div", { className: "ev-vfx-resonance-label", children: "RESSONÂNCIA!" })
+          : null,
         !scene.hit ? N("div", { className: "ev-vfx-miss-text", children: "ERROU" }) : null,
       ],
     });
@@ -227,6 +231,10 @@
   function VfxView({ scene }) {
     if (!scene) return null;
     const children = [];
+    if (scene.resonant && scene.hit) children.push(N("div", {
+      className: "ev-vfx-resonance-wash",
+      style: { "--ev-res-x": percent(scene.x1), "--ev-res-y": percent(scene.y1) },
+    }));
     if (scene.family === "volley" || scene.family === "spit") {
       for (let i = 0; i < scene.count; i++) children.push(flightNode(scene, i, scene.family === "spit" ? "drop" : scene.glyph));
     }

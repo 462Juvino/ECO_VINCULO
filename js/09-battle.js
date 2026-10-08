@@ -246,6 +246,9 @@
           [ln, Zn] = Un.useState(null),
           [Kn, Ku] = Un.useState([]),
           [attackScene, setAttackScene] = Un.useState(null),
+          [resonanceCharge, setResonanceCharge] = Un.useState(0),
+          resonanceChargeRef = Un.useRef(0),
+          [bossSignal, setBossSignal] = Un.useState(null),
           Hn = Un.useRef(1),
           [yu, Tu] = Un.useState(
             () =>
@@ -1877,12 +1880,13 @@
               await S0(X, w, j, y);
           }
         }
-        async function runUniqueAttack(move, attackerIsPlayer, damage, crit, attacker, onImpact) {
+        async function runUniqueAttack(move, attackerIsPlayer, damage, crit, attacker, onImpact, resonant = false) {
           let engine = window.EV_ATTACK_CHOREOGRAPHY,
             coords = Nn(attackerIsPlayer),
             arena = mn.current?.getBoundingClientRect();
           if (!engine?.plan || !coords || !arena) {
             onImpact();
+            if (resonant) window.EV_MUSIC?.playResonanceCue?.();
             await S0(move, attackerIsPlayer, damage, crit);
             return;
           }
@@ -1900,6 +1904,7 @@
               hit: !0,
               damage,
               crit,
+              resonant,
               showDamage: !0,
             }),
             motionSetter = attackerIsPlayer ? s : Zn,
@@ -1908,6 +1913,7 @@
             if (committed) return;
             committed = !0;
             onImpact();
+            if (resonant) window.EV_MUSIC?.playResonanceCue?.();
           };
           try {
             setAttackScene(scene);
@@ -1953,6 +1959,12 @@
             on = nn ? T.fighter.sp.types : _n(w.pat.sp).types,
             Vn = vn ? T.fighter.sp.name : _n(X.pat.sp).name,
             Bn = nn ? T.fighter.sp.name : _n(w.pat.sp).name;
+          const bossIdentity = [u.trainerName, u.npcId, u.foeSp].filter(Boolean).join(" ").toLowerCase();
+          if (!y && (u.isBoss === true || u.boss === true || /boss|guard|guardi[aã]o|tit[aã]|alfa|campe[aã]o/.test(bossIdentity))) {
+            setBossSignal({ name: j.name, type: j.type });
+            await Wn(`SINAL DO CHEFE: ${Vn} prepara ${j.name} (${j.type})!`, 850);
+            setBossSignal(null);
+          }
           if (
             (await Wn(`${Vn} usou ${j.name}!`, 700),
             Math.random() * 100 > j.acc)
@@ -1997,6 +2009,20 @@
               ((Mo = Math.floor(Vu / 2)), h("Instinto ativado: Espelho!"));
             }
           }
+          let resonance = { charge: resonanceChargeRef.current, resonant: false, gained: 0 };
+          if (y && Vu > 0 && window.EV_RESONANCE) {
+            const petAffinities = [...(R || []), ...(X.pat?.afinidades || [])];
+            const aligned = window.EV_RESONANCE.qualifies(j.type, petAffinities, l.affinities || []);
+            resonance = window.EV_RESONANCE.step({
+              charge: resonanceChargeRef.current,
+              aligned,
+              bond: X.pat?.bondLevel ?? X.pat?.vinculo ?? 0,
+            });
+            if (resonance.resonant) {
+              Vu = window.EV_RESONANCE.applyDamage(Vu, true);
+              h("RESSONÂNCIA DO VÍNCULO! Dano aumentado em 18%.");
+            }
+          }
           let attackerSpecies = vn ? T.fighter.sp : _n(X.pat.sp);
           if (X.pat?.hybridId) {
             let hybrid = Object.values(Y0).find((entry) => entry.id === X.pat.hybridId);
@@ -2012,8 +2038,12 @@
             w.pat.hp = Math.max(0, w.pat.hp - Vu);
             if (Mo > 0 && X.pat.hp > 0)
               X.pat.hp = Math.max(0, X.pat.hp - Mo);
+            if (y && (resonance.gained > 0 || resonance.resonant)) {
+              resonanceChargeRef.current = resonance.charge;
+              setResonanceCharge(resonance.charge);
+            }
             gn();
-          });
+          }, resonance.resonant);
           try {
             navigator.vibrate?.(25);
           } catch {}
@@ -2730,6 +2760,11 @@
                             "text-right text-[11px] font-bold text-slate-600",
                           children: [K, "/", jn.current?.maxHp],
                         }),
+                        bossSignal && O("div", {
+                          role: "status",
+                          className: "mt-1 rounded-lg border border-amber-300/70 bg-amber-950/80 px-2 py-1 text-[10px] font-black text-amber-100 animate-pulse",
+                          children: ["SINAL DO CHEFE · ", bossSignal.name, " · ", bossSignal.type],
+                        }),
                       ],
                     }),
                     O("div", {
@@ -2836,6 +2871,34 @@
                           className:
                             "text-right text-[11px] font-bold text-slate-600",
                           children: [M, "/", Dn.current?.maxHp],
+                        }),
+                        O("div", {
+                          className: "mt-1",
+                          role: "meter",
+                          "aria-label": "Carga de Ressonância do Vínculo",
+                          "aria-valuemin": 0,
+                          "aria-valuemax": 100,
+                          "aria-valuenow": resonanceCharge,
+                          children: [
+                            O("div", {
+                              className: "flex justify-between text-[9px] font-black tracking-wide text-emerald-800",
+                              children: [
+                                N("span", { children: "RESSONÂNCIA" }),
+                                N("span", { children: resonanceCharge >= 100 ? "PRONTA · +18%" : `${resonanceCharge}%` }),
+                              ],
+                            }),
+                            O("div", {
+                              className: "h-1.5 w-full overflow-hidden rounded-full bg-black/20",
+                              children: N("div", {
+                                className: "h-full rounded-full transition-[width] duration-300",
+                                style: {
+                                  width: `${Math.min(100, resonanceCharge)}%`,
+                                  background: resonanceCharge >= 100 ? "linear-gradient(90deg,#fde68a,#34d399)" : "linear-gradient(90deg,#34d399,#a3e635)",
+                                  boxShadow: resonanceCharge >= 100 ? "0 0 8px #34d399" : "none",
+                                },
+                              }),
+                            }),
+                          ],
                         }),
                         N("div", {
                           className:
