@@ -8,7 +8,7 @@
     boss: "./assets/audio/battle-boss.mp3",
     pvp: "./assets/audio/battle-pvp.mp3",
   };
-  const trackVolumes = { menu: 0.34, common: 0.11, boss: 0.13, pvp: 0.04 };
+  const trackVolumes = { menu: 0.34, common: 0.01, boss: 0.13, pvp: 0.10 };
   const player = new Audio();
   player.preload = "auto";
   player.loop = true;
