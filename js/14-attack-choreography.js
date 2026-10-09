@@ -199,6 +199,60 @@
     }, `shot-${scene.runId}-${index}`);
   }
 
+  function windupNode(scene) {
+    return N("div", {
+      className: `ev-vfx-windup ev-vfx-windup-${scene.glyph}`,
+      style: {
+        left: percent(scene.x0),
+        top: percent(scene.y0),
+        width: `${Math.round(scene.size * (1.9 + scene.stage * 0.16))}px`,
+        height: `${Math.round(scene.size * (1.9 + scene.stage * 0.16))}px`,
+        "--ev-a": scene.colors[0],
+        "--ev-b": scene.colors[1],
+        "--ev-c": scene.colors[2],
+        animation: `ev-vfx-windup ${scene.impactAtMs}ms cubic-bezier(.2,.7,.2,1) both`,
+      },
+    }, `windup-${scene.runId}`);
+  }
+
+  function impactParticle(scene, index, total) {
+    const angle = (Math.PI * 2 * index) / total + (scene.variant * Math.PI) / 9;
+    const distance = scene.size * (1.45 + scene.stage * 0.2 + (index % 3) * 0.14);
+    const size = scene.size * (0.18 + (index % 3) * 0.06);
+    return N("div", {
+      className: `ev-vfx-impact-particle ev-vfx-shape-${index % 3 ? scene.glyph : "spark"}`,
+      style: {
+        left: percent(scene.x1),
+        top: percent(scene.y1),
+        width: `${Math.max(5, Math.round(size))}px`,
+        height: `${Math.max(5, Math.round(size))}px`,
+        "--ev-a": scene.colors[index % scene.colors.length],
+        "--ev-b": scene.colors[(index + 1) % scene.colors.length],
+        "--ev-burst-x": `${Math.cos(angle) * distance}px`,
+        "--ev-burst-y": `${Math.sin(angle) * distance}px`,
+        "--ev-rot": `${Math.round(angle * 180 / Math.PI + scene.variant * 18)}deg`,
+        animation: `ev-vfx-debris ${420 + (index % 3) * 90}ms cubic-bezier(.12,.72,.2,1) ${scene.impactAtMs}ms both`,
+      },
+    }, `impact-particle-${scene.runId}-${index}`);
+  }
+
+  function impactHalo(scene) {
+    const size = Math.round(scene.size * (4.8 + scene.stage * 0.42));
+    return N("div", {
+      className: "ev-vfx-impact-halo",
+      style: {
+        left: percent(scene.x1),
+        top: percent(scene.y1),
+        width: `${size}px`,
+        height: `${size}px`,
+        "--ev-a": scene.colors[0],
+        "--ev-b": scene.colors[1],
+        "--ev-c": scene.colors[2],
+        animation: `ev-vfx-halo 500ms ease-out ${scene.impactAtMs}ms both`,
+      },
+    }, `halo-${scene.runId}`);
+  }
+
   function impactNode(scene) {
     return O("div", {
       className: `ev-vfx-impact-wrap ${scene.crit ? "ev-vfx-critical" : ""} ${scene.resonant ? "ev-vfx-resonant" : ""}`,
@@ -212,6 +266,7 @@
         "--ev-impact-size": `${Math.round(scene.size * (2.3 + scene.stage * 0.15))}px`,
       },
       children: [
+        N("div", { className: "ev-vfx-impact-ring ev-vfx-impact-ring-secondary" }),
         N("div", { className: "ev-vfx-impact-ring" }),
         N("div", { className: "ev-vfx-impact-flash" }),
         scene.showDamage && scene.hit && scene.damage > 0
@@ -231,6 +286,12 @@
   function VfxView({ scene }) {
     if (!scene) return null;
     const children = [];
+    if (scene.hit) {
+      children.push(windupNode(scene));
+      children.push(impactHalo(scene));
+      const particleCount = Math.min(13, 7 + scene.stage + (scene.crit ? 3 : 0));
+      for (let i = 0; i < particleCount; i++) children.push(impactParticle(scene, i, particleCount));
+    }
     if (scene.resonant && scene.hit) children.push(N("div", {
       className: "ev-vfx-resonance-wash",
       style: { "--ev-res-x": percent(scene.x1), "--ev-res-y": percent(scene.y1) },

@@ -32,10 +32,13 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/13-postgame-creature-art.js` | Silhuetas exclusivas dos 13 Pets da saga, com anatomias e paletas próprias. |
 | `js/14-attack-choreography.js` | Planejador/renderer compartilhado das coreografias por Pet e golpe. |
 | `js/15-bond-resonance.js` | Regras compartilhadas de alinhamento, carga e bônus de Ressonância. |
+| `js/16-safe-spawn.js` | Busca tiles caminháveis e distribui seguidores sem empilhá-los no spawn. |
 | `tests/bond-resonance.test.js` | Testes automatizados do núcleo de alinhamento, carga e dano. |
+| `tests/attack-choreography.test.js` | Testes do renderer das camadas visuais e do impacto sincronizado. |
+| `tests/world-spawn.test.js` | Testes da recuperação de posição e da formação inicial dos seguidores. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js` e `15-bond-resonance.js` devem carregar antes dos módulos de batalha e da aplicação.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js`, `15-bond-resonance.js` e `16-safe-spawn.js` devem carregar antes dos módulos de batalha e da aplicação.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -78,6 +81,14 @@ O repertório visual inclui investida do próprio Pet até o alvo, múltiplos pr
 
 Edite o mapeamento e as formas visuais em `js/14-attack-choreography.js` e `css/game.css`; ajuste a integração de impacto/HP em `js/09-battle.js` e `js/10-online-app.js`. O volume da trilha PvP está em `js/audio-manager.js`.
 
+### Camadas visuais acrescentadas
+
+As coreografias agora incluem uma aura curta de preparação junto ao atacante, um halo cromático no alvo e partículas direcionais no impacto, com intensidade escalada por estágio e acerto crítico. Esses elementos usam a mesma marca temporal em que o combate local desconta HP; nenhum nome, golpe, dano, precisão ou regra foi alterado. O `prefers-reduced-motion` continua respeitado.
+
+## Spawn seguro e compatibilidade de saves
+
+Novos treinadores começam em **(8,10)**, na praça aberta da Vila Vínculo, próximos ao Professor Verdelho e fora das construções. O ponto legado (8,9) é reposicionado para a praça quando o save ainda está no início da aventura; qualquer save cujo tile atual tenha ficado bloqueado por uma construção ou obstáculo procura automaticamente o tile caminhável mais próximo. A correção atualiza somente posição/direção no save, sem migração de schema. Os seguidores também começam em tiles livres distintos, atrás do jogador, em vez de empilhados sobre o personagem.
+
 ## Arte exclusiva dos Pets da saga
 
 Os 13 Pets da expansão agora passam por `js/13-postgame-creature-art.js` antes do fallback genérico. Cada espécie tem uma silhueta corporal própria: réptil de raízes e guardiã-arbórea; filhote de cristal e aríete; cerva aquática e cervo de coral; falcão e fênix tempestuosa; morcego lunar e touro de eclipse; ave de brasa, fênix solar e dragão primordial. As evoluções e o lendário ganham proporção maior e detalhes de estágio, com paleta, rosto, extremidades e adornos desenhados para a sua afinidade.
@@ -109,7 +120,7 @@ Peça à outra IA para preservar os saves existentes, os caminhos relativos, a o
 
 No PvP, a carga é armazenada por ID de participante dentro do estado sincronizado da partida, replicada nos dois clientes e exibida nos dois medidores. Partidas antigas sem esse campo começam em zero e recebem o campo na próxima resolução de turno. Os sinais prévios dos chefes avisam o nome e a afinidade do golpe antes da animação de ataque; esse aviso é informativo e não muda precisão, dano ou regras dos golpes.
 
-Os testes de regras não exigem dependências externas: `node --test tests/bond-resonance.test.js`.
+Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
 ## Validação desta versão
 
@@ -122,8 +133,11 @@ Os testes de regras não exigem dependências externas: `node --test tests/bond-
 - Os quatro arquivos de áudio responderam com HTTP 200.
 - O Modo de Ensaio foi testado no Chromium em tamanho móvel: abriu o Dex, exibiu os cinco golpes de Embercub e renderizou um projétil comum e o golpe assinatura sem iniciar batalha.
 - Os volumes foram verificados em teste isolado: menu 34%, batalha comum 11%, chefe 13% e PvP 4%.
-- Nesta integração, `node --test tests/bond-resonance.test.js` aprovou seis testes de alinhamento, carga, limite, retenção, consumo e dano; `node --check` passou em todos os módulos, e as referências HTML/MP3 foram conferidas.
+- Nesta integração, os testes de ressonância e spawn foram executados com `node --test tests/*.test.js`; `node --check` passou em todos os módulos, e as referências HTML/MP3 foram conferidas.
 - Smoke test no navegador Chromium via HTTP confirmou carregamento da página, montagem do menu/mapa, runtime de coreografias, núcleo da Ressonância e gerenciador de áudio; a coreografia teste marcou corretamente a cena como ressonante.
 - Em batalha local real no Chromium (Embercub Nv 5 contra Leafit Nv 4), quatro golpes alinhados preencheram a barra até 100%; o golpe seguinte consumiu a carga, aplicou o multiplicador e zerou o medidor, com HP atualizado após o impacto.
 - Em desafio local real contra o Guardião do Bosque, o HUD mostrou “SINAL DO CHEFE” e anunciou “Leafit prepara Chicote Vinha (Flora)!” antes da resposta inimiga.
+- A nova partida foi verificada na Vila em (8,10); o antigo início (8,9) migrou para a praça, e um save legado de QA dentro de uma casa foi recuperado para (4,2), preservando o Pet e atualizando `worldPositions.main`/`expHome`. Os seguidores também têm teste automatizado contra sobreposição e tiles bloqueados.
+- O renderer da coreografia emitiu a aura de preparação, o halo e as partículas no teste de ensaio; o fluxo de dano e o PvP não foram alterados nesta atualização.
+- Testes adicionais cobrem as camadas de preparação/impacto e o valor visual de dano/crítico, sem mudar o cálculo do combate.
 - Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.

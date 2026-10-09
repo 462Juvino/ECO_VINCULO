@@ -283,6 +283,57 @@
           if (p && !$.openedChests.includes(p.id)) return !0;
           return !1;
         }
+        function findSafeSpawn(g, S) {
+          return window.EV_SAFE_SPAWN?.nearestWalkable?.({
+            x: g,
+            y: S,
+            width: J.w,
+            height: J.h,
+            isBlocked: il,
+          }) ?? null;
+        }
+        function placeFollowersBehindPlayer() {
+          let g = Math.floor(q.current.x / t),
+            S = Math.floor(q.current.y / t),
+            p = window.EV_SAFE_SPAWN?.followerTrail?.({
+              x: g,
+              y: S,
+              count: 3,
+              direction: q.current.dir,
+              width: J.w,
+              height: J.h,
+              isBlocked: il,
+            }) ?? [];
+          for (let x = 0; x < 3; x++) {
+            let X = p[x];
+            Au.current[x] = X
+              ? { x: (X.x + 0.5) * t, y: (X.y + 0.5) * t }
+              : { x: q.current.x, y: q.current.y };
+          }
+        }
+        $n.useEffect(() => {
+          if (f || M.current !== null || A.current) return;
+          let g = Math.floor(q.current.x / t),
+            S = Math.floor(q.current.y / t),
+            blocked = il(g, S);
+          let p = worldId === "main" && !$.starterGiven && g === 8 && S === 9
+              ? findSafeSpawn(8, 10)
+              : blocked
+                ? findSafeSpawn(g, S)
+                : { x: g, y: S };
+          if (p && (p.x !== g || p.y !== S)) {
+            ((q.current.x = (p.x + 0.5) * t),
+              (q.current.y = (p.y + 0.5) * t),
+              ($.px = p.x),
+              ($.py = p.y),
+              ($.dir = q.current.dir),
+              ($.worldPositions ||= {}),
+              ($.worldPositions[worldId] = { x: p.x, y: p.y, dir: q.current.dir }),
+              worldId === "main" && ((P.current = $.worldPositions.main), ($.expHome = $.worldPositions.main)),
+              ml(I0, n.current));
+          }
+          placeFollowersBehindPlayer();
+        }, []);
         let Ff = (g, S) =>
           M.current !== null
             ? y3[M.current].find((p) => p.x === g && p.y === S)
@@ -362,7 +413,7 @@
           let p = $.worldPositions[g];
           if (!p) {
             p = g === "main"
-              ? $.expHome ?? { x: 8, y: 9, dir: 2 }
+              ? $.expHome ?? { x: 8, y: 10, dir: 0 }
               : g === "tata"
                 ? G3
                 : window.EV_POSTGAME_WORLDS[g].start;
