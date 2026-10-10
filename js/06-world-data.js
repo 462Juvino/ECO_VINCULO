@@ -5964,6 +5964,7 @@
           u.worldPositions = {};
         if (!u.worldPositions.main && u.expHome)
           u.worldPositions.main = { ...u.expHome };
+        window.EV_SAFE_SPAWN?.repairVillageHouseSpawn?.(u);
         if (u.sagaFinalReward === void 0) u.sagaFinalReward = !1;
         if (u.nurseFreeUsed === void 0) u.nurseFreeUsed = !1;
         if (u.nurseLastHealAt === void 0) u.nurseLastHealAt = 0;

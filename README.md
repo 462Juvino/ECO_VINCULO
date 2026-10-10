@@ -32,13 +32,15 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/13-postgame-creature-art.js` | Silhuetas exclusivas dos 13 Pets da saga, com anatomias e paletas próprias. |
 | `js/14-attack-choreography.js` | Planejador/renderer compartilhado das coreografias por Pet e golpe. |
 | `js/15-bond-resonance.js` | Regras compartilhadas de alinhamento, carga e bônus de Ressonância. |
-| `js/16-safe-spawn.js` | Busca tiles caminháveis e distribui seguidores sem empilhá-los no spawn. |
+| `js/16-safe-spawn.js` | Recupera saves dentro das casas da Vila, busca tiles caminháveis e distribui seguidores sem empilhá-los no spawn. |
+| `js/17-realtime-combat.js` | Arena experimental da campanha com luta em tempo real, controles móveis, stamina/poder, IA com telegraphs e bônus por arena. |
 | `tests/bond-resonance.test.js` | Testes automatizados do núcleo de alinhamento, carga e dano. |
 | `tests/attack-choreography.test.js` | Testes do renderer das camadas visuais e do impacto sincronizado. |
+| `tests/realtime-combat.test.js` | Testes das arenas, dos bônus de atributos e da mitigação ao defender. |
 | `tests/world-spawn.test.js` | Testes da recuperação de posição e da formação inicial dos seguidores. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js`, `15-bond-resonance.js` e `16-safe-spawn.js` devem carregar antes dos módulos de batalha e da aplicação.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js`, `15-bond-resonance.js`, `16-safe-spawn.js` e `17-realtime-combat.js` devem carregar antes de `09-battle.js` e da aplicação.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -87,7 +89,9 @@ As coreografias agora incluem uma aura curta de preparação junto ao atacante, 
 
 ## Spawn seguro e compatibilidade de saves
 
-Novos treinadores começam em **(8,10)**, na praça aberta da Vila Vínculo, próximos ao Professor Verdelho e fora das construções. O ponto legado (8,9) é reposicionado para a praça quando o save ainda está no início da aventura; qualquer save cujo tile atual tenha ficado bloqueado por uma construção ou obstáculo procura automaticamente o tile caminhável mais próximo. A correção atualiza somente posição/direção no save, sem migração de schema. Os seguidores também começam em tiles livres distintos, atrás do jogador, em vez de empilhados sobre o personagem.
+Novos treinadores começam em **(8,10)**, na praça aberta da Vila Vínculo, próximos ao Professor Verdelho e fora das construções. Ao normalizar o save, o jogo reconhece explicitamente as áreas internas das duas casas da Vila (inclusive tiles cuja aparência/camada possa divergir da colisão) e transfere o jogador para a praça **antes da criação do sprite**. A posição corrigida é gravada em `px`/`py`, `worldPositions.main` e `expHome`, preservando Pets, nível, itens e o restante do progresso. Para outros tiles bloqueados, permanece a busca automática pelo caminhável mais próximo. Os seguidores também começam em tiles livres distintos, atrás do personagem.
+
+O HTML aplica versão de cache aos três módulos que participam da correção. Para a página pública no GitHub Pages, envie/substitua o projeto atualizado (não basta alterar uma cópia no computador); depois reabra o endereço publicado ou faça recarga forçada para que o navegador baixe o HTML novo.
 
 ## Arte exclusiva dos Pets da saga
 
@@ -122,6 +126,20 @@ No PvP, a carga é armazenada por ID de participante dentro do estado sincroniza
 
 Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
+## Combate local em tempo real — primeira etapa
+
+Ao entrar em uma batalha da campanha, o seletor oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo em tempo real usa os golpes e Pets já existentes, sem mudar o catálogo nem o formato dos saves. Os ganhos de experiência, evoluções, registros do Dex, captura e conclusão da batalha passam pelos dados e callbacks da campanha. O modo online/PvP não foi alterado: continua no arquivo `js/10-online-app.js`, que permaneceu intocado nesta etapa.
+
+- **Celular:** direcional na tela para se mover; botões para os quatro golpes, defesa, esquiva e, em encontro selvagem, vínculo/captura.
+- **Teclado:** WASD/setas para mover; `1`–`4` para golpes; `F` ou espaço para defender; `E` ou Shift para esquivar; `Q` para trocar de Pet.
+- O golpe básico custa estamina; os outros golpes consomem poder. Estamina/poder recarregam durante a luta; defender drena estamina.
+- Trocas voluntárias ativam **15 segundos de recarga**; a troca automática quando um Pet desmaia não é bloqueada.
+- Clareira, arena das Marés e caverna mudam atributos efetivos, velocidade e velocidade de recarga conforme as afinidades; tipos secundários também contam. O HUD mostra os valores aplicados.
+- A IA anuncia o golpe e marca a zona de impacto antes de atacar; chefes têm sinais mais curtos e golpes mais fortes. Esquivar para fora da zona ou defender reduz o risco.
+- As coreografias reutilizam `js/14-attack-choreography.js`, dando movimento, projéteis e impacto conforme o Pet, tipo e golpe já selecionados.
+
+Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e controles, não uma conversão final de todos os confrontos: mantenha a opção clássica enquanto avalia, e não conte com o PvP como parte da conversão.
+
 ## Validação desta versão
 
 - `node --check` passou em todos os módulos JavaScript.
@@ -134,10 +152,12 @@ Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 - O Modo de Ensaio foi testado no Chromium em tamanho móvel: abriu o Dex, exibiu os cinco golpes de Embercub e renderizou um projétil comum e o golpe assinatura sem iniciar batalha.
 - Os volumes foram verificados em teste isolado: menu 34%, batalha comum 11%, chefe 13% e PvP 4%.
 - Nesta integração, os testes de ressonância e spawn foram executados com `node --test tests/*.test.js`; `node --check` passou em todos os módulos, e as referências HTML/MP3 foram conferidas.
+- A primeira etapa do combate em tempo real foi testada no Chromium: seletor local, render de Pets sem erro, golpe com dano e coreografia compartilhada, consumo de poder, troca com leitura de **15 s**, captura/registro no box e layout móvel simulado em 390×844; o PvP não foi tocado.
 - Smoke test no navegador Chromium via HTTP confirmou carregamento da página, montagem do menu/mapa, runtime de coreografias, núcleo da Ressonância e gerenciador de áudio; a coreografia teste marcou corretamente a cena como ressonante.
 - Em batalha local real no Chromium (Embercub Nv 5 contra Leafit Nv 4), quatro golpes alinhados preencheram a barra até 100%; o golpe seguinte consumiu a carga, aplicou o multiplicador e zerou o medidor, com HP atualizado após o impacto.
 - Em desafio local real contra o Guardião do Bosque, o HUD mostrou “SINAL DO CHEFE” e anunciou “Leafit prepara Chicote Vinha (Flora)!” antes da resposta inimiga.
-- A nova partida foi verificada na Vila em (8,10); o antigo início (8,9) migrou para a praça, e um save legado de QA dentro de uma casa foi recuperado para (4,2), preservando o Pet e atualizando `worldPositions.main`/`expHome`. Os seguidores também têm teste automatizado contra sobreposição e tiles bloqueados.
+- A nova partida foi verificada na Vila em (8,10); o antigo início (8,9) migra para a praça. O relato posterior revelou que o teste anterior de recuperação por tile não cobria o caso do save publicado. Agora o save dentro de qualquer uma das duas casas é transferido para (8,10) durante `M8`, antes de montar a cena; testes garantem a preservação do progresso e a sincronização `worldPositions.main`/`expHome`.
+- Na validação integrada final, um save com jogador em (5,5) dentro da casa, Pet Embercub nível 24 e posição de retorno também bloqueada foi carregado pelo botão Continuar e corrigido para (8,10) antes de entrar no mapa; o Pet e o nível permaneceram intactos.
 - O renderer da coreografia emitiu a aura de preparação, o halo e as partículas no teste de ensaio; o fluxo de dano e o PvP não foram alterados nesta atualização.
 - Testes adicionais cobrem as camadas de preparação/impacto e o valor visual de dano/crítico, sem mudar o cálculo do combate.
 - Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.

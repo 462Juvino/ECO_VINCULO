@@ -14,6 +14,25 @@
     [0, -1],
     [1, 0],
   ];
+  const SAFE_VILLAGE_SPAWN = Object.freeze({ x: 8, y: 10, dir: 0 });
+
+  function isInsideVillageHouse(x, y) {
+    const tileX = Math.floor(Number(x));
+    const tileY = Math.floor(Number(y));
+    if (!Number.isFinite(tileX) || !Number.isFinite(tileY) || tileY < 3 || tileY > 5) return false;
+    return (tileX >= 3 && tileX <= 6) || (tileX >= 10 && tileX <= 13);
+  }
+
+  function repairVillageHouseSpawn(save) {
+    if (!save || (save.worldId && save.worldId !== "main") || !isInsideVillageHouse(save.px, save.py)) return false;
+    save.px = SAFE_VILLAGE_SPAWN.x;
+    save.py = SAFE_VILLAGE_SPAWN.y;
+    save.dir = SAFE_VILLAGE_SPAWN.dir;
+    save.worldPositions ||= {};
+    save.worldPositions.main = { ...SAFE_VILLAGE_SPAWN };
+    save.expHome = { ...SAFE_VILLAGE_SPAWN };
+    return true;
+  }
 
   function nearestWalkable({ x, y, width, height, isBlocked, neighborOrder } = {}) {
     const mapWidth = Math.floor(Number(width));
@@ -75,5 +94,10 @@
     return trail;
   }
 
-  window.EV_SAFE_SPAWN = Object.freeze({ nearestWalkable, followerTrail });
+  window.EV_SAFE_SPAWN = Object.freeze({
+    nearestWalkable,
+    followerTrail,
+    isInsideVillageHouse,
+    repairVillageHouseSpawn,
+  });
 })();

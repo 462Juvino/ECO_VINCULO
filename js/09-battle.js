@@ -199,7 +199,7 @@
             },
           },
         };
-      function n9({ gs: n, init: u, onEnd: r }) {
+      function n9Classic({ gs: n, init: u, onEnd: r }) {
         let l = n.current,
           o = Un.useRef(!0),
           [f, $] = Un.useState("intro"),
@@ -6247,4 +6247,45 @@
           default:
             return null;
         }
+      }
+
+
+      // A batalha de campanha pode alternar entre a versão original e o protótipo
+      // em tempo real. O sistema online usa seu próprio componente e não passa por aqui.
+      var EV_REALTIME_VIEWS = window.EV_REALTIME_COMBAT?.createView({
+        React: Un,
+        h: N,
+        Sprite: In,
+        species: _n,
+        getStats: zn,
+        getEffectiveness: (attackType, defendingTypes) => P0(attackType, defendingTypes),
+        makePet: Vl,
+        xpForDefeat: (enemyLevel, trainerBattle, petLevel, wasActive) => {
+          const baseXp = _Q(enemyLevel, trainerBattle, petLevel);
+          return wasActive ? baseXp : Math.floor(baseXp / 2);
+        },
+        xpToNext: Io,
+        relics: lr,
+        registerSpecies: (save, speciesId) => { rl(save, speciesId); Yl(save, speciesId); },
+        registerEvolution: (save, speciesId) => {
+          rl(save, speciesId);
+          Yl(save, speciesId);
+          save.evolvedTotal = (save.evolvedTotal || 0) + 1;
+        },
+        evolve: (pet, save) => {
+          const currentSpecies = _n(pet.sp);
+          const requiredLevel = currentSpecies?.evoLevel ?? (currentSpecies?.stage === 0 ? 12 : 24);
+          if (currentSpecies && currentSpecies.stage < 2 && pet.level >= requiredLevel)
+            return H8(pet.sp, z0(save));
+          return null;
+        },
+      });
+      var EV_REALTIME_MODE_SELECTOR = EV_REALTIME_VIEWS?.ChooseBattleMode;
+      function n9(props) {
+        if (!EV_REALTIME_MODE_SELECTOR) return N(n9Classic, props);
+        return N(EV_REALTIME_MODE_SELECTOR, {
+          props,
+          Classic: n9Classic,
+          Realtime: EV_REALTIME_VIEWS.RealtimeBattle,
+        });
       }
