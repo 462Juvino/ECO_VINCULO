@@ -127,7 +127,7 @@
         el("div", { style: { width: `${clamp(value, 0, 100)}%`, height: "100%", background: color, transition: "width 100ms linear" } })),
     ]);
 
-    function RealtimeBattle({ gs, init, onEnd }) {
+    function RealtimeBattle({ gs, init, onEnd, onExit }) {
       const party = gs.current.party;
       const aliveStart = Math.max(0, party.findIndex((pet) => pet.hp > 0));
       const foeList = React.useRef(null);
@@ -518,7 +518,7 @@
       const directionButton = (label, dir) => el("button", {
         "aria-label": `Mover ${dir}`,
         type: "button", onPointerDown: pressDirection(dir), onPointerUp: releaseDirection(dir), onPointerCancel: releaseDirection(dir), onLostPointerCapture: releaseDirection(dir),
-        style: { touchAction: "none", width: 34, height: 34, borderRadius: 9, border: "1px solid #ffffff50", background: "#142c25cc", color: "white", fontWeight: 900, fontSize: 16, userSelect: "none", boxShadow: "0 2px 0 #0005" },
+        style: { touchAction: "none", width: 42, height: 42, borderRadius: 12, border: "1px solid #ffffff50", background: "#142c25cc", color: "white", fontWeight: 900, fontSize: 18, userSelect: "none", boxShadow: "0 2px 0 #0005" },
       }, label);
       const effectiveSwitches = party.slice(0, 3).map((pet, index) => el("button", {
         key: `pet-${index}`,
@@ -548,7 +548,10 @@
         ]),
         el("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 3, fontSize: 9, color: "#d4e2d6" } }, [
           el("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, arena.name),
-          el("button", { type: "button", onClick: () => setShowArenaDetails((open) => !open), title: arenaDetailText, "aria-label": `Ver efeitos da arena: ${arenaDetailText}`, style: { flex: "none", padding: "2px 5px", border: 0, borderRadius: 6, background: "#ffffff15", color: pArena.favored ? "#c8f49c" : pArena.hindered ? "#ffb9a8" : "#d4e2d6", fontSize: 8, fontWeight: 900, cursor: "pointer" } }, `${arena.focus}${pArena.favored ? " ↑" : pArena.hindered ? " ↓" : " · ⓘ"}`),
+          el("div", { style: { display: "flex", alignItems: "center", gap: 4, flex: "none" } }, [
+            el("button", { type: "button", onClick: () => setShowArenaDetails((open) => !open), title: arenaDetailText, "aria-label": `Ver efeitos da arena: ${arenaDetailText}`, style: { padding: "2px 5px", border: 0, borderRadius: 6, background: "#ffffff15", color: pArena.favored ? "#c8f49c" : pArena.hindered ? "#ffb9a8" : "#d4e2d6", fontSize: 8, fontWeight: 900, cursor: "pointer" } }, `${arena.focus}${pArena.favored ? " ↑" : pArena.hindered ? " ↓" : " · ⓘ"}`),
+            init.testMode && el("button", { type: "button", onClick: onExit, title: "Voltar ao menu inicial", "aria-label": "Sair do treino e voltar ao menu", style: { padding: "2px 6px", border: "1px solid #ffffff2c", borderRadius: 6, background: "#ffffff12", color: "#f0d6d2", fontSize: 8, fontWeight: 900, cursor: "pointer" } }, "SAIR ×"),
+          ]),
         ]),
         showArenaDetails && el("div", { style: { position: "absolute", right: 10, top: "calc(100% + 4px)", zIndex: 9, maxWidth: "calc(100% - 20px)", padding: "7px 9px", borderRadius: 9, background: "#081813f5", border: "1px solid #ffffff40", color: "#f4f7f4", boxShadow: "0 5px 16px #0008", fontSize: 9, fontWeight: 850 } }, arenaDetailText),
       ]);
@@ -565,7 +568,7 @@
         ]),
         el("span", { title: switchRemaining > 0 ? "Tempo para poder trocar" : "Troca pronta", style: { flex: "none", minWidth: 34, color: switchRemaining > 0 ? "#f5cf73" : "#b7dfbe", fontSize: 9, fontWeight: 900, textAlign: "right" } }, switchRemaining > 0 ? `${Math.ceil(switchRemaining / 1000)}s` : "Q · PET"),
       ]);
-      const buttonStyle = (background, minHeight = 34) => ({ minWidth: 0, minHeight, padding: "5px 7px", borderRadius: 10, border: "1px solid #ffffff36", background, color: "#fff", fontSize: 9, fontWeight: 950, lineHeight: 1.1, boxShadow: "0 2px 0 #0005", touchAction: "none", userSelect: "none", cursor: "pointer" });
+      const buttonStyle = (background, minHeight = 42) => ({ minWidth: 0, minHeight, padding: "5px 7px", borderRadius: 10, border: "1px solid #ffffff36", background, color: "#fff", fontSize: 9, fontWeight: 950, lineHeight: 1.1, boxShadow: "0 2px 0 #0005", touchAction: "none", userSelect: "none", cursor: "pointer" });
       const compactAction = (label, onPointerDown, background, disabled = false, title = "") => el("button", { type: "button", disabled, title, onPointerDown, style: { ...buttonStyle(disabled ? "#263831" : background), opacity: disabled ? .56 : 1 } }, label);
       const moveChoices = moveMenuOpen && el("div", { style: { position: "absolute", zIndex: 8, right: 8, bottom: "calc(100% + 7px)", width: "min(270px, 74vw)", display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 5, padding: 7, borderRadius: 15, border: "1px solid #ffffff35", background: "#081813f5", boxShadow: "0 8px 28px #0009" } }, playerMoves.map((move, index) => compactAction(
         `${index + 1} · ${move.name}\n${index === 0 ? "13 EST." : `${17 + index * 9} POD.`}`,
@@ -574,11 +577,11 @@
         false,
         `${move.type} · Poder ${move.power}`,
       )));
-      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "88px minmax(0,1fr)", gap: 7, alignItems: "center", padding: "4px 8px max(7px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
-        el("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,34px)", gridTemplateRows: "repeat(3,34px)", gap: 1, justifyContent: "center", alignContent: "center" } }, [
+      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "132px minmax(0,1fr)", gap: 7, alignItems: "center", padding: "4px 8px max(7px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
+        el("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,42px)", gridTemplateRows: "repeat(3,42px)", gap: 1, justifyContent: "center", alignContent: "center" } }, [
           el("span", { style: { gridColumn: "2", gridRow: "1" } }, directionButton("▲", "up")),
           el("span", { style: { gridColumn: "1", gridRow: "2" } }, directionButton("◀", "left")),
-          el("span", { style: { gridColumn: "2", gridRow: "2" } }, directionButton("▼", "down")),
+          el("span", { style: { gridColumn: "2", gridRow: "3" } }, directionButton("▼", "down")),
           el("span", { style: { gridColumn: "3", gridRow: "2" } }, directionButton("▶", "right")),
         ]),
         el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(60px,.75fr)", gap: 5, alignContent: "center" } }, [

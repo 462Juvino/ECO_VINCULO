@@ -2800,6 +2800,7 @@
         onContinue: r,
         onOnline: l,
         onDexUnlock: o,
+        onTestMobile: testMobile,
       }) {
         let [f, $] = fu.useState(!1),
           [_, v] = fu.useState(""),
@@ -2890,6 +2891,22 @@
                     N(x1, { size: 20, strokeWidth: 2.8 }),
                     " ",
                     n ? "Novo jogo" : "Começar aventura",
+                  ],
+                }),
+                O("button", {
+                  onClick: testMobile,
+                  className:
+                    "w-full rounded-2xl bg-sky-400/15 hover:bg-sky-400/25 border border-sky-200/25 px-5 py-3 text-left text-sky-100 transition active:scale-95",
+                  "aria-label": "Testar combate em tempo real no celular sem alterar o save",
+                  children: [
+                    N("span", {
+                      className: "block text-sm font-black",
+                      children: "Testar combate no celular",
+                    }),
+                    N("span", {
+                      className: "block mt-0.5 text-[10px] font-semibold text-sky-100/70",
+                      children: "Arena de demonstração · não altera seu save",
+                    }),
                   ],
                 }),
                 O("button", {
@@ -4052,6 +4069,7 @@
           [r, l] = pQ(n),
           o = fu.useRef(null),
           [f, $] = fu.useState(null),
+          [mobileTest, setMobileTest] = fu.useState(null),
           [_, v] = fu.useState(null),
           [Z, J] = fu.useState(0),
           [e, Q] = fu.useState(null),
@@ -4094,6 +4112,25 @@
               B([]),
               A(b, !0),
               Jr("success", "Sua jornada em Eco Vínculo começou!"));
+          },
+          startMobileTest = () => {
+            if (!window.EV_REALTIME_TEST_COMPONENT) {
+              Jr("error", "O módulo de combate não carregou. Confira se o GitHub Pages recebeu a pasta js/ inteira.");
+              return;
+            }
+            const demoSave = DQ("Treinador de Teste", ["Flora", "Faísca"]);
+            demoSave.party = ["leafit", "embercub", "aquaffin"].map((sp) => Vl(sp, 8));
+            setMobileTest({
+              gs: { current: demoSave },
+              init: {
+                kind: "trainer",
+                trainerName: "Guardião de Treino",
+                isBoss: true,
+                arena: "grass",
+                team: [{ sp: "pebblor", level: 8 }],
+                testMode: true,
+              },
+            });
           },
           q = (b) => {
             let z = o.current;
@@ -4181,6 +4218,7 @@
                       ),
                         u("dex"));
                     },
+                    onTestMobile: startMobileTest,
                   }),
                 r === "create" &&
                   N(be, {
@@ -4217,6 +4255,16 @@
               N("div", {
                 className: "fixed inset-0 z-[60] bg-black",
                 children: N(n9, { gs: Y, init: f, onEnd: L }),
+              }),
+            mobileTest &&
+              N("div", {
+                className: "fixed inset-0 z-[80] bg-black",
+                children: N(window.EV_REALTIME_TEST_COMPONENT, {
+                  gs: mobileTest.gs,
+                  init: mobileTest.init,
+                  onEnd: () => setMobileTest(null),
+                  onExit: () => setMobileTest(null),
+                }),
               }),
           ],
         });

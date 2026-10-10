@@ -6281,6 +6281,8 @@
         },
       });
       var EV_REALTIME_MODE_SELECTOR = EV_REALTIME_VIEWS?.ChooseBattleMode;
+      // Ponto de entrada para o treino rápido do menu; recebe um estado descartável e não salva a campanha.
+      window.EV_REALTIME_TEST_COMPONENT = EV_REALTIME_VIEWS?.RealtimeBattle;
       function n9(props) {
         if (!EV_REALTIME_MODE_SELECTOR) return N(n9Classic, props);
         return N(EV_REALTIME_MODE_SELECTOR, {

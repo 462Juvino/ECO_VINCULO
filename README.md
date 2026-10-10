@@ -128,9 +128,10 @@ Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
 ## Combate local em tempo real — primeira etapa
 
-Ao entrar em uma batalha da campanha, o seletor oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo em tempo real usa os golpes e Pets já existentes, sem mudar o catálogo nem o formato dos saves. Os ganhos de experiência, evoluções, registros do Dex, captura e conclusão da batalha passam pelos dados e callbacks da campanha. O modo online/PvP não foi alterado: continua no arquivo `js/10-online-app.js`, que permaneceu intocado nesta etapa.
+Na tela inicial há agora **Testar combate no celular**: abre diretamente uma arena de demonstração com um time temporário e um botão **SAIR**. XP, captura, evoluções e itens desse treino ficam somente em memória; o save de campanha não é carregado nem sobrescrito. Em encontros normais da campanha, o seletor ainda oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo online/PvP continua fora desta etapa.
 
 - **Celular:** arena top-down em tiles inspirados no mapa; direcional compacto para mover. Um botão executa o golpe selecionado e um seletor contextual revela todo o repertório só quando solicitado, junto a defesa, esquiva e, em encontro selvagem, vínculo/captura.
+- **Acesso ao treino:** na tela inicial, toque em **Testar combate no celular**; não precisa começar a campanha nem procurar um encontro.
 - **Teclado:** WASD/setas para mover; `1`–`5` para os golpes; `F` ou espaço para defender; `E` ou Shift para esquivar; `Q` para trocar de Pet.
 - O golpe básico custa estamina; os outros golpes consomem poder. Estamina/poder recarregam durante a luta; defender drena estamina.
 - Trocas voluntárias ativam **15 segundos de recarga**; a troca automática quando um Pet desmaia não é bloqueada.
@@ -163,3 +164,5 @@ Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e cont
 - Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.
 - Ajuste final da arena: prévia vertical em navegador mostrou o campo em tiles, os sinais de chefe vinculados ao raio de impacto e um botão opcional para consultar ATQ/DEF/VEL e regenerações do bioma; o seletor revelou e ativou o quinto golpe de Leafit/Embercub, sem cinco botões de ataque fixos no HUD.
 - Validação final desta revisão: `node --test tests/*.test.js` aprovou 22/22; `node --check` passou em todos os JS e as 20 referências relativas de HTML apontam para arquivos existentes.
+- Acesso rápido: o botão `Testar combate no celular` foi aberto no Chromium diretamente do menu, a arena iniciou e o botão `SAIR` retornou ao título; o fluxo usou um estado temporário e não criou save.
+- Controles móveis: no layout de 390 px, as quatro setas aparecem em cruz, têm alvos de 42×42 px e a grade reservada impede sobreposição com as ações.
