@@ -130,15 +130,15 @@ Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
 Ao entrar em uma batalha da campanha, o seletor oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo em tempo real usa os golpes e Pets já existentes, sem mudar o catálogo nem o formato dos saves. Os ganhos de experiência, evoluções, registros do Dex, captura e conclusão da batalha passam pelos dados e callbacks da campanha. O modo online/PvP não foi alterado: continua no arquivo `js/10-online-app.js`, que permaneceu intocado nesta etapa.
 
-- **Celular:** direcional na tela para se mover; botões para os quatro golpes, defesa, esquiva e, em encontro selvagem, vínculo/captura.
-- **Teclado:** WASD/setas para mover; `1`–`4` para golpes; `F` ou espaço para defender; `E` ou Shift para esquivar; `Q` para trocar de Pet.
+- **Celular:** arena top-down em tiles inspirados no mapa; direcional compacto para mover. Um botão executa o golpe selecionado e um seletor contextual revela todo o repertório só quando solicitado, junto a defesa, esquiva e, em encontro selvagem, vínculo/captura.
+- **Teclado:** WASD/setas para mover; `1`–`5` para os golpes; `F` ou espaço para defender; `E` ou Shift para esquivar; `Q` para trocar de Pet.
 - O golpe básico custa estamina; os outros golpes consomem poder. Estamina/poder recarregam durante a luta; defender drena estamina.
 - Trocas voluntárias ativam **15 segundos de recarga**; a troca automática quando um Pet desmaia não é bloqueada.
-- Clareira, arena das Marés e caverna mudam atributos efetivos, velocidade e velocidade de recarga conforme as afinidades; tipos secundários também contam. O HUD mostra os valores aplicados.
-- A IA anuncia o golpe e marca a zona de impacto antes de atacar; chefes têm sinais mais curtos e golpes mais fortes. Esquivar para fora da zona ou defender reduz o risco.
+- Clareira, arena das Marés e caverna mudam atributos efetivos, velocidade e velocidade de recarga conforme as afinidades; tipos secundários também contam. O HUD resume a sinergia/desvantagem e mostra os números completos sob demanda, sem cobrir o campo.
+- Limites visuais e obstáculos do bioma bloqueiam movimento e esquiva; os sinais de impacto são proporcionais ao raio de dano aplicado e identificam o golpe do chefe.
 - As coreografias reutilizam `js/14-attack-choreography.js`, dando movimento, projéteis e impacto conforme o Pet, tipo e golpe já selecionados.
 
-Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e controles, não uma conversão final de todos os confrontos: mantenha a opção clássica enquanto avalia, e não conte com o PvP como parte da conversão.
+Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e controles, não uma conversão final de todos os confrontos: mantenha a opção clássica enquanto avalia. O PvP online não foi alterado e continua fora desta etapa.
 
 ## Validação desta versão
 
@@ -161,3 +161,5 @@ Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e cont
 - O renderer da coreografia emitiu a aura de preparação, o halo e as partículas no teste de ensaio; o fluxo de dano e o PvP não foram alterados nesta atualização.
 - Testes adicionais cobrem as camadas de preparação/impacto e o valor visual de dano/crítico, sem mudar o cálculo do combate.
 - Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.
+- Ajuste final da arena: prévia vertical em navegador mostrou o campo em tiles, os sinais de chefe vinculados ao raio de impacto e um botão opcional para consultar ATQ/DEF/VEL e regenerações do bioma; o seletor revelou e ativou o quinto golpe de Leafit/Embercub, sem cinco botões de ataque fixos no HUD.
+- Validação final desta revisão: `node --test tests/*.test.js` aprovou 22/22; `node --check` passou em todos os JS e as 20 referências relativas de HTML apontam para arquivos existentes.

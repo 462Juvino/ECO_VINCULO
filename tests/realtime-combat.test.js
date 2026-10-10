@@ -48,3 +48,41 @@ test("vantagem elemental e crítico elevam dano; defender reduz dano sem zerá-l
   assert.ok(critical > neutral);
   assert.equal(combat.damageFor({ atk: 0, def: 999, power: 0, typeMultiplier: 0 }), 1);
 });
+
+test("o campo de combate bloqueia bordas e obstáculos nos três biomas", () => {
+  for (const biome of ["grass", "water", "cave"]) {
+    const arena = combat.arenaFor(biome);
+    const obstacle = arena.field.obstacles[0];
+    assert.equal(combat.canOccupy(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, arena), false);
+    assert.equal(combat.canOccupy(0.52, 0.52, arena), true);
+    assert.equal(combat.canOccupy(0.01, 0.5, arena), false);
+  }
+});
+
+test("movimento e esquiva respeitam as paredes e não atravessam rochas/vegetação", () => {
+  const arena = combat.arenaFor("grass");
+  const obstacle = arena.field.obstacles[0];
+  const y = obstacle.y + obstacle.h / 2;
+  const start = { x: obstacle.x - 0.12, y };
+  const moved = combat.moveInArena(start, 0.45, 0, arena);
+  assert.ok(moved.x <= obstacle.x - 0.04, `atravessou o obstáculo: ${moved.x}`);
+  assert.equal(moved.y, y);
+  const slid = combat.moveInArena(start, 0.22, 0.16, arena);
+  assert.ok(combat.canOccupy(slid.x, slid.y, arena));
+  const edge = combat.moveInArena({ x: 0.5, y: 0.5 }, 2, 0, arena);
+  assert.ok(edge.x < arena.field.bounds.maxX);
+  assert.ok(combat.canOccupy(edge.x, edge.y, arena));
+});
+
+test("sinais de ataque escalam com o perigo e expõem o raio aplicado no impacto", () => {
+  assert.ok(combat.telegraphRadius(70, true) > combat.telegraphRadius(70, false));
+  assert.ok(combat.telegraphRadius(70, false) > combat.telegraphRadius(35, false));
+  assert.ok(combat.telegraphRadius(35, true) > combat.telegraphRadius(35, false));
+  assert.ok(combat.telegraphRadius(70, true) < 0.3, "o raio pesado ainda deve permitir esquiva numa arena limitada");
+});
+
+test("o seletor preserva todos os golpes disponíveis, inclusive o quinto", () => {
+  const moves = ["impacto", "faísca", "onda", "raiz", "assinatura"];
+  assert.deepEqual(combat.availableMoves({ moves }), moves);
+  assert.equal(combat.availableMoves({ moves: null }).length, 0);
+});
