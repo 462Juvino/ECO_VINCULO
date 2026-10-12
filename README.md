@@ -33,14 +33,16 @@ Esta pasta contém o jogo dividido em módulos, com uma saga pós-jogo, novas es
 | `js/14-attack-choreography.js` | Planejador/renderer compartilhado das coreografias por Pet e golpe. |
 | `js/15-bond-resonance.js` | Regras compartilhadas de alinhamento, carga e bônus de Ressonância. |
 | `js/16-safe-spawn.js` | Recupera saves dentro das casas da Vila, busca tiles caminháveis e distribui seguidores sem empilhá-los no spawn. |
-| `js/17-realtime-combat.js` | Arena experimental da campanha com luta em tempo real, controles móveis, stamina/poder, IA com telegraphs e bônus por arena. |
+| `js/18-projectile-physics.js` | Classificação de técnicas, velocidade de projétil, geometria de área e impulso pós-impacto. |
+| `js/17-realtime-combat.js` | Arena experimental da campanha com luta em tempo real, controles móveis, stamina/poder, esquivas, projéteis e bônus por arena. |
+| `tests/realtime-projectile-physics.test.js` | Testes de papéis de golpes, velocidade, colisão de área e empurrão. |
 | `tests/bond-resonance.test.js` | Testes automatizados do núcleo de alinhamento, carga e dano. |
 | `tests/attack-choreography.test.js` | Testes do renderer das camadas visuais e do impacto sincronizado. |
 | `tests/realtime-combat.test.js` | Testes das arenas, dos bônus de atributos e da mitigação ao defender. |
 | `tests/world-spawn.test.js` | Testes da recuperação de posição e da formação inicial dos seguidores. |
 | `js/external-links.js` | Ajuste original para links externos. |
 
-**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js`, `15-bond-resonance.js`, `16-safe-spawn.js` e `17-realtime-combat.js` devem carregar antes de `09-battle.js` e da aplicação.
+**Preserve a ordem dos `<script>` em `index.html`.** `12-postgame-worlds.js` deve vir depois de `11-signature-attacks.js`; `13-postgame-creature-art.js` deve vir depois dos dados do mundo; `14-attack-choreography.js`, `15-bond-resonance.js`, `16-safe-spawn.js`, `18-projectile-physics.js` e `17-realtime-combat.js` devem carregar antes de `09-battle.js` e da aplicação.
 
 ## Saga pós-jogo: Terras do Grande Eco
 
@@ -130,13 +132,15 @@ Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
 Na tela inicial há agora **Testar combate no celular**: abre diretamente uma arena de demonstração com um time temporário e um botão **SAIR**. XP, captura, evoluções e itens desse treino ficam somente em memória; o save de campanha não é carregado nem sobrescrito. Em encontros normais da campanha, o seletor ainda oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo online/PvP continua fora desta etapa.
 
-- **Celular:** arena top-down em tiles inspirados no mapa; direcional compacto para mover. Um botão executa o golpe selecionado e um seletor contextual revela todo o repertório só quando solicitado, junto a defesa, esquiva e, em encontro selvagem, vínculo/captura.
+- **Celular:** arena top-down em tiles inspirados no mapa, com mais espaço caminhável e obstáculos sólidos. O repertório aparece só ao abrir **GOLPES**; cada técnica é identificada como ataque, área ou defesa. O botão principal muda de **ATACAR** para **DEFESA** quando se seleciona uma técnica defensiva, evitando encher a tela de botões.
 - **Acesso ao treino:** na tela inicial, toque em **Testar combate no celular**; não precisa começar a campanha nem procurar um encontro.
-- **Teclado:** WASD/setas para mover; `1`–`5` para os golpes; `F` ou espaço para defender; `E` ou Shift para esquivar; `Q` para trocar de Pet.
-- O golpe básico custa estamina; os outros golpes consomem poder. Estamina/poder recarregam durante a luta; defender drena estamina.
+- **Teclado:** WASD/setas para mover; `1`–`5` para selecionar/usar as técnicas; `F` ou espaço ativa a primeira defesa de chão; `E` ou Shift para esquivar; `Q` para trocar de Pet.
+- O golpe básico custa estamina, técnicas de ataque mais fortes consomem poder e a defesa custa estamina. Estamina/poder recarregam durante a luta; a defesa reduz o dano por uma breve janela.
+- Ataques comuns saem visualmente do Pet e cruzam a arena. A velocidade efetiva do projétil depende da velocidade do atacante; o alvo pode se deslocar e a IA tenta esquivar. O HP só muda quando há colisão; um acerto empurra o Pet atingido um pouco para trás.
+- Golpes sem projétil e efeitos de chão/órbita são reutilizados como técnicas defensivas, com raízes/energia emergindo do piso. Apenas alguns Pets Pedra, ou Pets evoluídos Brasa/Faísca com golpe potente de céu, criam uma área marcada; a marca visível e a colisão usam o mesmo raio.
 - Trocas voluntárias ativam **15 segundos de recarga**; a troca automática quando um Pet desmaia não é bloqueada.
 - Clareira, arena das Marés e caverna mudam atributos efetivos, velocidade e velocidade de recarga conforme as afinidades; tipos secundários também contam. O HUD resume a sinergia/desvantagem e mostra os números completos sob demanda, sem cobrir o campo.
-- Limites visuais e obstáculos do bioma bloqueiam movimento e esquiva; os sinais de impacto são proporcionais ao raio de dano aplicado e identificam o golpe do chefe.
+- Limites ampliados e obstáculos do bioma bloqueiam movimento e esquiva; golpes de projétil mostram o sinal sobre o atacante, e só golpes de área indicam uma zona no chão. O sinal de chefe identifica a técnica antes do disparo.
 - As coreografias reutilizam `js/14-attack-choreography.js`, dando movimento, projéteis e impacto conforme o Pet, tipo e golpe já selecionados.
 
 Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e controles, não uma conversão final de todos os confrontos: mantenha a opção clássica enquanto avalia. O PvP online não foi alterado e continua fora desta etapa.
@@ -163,6 +167,7 @@ Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e cont
 - Testes adicionais cobrem as camadas de preparação/impacto e o valor visual de dano/crítico, sem mudar o cálculo do combate.
 - Não foi iniciada uma partida PvP real nesta rodada; nenhuma alteração foi feita no modo online durante esta etapa.
 - Ajuste final da arena: prévia vertical em navegador mostrou o campo em tiles, os sinais de chefe vinculados ao raio de impacto e um botão opcional para consultar ATQ/DEF/VEL e regenerações do bioma; o seletor revelou e ativou o quinto golpe de Leafit/Embercub, sem cinco botões de ataque fixos no HUD.
-- Validação final desta revisão: `node --test tests/*.test.js` aprovou 22/22; `node --check` passou em todos os JS e as 20 referências relativas de HTML apontam para arquivos existentes.
+- Validação final da revisão anterior: `node --test tests/*.test.js` aprovou 22/22; `node --check` passou em todos os JS e as 20 referências relativas de HTML apontaram para arquivos existentes.
 - Acesso rápido: o botão `Testar combate no celular` foi aberto no Chromium diretamente do menu, a arena iniciou e o botão `SAIR` retornou ao título; o fluxo usou um estado temporário e não criou save.
 - Controles móveis: no layout de 390 px, as quatro setas aparecem em cruz, têm alvos de 42×42 px e a grade reservada impede sobreposição com as ações.
+- Revisão do combate de projéteis: golpes percorrem a arena em velocidade derivada do atributo VEL; defesa usa técnicas existentes e efeito de raízes do chão; certos golpes de céu são área, os alvos (inclusive a IA) podem esquivar e acertos aplicam um pequeno empurrão. Foram aprovados 27 testes e `node --check` em todos os módulos; a prévia do menu e a arena foram carregadas no Chromium sem erro de runtime.

@@ -56,6 +56,8 @@ test("o campo de combate bloqueia bordas e obstáculos nos três biomas", () => 
     assert.equal(combat.canOccupy(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, arena), false);
     assert.equal(combat.canOccupy(0.52, 0.52, arena), true);
     assert.equal(combat.canOccupy(0.01, 0.5, arena), false);
+    assert.equal(arena.field.bounds.minX, 0.04);
+    assert.equal(arena.field.bounds.maxX, 0.96);
   }
 });
 

@@ -287,19 +287,19 @@
     if (!scene) return null;
     const children = [];
     if (scene.hit) {
-      children.push(windupNode(scene));
+      if (!scene.impactOnly) children.push(windupNode(scene));
       children.push(impactHalo(scene));
       const particleCount = Math.min(13, 7 + scene.stage + (scene.crit ? 3 : 0));
       for (let i = 0; i < particleCount; i++) children.push(impactParticle(scene, i, particleCount));
     }
-    if (scene.resonant && scene.hit) children.push(N("div", {
+    if (!scene.impactOnly && scene.resonant && scene.hit) children.push(N("div", {
       className: "ev-vfx-resonance-wash",
       style: { "--ev-res-x": percent(scene.x1), "--ev-res-y": percent(scene.y1) },
     }));
-    if (scene.family === "volley" || scene.family === "spit") {
+    if (!scene.impactOnly && (scene.family === "volley" || scene.family === "spit")) {
       for (let i = 0; i < scene.count; i++) children.push(flightNode(scene, i, scene.family === "spit" ? "drop" : scene.glyph));
     }
-    if (scene.family === "skyfall") {
+    if (!scene.impactOnly && scene.family === "skyfall") {
       for (let i = 0; i < scene.count; i++) {
         const size = scene.size * (0.85 + (i % 3) * 0.22);
         const x = Math.max(0.04, Math.min(0.96, scene.x1 + (((i * 37 + scene.variant * 13) % 9) - 4) * scene.spread * 0.28));
@@ -324,7 +324,7 @@
         }, `meteor-${scene.runId}-${i}`));
       }
     }
-    if (scene.family === "eruption" || scene.family === "roots") {
+    if ((!scene.impactOnly || scene.realtimeGuard) && (scene.family === "eruption" || scene.family === "roots")) {
       const total = scene.family === "roots" ? scene.count + 1 : Math.max(3, scene.count - 1);
       for (let i = 0; i < total; i++) {
         const size = scene.size * (1.0 + ((i + scene.variant) % 3) * 0.45);
@@ -351,7 +351,7 @@
         }, `rise-${scene.runId}-${i}`));
       }
     }
-    if (scene.family === "rush") {
+    if (!scene.impactOnly && scene.family === "rush") {
       const left = Math.min(scene.x0, scene.x1);
       const width = Math.max(0.12, Math.abs(scene.x1 - scene.x0));
       const angle = Math.atan2((scene.y1 - scene.y0) * (scene.attackerIsPlayer ? 1 : -1), Math.abs(scene.x1 - scene.x0)) * 180 / Math.PI;
@@ -367,7 +367,7 @@
         },
       }, `slash-${scene.runId}-${i}`));
     }
-    if (scene.family === "flood") {
+    if (!scene.impactOnly && scene.family === "flood") {
       children.push(N("div", {
         className: "ev-vfx-flood-glaze",
         style: {
@@ -389,7 +389,7 @@
         },
       }));
     }
-    if (scene.family === "beam") {
+    if (!scene.impactOnly && scene.family === "beam") {
       const left = Math.min(scene.x0, scene.x1);
       const width = Math.max(0.12, Math.abs(scene.x1 - scene.x0));
       const leftToRight = scene.x0 <= scene.x1;
@@ -411,7 +411,7 @@
         },
       }));
     }
-    if (scene.family === "cyclone") {
+    if (!scene.impactOnly && scene.family === "cyclone") {
       for (let i = 0; i < scene.count + 2; i++) {
         const size = scene.size * (0.48 + (i % 3) * 0.16);
         children.push(N("div", {
@@ -430,7 +430,7 @@
         }, `orbit-${scene.runId}-${i}`));
       }
     }
-    if (scene.family === "eclipse") {
+    if (!scene.impactOnly && scene.family === "eclipse") {
       children.push(N("div", {
         className: "ev-vfx-eclipse",
         style: {
