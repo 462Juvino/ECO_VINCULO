@@ -103,7 +103,18 @@ test("encontro selvagem rogue-like termina com o Pet original após clones menor
   assert.ok(sequence[4].level > sequence[0].level);
 });
 
-test("a quantidade de clones escala com o nível e fica limitada a três a cinco", () => {
+test("a quantidade de clones escala com o nível e a formação simultânea respeita arena e espaçamento", () => {
   assert.equal(combat.rogueSequence("leafit", 1).length, 4);
   assert.equal(combat.rogueSequence("leafit", 90).length, 6);
+  for (const biome of ["grass", "water", "cave"]) {
+    const arena = combat.arenaFor(biome);
+    const formation = combat.rogueFormation(4, arena);
+    assert.equal(formation.minions.length, 4, `${biome}: deve posicionar os quatro ecos juntos`);
+    assert.ok(formation.minions.every((point) => combat.canOccupy(point.x, point.y, arena, 0.065)));
+    for (let i = 0; i < formation.minions.length; i++) {
+      for (let j = i + 1; j < formation.minions.length; j++) {
+        assert.ok(sandbox.window.EV_REALTIME_PHYSICS.bodyDistance(formation.minions[i], formation.minions[j], 390, 640) >= 0.16);
+      }
+    }
+  }
 });

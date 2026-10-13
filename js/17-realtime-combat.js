@@ -79,6 +79,26 @@
     return { x, y };
   }
 
+  function rogueFormation(count, arena, playerPosition = { x: 0.27, y: 0.63 }) {
+    const candidates = [
+      { x: 0.77, y: 0.18 }, { x: 0.88, y: 0.32 }, { x: 0.88, y: 0.49 },
+      { x: 0.79, y: 0.76 }, { x: 0.61, y: 0.22 }, { x: 0.61, y: 0.79 },
+      { x: 0.92, y: 0.70 }, { x: 0.90, y: 0.84 },
+    ];
+    const distance = (a, b) => window.EV_REALTIME_PHYSICS?.bodyDistance(a, b, 390, 640)
+      ?? Math.hypot(a.x - b.x, a.y - b.y);
+    const minions = [];
+    for (const candidate of candidates) {
+      const point = moveInArena(candidate, 0, 0, arena, 0.065);
+      if (!canOccupy(point.x, point.y, arena, 0.065)) continue;
+      if (distance(point, playerPosition) < 0.26 || minions.some((other) => distance(point, other) < 0.16)) continue;
+      minions.push(point);
+      if (minions.length >= clamp(Math.floor(Number(count) || 0), 0, 6)) break;
+    }
+    const prime = moveInArena({ x: 0.77, y: 0.43 }, 0, 0, arena, 0.075);
+    return { minions, prime };
+  }
+
   function arenaStats(baseStats, types, arena) {
     const affinities = types || [];
     const boost = {};
@@ -186,16 +206,29 @@
       }
       const arena = arenaFor(init.arena ?? init.bg);
       const boss = Boolean(init.isBoss || init.boss || /tat[aá]\s*alfa|guard[iã]o|chefe/i.test(`${init.trainerName || ""} ${init.npcId || ""}`));
+      const rogueCount = rogueRun ? foeList.current.filter((entry) => entry.isClone).length : 0;
+      const rogueLayout = rogueRun ? rogueFormation(rogueCount, arena) : null;
       const sim = React.useRef(null);
       if (!sim.current) {
         const now = performance.now();
+        const firstSpawn = rogueLayout?.minions[0] || { x: 0.73, y: 0.38 };
         sim.current = {
           playerIndex: aliveStart,
           foeIndex: 0,
           px: 0.27,
           py: 0.63,
-          ex: 0.73,
-          ey: 0.38,
+          ex: firstSpawn.x,
+          ey: firstSpawn.y,
+          swarm: rogueRun ? rogueLayout.minions.map((position, index) => ({
+            foeIndex: index, x: position.x, y: position.y,
+            stamina: 38, power: 34,
+            attackAt: now + 920 + index * 260,
+            windup: null, dodgeUntil: 0, moving: false, facingLeft: true,
+          })) : [],
+          primePos: rogueLayout?.prime || null,
+          playerMoving: false,
+          playerFacingLeft: false,
+          playerPoseUntil: 0,
           stamina: 100,
           power: 100,
           enemyStamina: 100,
@@ -225,7 +258,7 @@
         };
       }
       const [, repaint] = React.useState(0);
-      const [attackScene, setAttackScene] = React.useState(null);
+      const [attackScenes, setAttackScenes] = React.useState([]);
       const [selectedMoveIndex, setSelectedMoveIndex] = React.useState(null);
       const [moveMenuOpen, setMoveMenuOpen] = React.useState(false);
       const [showArenaDetails, setShowArenaDetails] = React.useState(false);
@@ -234,8 +267,28 @@
       const arenaRef = React.useRef(null);
       const physicalDistance = (a, b, rect = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 }) =>
         window.EV_REALTIME_PHYSICS?.bodyDistance(a, b, rect.width, rect.height) ?? Math.hypot(a.x - b.x, a.y - b.y);
-      const attackSceneTimer = React.useRef(0);
+      const attackSceneTimers = React.useRef(new Map());
       const s = sim.current;
+      const positionForFoe = (index) => {
+        if (index === s.foeIndex) return { x: s.ex, y: s.ey };
+        const minion = s.swarm?.find((entry) => entry.foeIndex === index);
+        if (minion) return { x: minion.x, y: minion.y };
+        return s.primePos || { x: s.ex, y: s.ey };
+      };
+      const selectFoe = (index) => {
+        const target = foeList.current[index];
+        if (!target || target.hp <= 0 || s.done) return false;
+        if (rogueRun && target.isPrime && foeList.current.some((entry) => entry.isClone && entry.hp > 0)) return false;
+        const point = positionForFoe(index);
+        s.foeIndex = index;
+        s.ex = point.x; s.ey = point.y;
+        const minion = s.swarm?.find((entry) => entry.foeIndex === index);
+        if (minion) { s.enemyStamina = minion.stamina; s.enemyPower = minion.power; }
+        s.intent = null;
+        s.attackAt = performance.now() + 650;
+        repaint((n) => n + 1);
+        return true;
+      };
       const active = party[s.playerIndex] || party[aliveStart];
       const foe = foeList.current[s.foeIndex];
       const activeDef = species(active?.sp) || {};
@@ -270,6 +323,8 @@
       const switchRemaining = Math.max(0, s.nextSwitchAt - performance.now());
       const playerHpPct = clamp((active?.hp ?? 0) / Math.max(1, pMaxHp) * 100, 0, 100);
       const enemyHpPct = clamp((foe?.hp ?? 0) / Math.max(1, eMaxHp) * 100, 0, 100);
+      const rogueCloneTotal = rogueRun ? foeList.current.filter((entry) => entry.isClone).length : 0;
+      const liveCloneCount = rogueRun ? foeList.current.filter((entry) => entry.isClone && entry.hp > 0).length : 0;
 
       const report = (message) => { s.log = message; s.logUntil = performance.now() + 1800; repaint((n) => n + 1); };
       const playAttackScene = (attacker, move, damage, crit, from, to, attackerIsPlayer = true, options = {}) => {
@@ -297,9 +352,12 @@
         scene.impactOnly = options.impactOnly === true;
         scene.realtimeGuard = options.realtimeGuard === true;
         if (options.family) scene.family = options.family;
-        setAttackScene(scene);
-        window.clearTimeout(attackSceneTimer.current);
-        attackSceneTimer.current = window.setTimeout(() => setAttackScene(null), Math.max(650, scene.durationMs || 1050));
+        setAttackScenes((activeScenes) => [...activeScenes, scene]);
+        const timer = window.setTimeout(() => {
+          setAttackScenes((activeScenes) => activeScenes.filter((activeScene) => activeScene.runId !== scene.runId));
+          attackSceneTimers.current.delete(scene.runId);
+        }, Math.max(650, scene.durationMs || 1050));
+        attackSceneTimers.current.set(scene.runId, timer);
         return scene;
       };
       const finish = (result) => {
@@ -342,11 +400,52 @@
           }
         }
       };
-      const advanceFoe = (defeated, now = performance.now()) => {
+      const advanceFoe = (defeated, now = performance.now(), defeatedIndex = s.foeIndex) => {
         for (const type of (species(party[s.playerIndex]?.sp)?.types || [])) gs.current.sintonia[type] = (gs.current.sintonia[type] || 0) + 1;
         updateXpAndEvolution(defeated, s.playerIndex, defeated?.isClone ? 0.24 : 1);
-        s.foeIndex += 1;
         s.playerWon += 1;
+        if (rogueRun) {
+          s.intent = null;
+          s.playerWindup = null;
+          s.projectiles = s.projectiles.filter((shot) => shot.owner === "enemy" || shot.targetFoeIndex !== defeatedIndex);
+          s.areaStrikes = s.areaStrikes.filter((strike) => strike.owner === "enemy" || strike.targetFoeIndex !== defeatedIndex);
+          if (defeated?.isClone) {
+            s.stamina = Math.min(100, s.stamina + 17);
+            s.power = Math.min(100, s.power + 12);
+            const nextIndex = foeList.current.findIndex((entry, index) => entry.isClone && index !== defeatedIndex && entry.hp > 0);
+            if (nextIndex >= 0) {
+              const nextActor = s.swarm.find((entry) => entry.foeIndex === nextIndex);
+              s.foeIndex = nextIndex;
+              s.ex = nextActor?.x ?? 0.77;
+              s.ey = nextActor?.y ?? 0.38;
+              s.enemyStamina = nextActor?.stamina ?? 38;
+              s.enemyPower = nextActor?.power ?? 34;
+              s.enemyDodgeUntil = 0;
+              s.enemyDodgeAt = now + 450;
+              s.attackAt = now + 900;
+              const remaining = foeList.current.filter((entry) => entry.isClone && entry.hp > 0).length;
+              s.log = `Eco dissipou · ${remaining} ${remaining === 1 ? "clone restante" : "clones restantes"}.`;
+            } else {
+              const primeIndex = foeList.current.findIndex((entry) => entry.isPrime);
+              s.foeIndex = primeIndex;
+              s.ex = s.primePos?.x ?? 0.77;
+              s.ey = s.primePos?.y ?? 0.43;
+              s.enemyStamina = 100;
+              s.enemyPower = 100;
+              s.enemyDodgeUntil = 0;
+              s.enemyDodgeAt = now + 650;
+              s.attackAt = now + 1450;
+              s.log = "Os ecos caíram! O Pet original está vulnerável e pode ser vinculado.";
+            }
+            s.logUntil = now + 1900;
+            repaint((n) => n + 1);
+            return;
+          }
+          s.log = "O Pet original caiu. O Eco da arena foi vencido!";
+          finish({ won: true, rogueRun: true, defeatedClones: foeList.current.filter((entry) => entry.isClone && entry.hp <= 0).length });
+          return;
+        }
+        s.foeIndex += 1;
         s.intent = null;
         s.projectiles = [];
         s.areaStrikes = [];
@@ -415,9 +514,9 @@
           attackerIsPlayer,
         });
       };
-      const launchProjectile = (owner, attackerSp, attackerLevel, move, family, role, from, to, crit) => {
+      const launchProjectile = (owner, attackerSp, attackerLevel, move, family, role, from, to, crit, attackerIndex = s.foeIndex) => {
         const definition = species(attackerSp) || {};
-        const attacker = owner === "enemy" ? foeList.current[s.foeIndex] : party[s.playerIndex];
+        const attacker = owner === "enemy" ? foeList.current[attackerIndex] : party[s.playerIndex];
         const base = getStats(attackerSp, attackerLevel || 1);
         const actualBase = attacker?.isClone ? {
           ...base,
@@ -438,6 +537,7 @@
           glyph: visual?.glyph || "spark", size: visual?.size || 28,
           targetPlayerIndex: owner === "enemy" ? s.playerIndex : null,
           targetFoeIndex: owner === "player" ? s.foeIndex : null,
+          attackerIndex: owner === "enemy" ? attackerIndex : null,
           evadeChecked: false,
         });
       };
@@ -454,7 +554,7 @@
           targetFoeIndex: owner === "player" ? s.foeIndex : null,
         });
       };
-      const applyHit = (owner, attackerSp, attackerLevel, move, crit, from, impactPoint) => {
+      const applyHit = (owner, attackerSp, attackerLevel, move, crit, from, impactPoint, attackerIndex = s.foeIndex, targetFoeIndex = s.foeIndex) => {
         const now = performance.now();
         const playerTarget = owner === "enemy";
         if (playerTarget && s.bondAttempt) {
@@ -462,13 +562,13 @@
           s.log = "O impacto quebrou o Eco de Vínculo!";
           s.logUntil = now + 1100;
         }
-        const target = playerTarget ? party[s.playerIndex] : foeList.current[s.foeIndex];
+        const target = playerTarget ? party[s.playerIndex] : foeList.current[targetFoeIndex];
         if (!target || target.hp <= 0) return;
         const attackerDef = species(attackerSp) || {};
         const targetDef = species(target.sp) || {};
-        const currentFoe = foeList.current[s.foeIndex];
+        const currentFoe = foeList.current[attackerIndex];
         const attackerActor = playerTarget ? currentFoe : party[s.playerIndex];
-        const targetActor = playerTarget ? party[s.playerIndex] : currentFoe;
+        const targetActor = playerTarget ? party[s.playerIndex] : foeList.current[targetFoeIndex];
         const attackerBase = getStats(attackerSp, attackerLevel || 1);
         const targetBase = getStats(target.sp, target.level || 1);
         const scaledAttackerBase = attackerActor?.isClone ? {
@@ -498,16 +598,19 @@
           s.hurtUntil = now + 320;
         } else {
           const impulse = window.EV_REALTIME_PHYSICS?.knockbackVector(impactPoint, from, clamp(0.045 + damage * 0.0007, 0.045, 0.09), viewport.width, viewport.height) || { x: -0.06, y: 0 };
-          const pushed = moveInArena({ x: s.ex, y: s.ey }, impulse.x, impulse.y, arena, 0.055);
-          s.ex = pushed.x;
-          s.ey = pushed.y;
+          const targetPosition = positionForFoe(targetFoeIndex);
+          const pushed = moveInArena(targetPosition, impulse.x, impulse.y, arena, 0.055);
+          const actor = s.swarm?.find((entry) => entry.foeIndex === targetFoeIndex);
+          if (actor) { actor.x = pushed.x; actor.y = pushed.y; }
+          if (targetFoeIndex === s.foeIndex) { s.ex = pushed.x; s.ey = pushed.y; }
+          if (foeList.current[targetFoeIndex]?.isPrime) s.primePos = pushed;
         }
         playAttackScene(attackerDef, move, damage, crit, from, impactPoint, owner === "player", { impactOnly: true });
         s.floating = { text: `${crit ? "CRÍTICO · " : ""}-${damage}`, x: impactPoint.x, y: impactPoint.y, until: now + 700 };
         s.log = `${attackerDef.name || attackerSp} acertou ${move.name}: -${damage} HP.`;
         s.logUntil = now + 1500;
         if (!playerTarget && target.hp <= 0) {
-          advanceFoe(target, now);
+          advanceFoe(target, now, targetFoeIndex);
         } else if (playerTarget && target.hp <= 0) {
           handlePlayerKnockout();
         }
@@ -590,6 +693,7 @@
           from: { x: s.px, y: s.py }, target: { x: s.ex, y: s.ey },
           launchAt: now + windup,
         };
+        s.playerPoseUntil = now + windup + 360;
         s.log = `${attackerDef.name || attacker.sp} prepara ${move.name}…`;
         s.logUntil = now + windup + 500;
         repaint((n) => n + 1);
@@ -613,6 +717,7 @@
         s.stamina -= 22;
         s.dodgeUntil = now + 390;
         s.nextDodgeAt = now + 700;
+        s.playerPoseUntil = now + 390;
         s.px = dodgedTo.x;
         s.py = dodgedTo.y;
         report("Esquiva! Janela breve de invulnerabilidade.");
@@ -624,7 +729,7 @@
       const tryCapture = () => {
         if (s.done || init.kind !== "wild" || s.bondAttempt) return;
         if (rogueRun && foe.isClone) {
-          report("Esse é um Eco clone. Derrote-o para alcançar o Pet original e tentar o vínculo.");
+          report("Esse é um Eco clone. Derrote os ecos menores para alcançar o Pet original e tentar o vínculo.");
           return;
         }
         const matched = (foeDef.types || []).some((type) => (gs.current.affinities || []).includes(type));
@@ -704,6 +809,13 @@
             const next = party.findIndex((pet, index) => index !== s.playerIndex && pet.hp > 0);
             if (next >= 0) swapTo(next);
           }
+          else if (event.code === "Tab" && rogueRun && !event.repeat) {
+            event.preventDefault(); event.stopImmediatePropagation();
+            const availableTargets = foeList.current.map((entry, index) => ({ entry, index }))
+              .filter(({ entry }) => entry.hp > 0 && (!entry.isPrime || !foeList.current.some((clone) => clone.isClone && clone.hp > 0)));
+            const current = availableTargets.findIndex(({ index }) => index === s.foeIndex);
+            if (availableTargets.length > 1) selectFoe(availableTargets[(current + 1) % availableTargets.length].index);
+          }
         };
         const up = (event) => { if (keys[event.code]) held.current.delete(keys[event.code]); };
         window.addEventListener("keydown", down, true);
@@ -749,6 +861,9 @@
           const moveX = (held.current.has("right") ? 1 : 0) - (held.current.has("left") ? 1 : 0);
           const moveY = (held.current.has("down") ? 1 : 0) - (held.current.has("up") ? 1 : 0);
           const moveLength = Math.hypot(moveX, moveY) || 1;
+          s.playerMoving = Boolean((moveX || moveY) && !s.bondAttempt);
+          if (moveX < 0) s.playerFacingLeft = true;
+          else if (moveX > 0) s.playerFacingLeft = false;
           if ((moveX || moveY) && !s.bondAttempt) {
             const speed = 0.34 * clamp(currentStats.stats.vel / 52, 0.62, 1.55);
             const travel = speed * dt * minDimension;
@@ -763,6 +878,7 @@
           const bodyGap = clamp(88 / minDimension, 0.09, 0.225);
           const distance = physicalDistance({ x: s.px, y: s.py }, { x: s.ex, y: s.ey }, rectNow);
           const style = physics?.combatStyle(opponentSpecies.types, opponentStats.stats) || "balanced";
+          s.enemyMoving = false;
           if (!s.bondAttempt) {
             const vx = (s.px - s.ex) * rectNow.width / minDimension;
             const vy = (s.py - s.ey) * rectNow.height / minDimension;
@@ -788,6 +904,7 @@
             if (shouldMove) {
               const travel = speed * dt * minDimension;
               const enemyMove = moveInArena({ x: s.ex, y: s.ey }, mx * travel / rectNow.width, my * travel / rectNow.height, arena, 0.065);
+              s.enemyMoving = enemyMove.x !== s.ex || enemyMove.y !== s.ey;
               s.ex = enemyMove.x;
               s.ey = enemyMove.y;
             }
@@ -799,6 +916,89 @@
               s.ex = eSafe.x; s.ey = eSafe.y;
             }
             applyContactDamage(now, opponent, opponentSpecies, opponentBase, currentPet, currentSpecies, currentBase, bodyGap);
+          }
+          const selectedMinion = s.swarm?.find((actor) => actor.foeIndex === s.foeIndex);
+          if (selectedMinion) {
+            selectedMinion.x = s.ex; selectedMinion.y = s.ey;
+            selectedMinion.stamina = s.enemyStamina; selectedMinion.power = s.enemyPower;
+            selectedMinion.moving = s.enemyMoving; selectedMinion.facingLeft = s.px < s.ex;
+          }
+          if (rogueRun && !s.bondAttempt) {
+            const swarmActors = s.swarm.filter((actor) => actor.foeIndex !== s.foeIndex && foeList.current[actor.foeIndex]?.hp > 0);
+            for (const actor of swarmActors) {
+              const pet = foeList.current[actor.foeIndex];
+              const definition = species(pet.sp) || {};
+              const raw = getStats(pet.sp, pet.level || 1);
+              const scaled = {
+                ...raw,
+                maxHp: pet.maxHpOverride || raw.maxHp,
+                atk: Math.max(1, Math.round(raw.atk * (pet.atkMultiplier || 0.66))),
+                def: Math.max(1, Math.round(raw.def * (pet.defMultiplier || 0.74))),
+                vel: Math.max(1, Math.round(raw.vel * (pet.velMultiplier || 1.08))),
+              };
+              const effective = arenaStats(scaled, definition.types, arena).stats;
+              const minionPoint = { x: actor.x, y: actor.y };
+              const minionDistance = physicalDistance(minionPoint, { x: s.px, y: s.py }, rectNow);
+              const minionStyle = physics?.combatStyle(definition.types, effective) || "balanced";
+              const energy = physics?.energyProfile(scaled, definition.types, currentSpecies.types, arena,
+                bestMatchup(definition.types, currentSpecies.types)) || { staminaRegen: 7, powerRegen: 4.5 };
+              actor.stamina = clamp(actor.stamina + energy.staminaRegen * dt, 0, 100);
+              actor.power = clamp(actor.power + energy.powerRegen * dt, 0, 100);
+              actor.facingLeft = s.px < actor.x;
+              actor.moving = false;
+              if (!actor.windup) {
+                const vx = (s.px - actor.x) * rectNow.width / minDimension;
+                const vy = (s.py - actor.y) * rectNow.height / minDimension;
+                const length = Math.hypot(vx, vy) || 1;
+                let mx = vx / length, my = vy / length, shouldMove = false;
+                if (actor.stamina < 12 || actor.power < 12) {
+                  mx = -mx; my = -my; shouldMove = minionDistance < 0.62;
+                } else if (minionStyle === "skirmisher") {
+                  if (minionDistance < 0.31) { mx = -mx; my = -my; shouldMove = true; }
+                  else if (minionDistance > 0.54) shouldMove = true;
+                  else { const sign = Math.sin(time / 900 + actor.foeIndex) >= 0 ? 1 : -1; mx = -vy / length * sign; my = vx / length * sign; shouldMove = true; }
+                } else if (minionStyle === "aggressive") shouldMove = minionDistance > 0.28;
+                else if (minionDistance > 0.43) shouldMove = true;
+                else if (minionDistance < 0.25) { mx = -mx; my = -my; shouldMove = true; }
+                if (shouldMove) {
+                  const travel = 0.12 * clamp(effective.vel / 52, 0.62, 1.45) * dt * minDimension;
+                  const moved = moveInArena(minionPoint, mx * travel / rectNow.width, my * travel / rectNow.height, arena, 0.055);
+                  actor.x = moved.x; actor.y = moved.y;
+                  actor.moving = moved.x !== minionPoint.x || moved.y !== minionPoint.y;
+                }
+              }
+              if (actor.windup && now >= actor.windup.fireAt) {
+                const cast = actor.windup;
+                actor.windup = null;
+                actor.poseUntil = now + 350;
+                launchProjectile("enemy", pet.sp, pet.level, cast.move, cast.family, "projectile", { x: actor.x, y: actor.y }, cast.target, Math.random() < 0.035, actor.foeIndex);
+                actor.attackAt = now + (cast.cost >= 60 ? 3100 : 2450) * clamp(60 / Math.max(25, effective.vel), 0.78, 1.34);
+              }
+              if (!actor.windup && now >= actor.attackAt) {
+                const profiles = describeMoves(pet, definition);
+                const entry = chooseAiMove(profiles, actor.power, actor.stamina, minionStyle, minionDistance,
+                  (moveType) => getEffectiveness(moveType, currentSpecies.types || []));
+                if (entry) {
+                  const cost = entry.cost ?? (entry.index < 2 ? 20 : 60);
+                  actor.power = Math.max(0, actor.power - cost);
+                  actor.stamina = Math.max(0, actor.stamina - (cost >= 60 ? 8 : 4));
+                  actor.windup = { move: entry.move, family: entry.family, cost, fireAt: now + 260, target: { x: s.px, y: s.py } };
+                } else actor.attackAt = now + 380;
+              }
+              const blockers = [
+                { x: s.px, y: s.py },
+                { x: s.ex, y: s.ey },
+                ...(s.primePos && foeList.current.some((entry) => entry.isClone && entry.hp > 0) ? [s.primePos] : []),
+                ...s.swarm.filter((other) => other.foeIndex !== actor.foeIndex && other.foeIndex !== s.foeIndex && foeList.current[other.foeIndex]?.hp > 0).map((other) => ({ x: other.x, y: other.y })),
+              ];
+              for (const blocker of blockers) {
+                const separated = physics?.separateBodies(blocker, { x: actor.x, y: actor.y }, 0.13, rectNow.width, rectNow.height);
+                if (separated?.separated) {
+                  const safe = moveInArena({ x: actor.x, y: actor.y }, separated.b.x - actor.x, separated.b.y - actor.y, arena, 0.055);
+                  actor.x = safe.x; actor.y = safe.y;
+                }
+              }
+            }
           }
           if (s.playerWindup && now >= s.playerWindup.launchAt) {
             const cast = s.playerWindup;
@@ -878,7 +1078,7 @@
               const inside = window.EV_REALTIME_PHYSICS?.insideArea(targetPos, { x: strike.x, y: strike.y }, strike.radius, rect?.width, rect?.height)
                 ?? (Math.hypot(targetPos.x - strike.x, targetPos.y - strike.y) <= strike.radius);
               if (inside && !dodged) {
-                applyHit(strike.owner, strike.attackerSp, strike.attackerLevel, strike.move, strike.crit, strike.from, targetPos);
+                applyHit(strike.owner, strike.attackerSp, strike.attackerLevel, strike.move, strike.crit, strike.from, targetPos, strike.attackerIndex ?? s.foeIndex, strike.targetFoeIndex ?? s.foeIndex);
               } else {
                 s.log = dodged ? "Esquiva no último instante!" : "O impacto de área atingiu o chão vazio.";
                 s.logUntil = now + 1000;
@@ -927,7 +1127,7 @@
               const targetPos = playerTarget ? { x: s.px, y: s.py } : { x: s.ex, y: s.ey };
               const dodged = playerTarget ? now < s.dodgeUntil : now < s.enemyDodgeUntil;
               if (!dodged && physicalDistance({ x: projectile.x, y: projectile.y }, targetPos, rectNow) <= 0.075) {
-                applyHit(projectile.owner, projectile.attackerSp, projectile.attackerLevel, projectile.move, projectile.crit, { x: projectile.fromX, y: projectile.fromY }, targetPos);
+                applyHit(projectile.owner, projectile.attackerSp, projectile.attackerLevel, projectile.move, projectile.crit, { x: projectile.fromX, y: projectile.fromY }, targetPos, projectile.attackerIndex ?? s.foeIndex, projectile.targetFoeIndex ?? s.foeIndex);
                 continue;
               }
               if (projectile.elapsedMs >= projectile.flightMs || remainingDistance <= step + 0.0001) {
@@ -947,7 +1147,8 @@
           window.removeEventListener("keydown", down, true);
           window.removeEventListener("keyup", up, true);
           held.current.clear();
-          window.clearTimeout(attackSceneTimer.current);
+          for (const timer of attackSceneTimers.current.values()) window.clearTimeout(timer);
+          attackSceneTimers.current.clear();
           window.EV_MUSIC?.leaveBattle?.();
         };
       }, []);
@@ -982,8 +1183,8 @@
         onClick: () => swapTo(index),
         style: { position: "relative", width: 38, height: 36, padding: 0, display: "grid", placeItems: "center", borderRadius: 11, background: index === s.playerIndex ? "#f4c54c" : "#10251fe6", border: `1px solid ${index === s.playerIndex ? "#ffe28a" : "#ffffff35"}`, opacity: pet.hp <= 0 ? 0.35 : 1, cursor: "pointer" },
       }, [el(Sprite, { sp: pet.sp, size: 30, fainted: pet.hp <= 0 }), el("span", { style: { position: "absolute", left: 4, right: 4, bottom: 2, height: 3, borderRadius: 3, background: `linear-gradient(90deg,#67e49a ${clamp(pet.hp / Math.max(1, getStats(pet.sp, pet.level).maxHp) * 100, 0, 100)}%,#1c2930 0)` } })]));
-      const choreographyLayer = attackScene && window.EV_ATTACK_CHOREOGRAPHY?.View
-        ? el(window.EV_ATTACK_CHOREOGRAPHY.View, { scene: attackScene })
+      const choreographyLayer = attackScenes.length && window.EV_ATTACK_CHOREOGRAPHY?.View
+        ? el("div", { style: { position: "absolute", inset: 0, zIndex: 44, pointerEvents: "none" } }, attackScenes.map((scene) => el(window.EV_ATTACK_CHOREOGRAPHY.View, { key: scene.runId, scene })))
         : null;
       const arenaField = arena.field;
       const arenaRect = arenaRef.current?.getBoundingClientRect();
@@ -1000,6 +1201,8 @@
           el("span", { style: { position: "absolute", left: "50%", top: "calc(100% - 3px)", transform: "translate(-50%,0)", padding: "3px 6px", borderRadius: 6, background: "#07120df2", border: `1px solid ${color}`, color: "white", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap" } }, `${warning.label} · ${warning.move?.name || "Impacto"}`),
         ]);
       });
+      const swarmWindupNodes = rogueRun ? s.swarm.filter((actor) => actor.windup && foeList.current[actor.foeIndex]?.hp > 0).map((actor) =>
+        el("div", { key: `swarm-windup-${actor.foeIndex}`, title: `Ataque iminente: ${actor.windup.move.name}`, style: { position: "absolute", left: `${actor.x * 100}%`, top: `${actor.y * 100 - 8}%`, transform: "translate(-50%,-50%)", zIndex: 7, pointerEvents: "none", display: "grid", placeItems: "center", width: 23, height: 23, borderRadius: "50%", background: "#8e321bea", border: "2px solid #ffd27a", color: "#fff2ba", fontSize: 13, fontWeight: 1000, boxShadow: "0 0 12px #ff9f43", animation: "ev-rt-telegraph 350ms ease-in-out infinite alternate" } }, "!")) : [];
       const telegraph = s.intent && s.intent.role !== "area" && el("div", { style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100 - 8}%`, transform: "translate(-50%,-50%)", zIndex: 6, pointerEvents: "none", padding: "4px 7px", borderRadius: 9, background: "#3e1111e8", border: "1px solid #ff8585", color: "white", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap", boxShadow: "0 2px 9px #0009" } }, `${boss ? "SINAL DO CHEFE" : "SINAL"} · ${s.intent.move.name}`);
       const windupMarker = s.playerWindup && el("div", { style: { position: "absolute", left: `${s.playerWindup.from.x * 100}%`, top: `${s.playerWindup.from.y * 100 - 8}%`, transform: "translate(-50%,-50%)", zIndex: 6, pointerEvents: "none", padding: "3px 6px", borderRadius: 8, background: "#24320be8", border: "1px solid #ffe16b", color: "#fff4bd", fontSize: 8, fontWeight: 950, whiteSpace: "nowrap" } }, `PREPARA · ${s.playerWindup.move.name}`);
       const projectileNodes = s.projectiles.flatMap((shot) => {
@@ -1031,7 +1234,7 @@
       const hud = el("div", { style: { position: "relative", zIndex: 4, padding: "max(7px, env(safe-area-inset-top)) 12px 7px", background: "#07120de8", color: "white", boxShadow: "0 3px 12px #0005" } }, [
         el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } }, [
           el("div", { style: { minWidth: 0, flex: 1 } }, [
-            el("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, [el("strong", { style: { fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, `${foeDef.name || foe.sp} · Nv ${foe.level}`), el("span", { style: { flex: "none", padding: "2px 6px", borderRadius: 6, color: rogueRun && foe.isClone ? "#d8c5ff" : "#f4e5b4", background: rogueRun && foe.isClone ? "#7451a455" : "#ffffff17", fontSize: 8, fontWeight: 900 } }, rogueRun ? (foe.isClone ? `ECO ${s.foeIndex + 1}/${foeList.current.length - 1}` : "ORIGINAL") : init.kind === "trainer" ? `${boss ? "CHEFE" : "DUELO"} ${s.foeIndex + 1}/${foeList.current.length}` : "SELVAGEM")]),
+            el("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, [el("strong", { style: { fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, `${foeDef.name || foe.sp} · Nv ${foe.level}`), el("span", { style: { flex: "none", padding: "2px 6px", borderRadius: 6, color: rogueRun && foe.isClone ? "#d8c5ff" : "#f4e5b4", background: rogueRun && foe.isClone ? "#7451a455" : "#ffffff17", fontSize: 8, fontWeight: 900 } }, rogueRun ? (foe.isClone ? `ECOS ${liveCloneCount}/${rogueCloneTotal}` : "ORIGINAL") : init.kind === "trainer" ? `${boss ? "CHEFE" : "DUELO"} ${s.foeIndex + 1}/${foeList.current.length}` : "SELVAGEM")]),
             el("div", { style: { height: 7, marginTop: 5, overflow: "hidden", borderRadius: 8, background: "#ffffff24", border: "1px solid #ffffff30" } }, el("div", { style: { width: `${enemyHpPct}%`, height: "100%", background: "linear-gradient(90deg,#f44343,#ff9970)", transition: "width 120ms linear" } })),
             el("div", { title: `Estamina inimiga: ${Math.round(s.enemyStamina)}%`, style: { height: 3, marginTop: 3, overflow: "hidden", borderRadius: 8, background: "#ffffff1c" } }, el("div", { style: { width: `${clamp(s.enemyStamina, 0, 100)}%`, height: "100%", background: "linear-gradient(90deg,#268d84,#8ae6cc)", transition: "width 120ms linear" } })),
           ]),
@@ -1100,23 +1303,52 @@
             : "linear-gradient(135deg,#e0d0fa 0%,#9b80bf 26%,#54446e 68%,#332b43 100%)",
         boxShadow: "inset 0 0 0 2px #ffffff21,0 5px 0 #07130d55",
       } }, arenaField.obstacle === "crystal" ? el("span", { style: { fontSize: 19, color: "#e5d1ff", textShadow: "0 0 9px #d8bdff" } }, "✦") : null));
+      const prime = rogueRun ? foeList.current.find((entry) => entry.isPrime) : null;
+      const primeProtected = Boolean(rogueRun && liveCloneCount > 0 && prime && s.primePos);
+      const primeIndex = rogueRun ? foeList.current.findIndex((entry) => entry.isPrime) : -1;
+      const primeNode = primeProtected ? el("div", { key: "rogue-prime-shield", style: { position: "absolute", left: `${s.primePos.x * 100}%`, top: `${s.primePos.y * 100}%`, transform: "translate(-50%,-50%)", zIndex: 2, pointerEvents: "none", display: "grid", placeItems: "center", width: 100, height: 100 } }, [
+        el("div", { style: { position: "absolute", inset: 2, border: "2px solid #c7f9ffcc", borderRadius: "50%", background: "radial-gradient(circle,#a8f3ff16 34%,#7eeaff38 62%,#aff7ff12 70%)", boxShadow: "0 0 14px #8beaff, inset 0 0 16px #8beaff66", animation: "ev-rt-shield 2s ease-in-out infinite" } }),
+        el("div", { className: "ev-rt-creature ev-rt-creature--idle", style: { opacity: .74, filter: "saturate(.7) drop-shadow(0 4px 4px #07110d99)" } }, el(Sprite, { sp: prime.sp, size: 75, flip: true, fainted: false, battleMode: true, tScale: 1.2 })),
+        el("span", { style: { position: "absolute", bottom: -3, padding: "3px 6px", borderRadius: 7, background: "#09202be8", border: "1px solid #8beaff", color: "#d7fbff", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap" } }, "ORIGINAL · PROTEGIDO"),
+      ]) : null;
+      const primeActiveNode = rogueRun && !liveCloneCount && prime?.hp > 0 ? el("div", { key: "rogue-prime-active", role: "button", tabIndex: 0, "aria-label": `Selecionar Pet original, vida ${Math.ceil(prime.hp)} de ${prime.maxHpOverride || getStats(prime.sp, prime.level).maxHp}`, onPointerDown: (event) => { event.stopPropagation(); selectFoe(primeIndex); }, onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectFoe(primeIndex); } }, style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100}%`, transform: "translate(-50%,-50%)", transition: "left 75ms linear,top 75ms linear", zIndex: 5, cursor: "pointer", filter: performance.now() < s.enemyDodgeUntil ? "opacity(.58) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 6px 4px #07110d99)" } }, [
+        el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < (s.enemyPoseUntil || 0) || s.intent ? "attack" : s.enemyMoving ? "move" : "idle"}` }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: prime.sp, size: 88, flip: true, fainted: false, battleMode: true, tScale: s.enemyMoving ? 3.2 : 1.4 })]),
+        el("span", { style: { position: "absolute", left: "50%", bottom: -4, transform: "translate(-50%,100%)", padding: "3px 6px", borderRadius: 7, background: "#152413e8", border: "1px solid #d4ee90", color: "#f2ffd1", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap" } }, s.foeIndex === primeIndex ? "ORIGINAL · VULNERÁVEL" : "TOQUE PARA ALVEJAR"),
+      ]) : null;
+      const cloneNodes = rogueRun ? s.swarm.filter((actor) => foeList.current[actor.foeIndex]?.hp > 0).map((actor) => {
+        const pet = foeList.current[actor.foeIndex];
+        const maxHp = pet.maxHpOverride || getStats(pet.sp, pet.level).maxHp;
+        const selected = actor.foeIndex === s.foeIndex;
+        const motion = performance.now() < (actor.poseUntil || 0) || actor.windup ? "attack" : actor.moving ? "move" : "idle";
+        return el("div", { key: `rogue-echo-${actor.foeIndex}`, role: "button", tabIndex: 0, "aria-label": `Selecionar Eco ${actor.foeIndex + 1}, vida ${Math.ceil(pet.hp)} de ${maxHp}`, onPointerDown: (event) => { event.stopPropagation(); selectFoe(actor.foeIndex); }, onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectFoe(actor.foeIndex); } }, style: { position: "absolute", left: `${actor.x * 100}%`, top: `${actor.y * 100}%`, transform: "translate(-50%,-50%)", transition: "left 80ms linear,top 80ms linear", zIndex: selected ? 5 : 4, cursor: "pointer", outline: "none", filter: performance.now() < actor.dodgeUntil ? "opacity(.55) drop-shadow(0 0 13px #fff)" : "drop-shadow(0 5px 3px #07110d99)" } }, [
+          selected && el("div", { style: { position: "absolute", left: "50%", top: "50%", width: 63, height: 63, transform: "translate(-50%,-50%)", border: "2px solid #f0d7ff", borderRadius: "50%", boxShadow: "0 0 13px #c4a6ff88", pointerEvents: "none" } }),
+          el("div", { className: `ev-rt-creature ev-rt-creature--${motion}`, style: { filter: "opacity(.88) saturate(.76) drop-shadow(0 0 8px #b699ff)" } }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: pet.sp, size: 50, flip: actor.facingLeft, fainted: false, battleMode: true, tScale: actor.moving ? 3.2 : 1.4 })]),
+          el("div", { style: { position: "absolute", left: "50%", bottom: 2, transform: "translateX(-50%)", width: 36, height: 4, overflow: "hidden", border: "1px solid #07110d", borderRadius: 9, background: "#111827" } }, el("div", { style: { width: `${clamp(pet.hp / Math.max(1, maxHp) * 100, 0, 100)}%`, height: "100%", background: "linear-gradient(90deg,#bb63ed,#e7c8ff)" } })),
+          selected && el("span", { style: { position: "absolute", left: "50%", top: -3, transform: "translate(-50%,-100%)", padding: "2px 4px", borderRadius: 5, background: "#241332e8", color: "#f0dcff", fontSize: 7, fontWeight: 1000, whiteSpace: "nowrap" } }, "ALVO"),
+        ]);
+      }) : [];
+      const singleEnemyNode = !rogueRun ? el("div", { key: `enemy-${s.foeIndex}`, style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100}%`, transform: "translate(-50%,-50%)", transition: "left 75ms linear,top 75ms linear", filter: performance.now() < s.enemyDodgeUntil ? "opacity(.58) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < (s.enemyPoseUntil || 0) || s.intent ? "attack" : s.enemyMoving ? "move" : "idle"}` }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: foe.sp, size: 82, flip: true, fainted: foe.hp <= 0, battleMode: true, tScale: s.enemyMoving ? 3.2 : 1.4 })])) : null;
       return el("div", { onPointerUp, onPointerCancel: onPointerUp, style: { width: "100%", height: "100dvh", overflow: "hidden", position: "relative", display: "grid", gridTemplateRows: "auto minmax(0,1fr) auto", color: "white", fontFamily: "system-ui,sans-serif", background: "#07120d", userSelect: "none", touchAction: "none" } }, [
         el("style", {}, `@keyframes ev-rt-telegraph{from{opacity:.38;transform:scale(.72)}to{opacity:1;transform:scale(1.12)}} @keyframes ev-rt-float{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-36px)}} @keyframes ev-rt-bond-travel{0%{opacity:0;transform:translate(-50%,-50%) scale(.45);filter:blur(4px)}15%{opacity:1;filter:blur(0)}55%{transform:translate(calc(-50% + var(--bond-mid-dx)),calc(-50% + var(--bond-mid-dy))) scale(1.2)}100%{opacity:.12;transform:translate(calc(-50% + var(--bond-dx)),calc(-50% + var(--bond-dy))) scale(.2);filter:blur(2px)}} .ev-rt-hint{display:none}@media(min-width:700px){.ev-rt-hint{display:block}} @media(max-height:680px){.ev-rt-hint{display:none!important}}`),
         hud,
         el("div", { ref: arenaRef, style: { minHeight: 0, position: "relative", overflow: "hidden", backgroundColor: arenaField.tile, backgroundImage: `linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%),linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%)`, backgroundPosition: "0 0,20px 20px", backgroundSize: "40px 40px", imageRendering: "pixelated" } }, [
           el("div", { style: { position: "absolute", inset: 3, border: `6px solid ${arenaField.edge}`, outline: "2px solid #08140d88", boxShadow: `inset 0 0 0 3px ${arena.accent}50,inset 0 0 28px #06140b55,0 0 0 1px #ffffff20`, pointerEvents: "none", zIndex: 1 } }),
           ...terrainObstacles,
+          primeNode,
+          primeActiveNode,
           ...areaWarningNodes,
-          el("div", { style: { position: "absolute", left: `${s.px * 100}%`, top: `${s.py * 100}%`, transform: "translate(-50%,-50%)", transition: "left 45ms linear,top 45ms linear", filter: performance.now() < s.hurtUntil ? "brightness(1.7) saturate(2)" : performance.now() < s.dodgeUntil ? "opacity(.55) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el(Sprite, { sp: active.sp, size: 82, fainted: active.hp <= 0 })),
+          el("div", { style: { position: "absolute", left: `${s.px * 100}%`, top: `${s.py * 100}%`, transform: "translate(-50%,-50%)", transition: "left 45ms linear,top 45ms linear", filter: performance.now() < s.hurtUntil ? "brightness(1.7) saturate(2)" : performance.now() < s.dodgeUntil ? "opacity(.55) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < s.hurtUntil ? "hurt" : performance.now() < s.dodgeUntil ? "dodge" : performance.now() < s.playerPoseUntil ? "attack" : s.playerMoving ? "move" : "idle"}`, style: { "--ev-rt-lunge-x": `${s.playerFacingLeft ? -11 : 11}px` } }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: active.sp, size: 82, flip: s.playerFacingLeft, fainted: active.hp <= 0, battleMode: true, tScale: s.playerMoving ? 3.2 : 1.4 })])),
           telegraph,
           windupMarker,
-          el("div", { key: `enemy-${s.foeIndex}`, style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100}%`, transform: "translate(-50%,-50%)", transition: "left 75ms linear,top 75ms linear", filter: performance.now() < s.enemyDodgeUntil ? "opacity(.58) drop-shadow(0 0 18px #fff)" : foe.isClone ? "opacity(.82) saturate(.72) drop-shadow(0 0 10px #b699ff) drop-shadow(0 5px 3px #07110d99)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el(Sprite, { sp: foe.sp, size: foe.isClone ? 56 : foe.isPrime ? 88 : 82, flip: true, fainted: foe.hp <= 0 })),
+          ...swarmWindupNodes,
+          ...cloneNodes,
+          singleEnemyNode,
           ...projectileNodes,
           choreographyLayer,
           bondOrb,
           s.floating && performance.now() < s.floating.until && el("div", { style: { position: "absolute", left: `${(s.floating.x ?? s.ex) * 100}%`, top: `${(s.floating.y ?? s.ey) * 100 - 8}%`, color: "#fff3a7", fontWeight: 1000, fontSize: 19, textShadow: "0 3px 5px #000", transform: "translateX(-50%)", animation: "ev-rt-float 650ms ease-out forwards", zIndex: 46 } }, s.floating.text),
           !s.intent && s.log && performance.now() < (s.logUntil || 0) && el("div", { style: { position: "absolute", left: "50%", top: 9, transform: "translateX(-50%)", maxWidth: "82%", padding: "4px 8px", borderRadius: 8, background: "#06130edc", border: "1px solid #ffffff35", color: "white", textAlign: "center", fontSize: 9, fontWeight: 850, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", pointerEvents: "none", zIndex: 5 } }, s.log),
-          el("div", { className: "ev-rt-hint", style: { position: "absolute", right: 8, top: 8, padding: "4px 7px", borderRadius: 8, background: "#06130e9c", fontSize: 8, fontWeight: 800, opacity: .78 } }, "WASD mover · 1–5 ataques · E esquiva · Q trocar"),
+          el("div", { className: "ev-rt-hint", style: { position: "absolute", right: 8, top: 8, padding: "4px 7px", borderRadius: 8, background: "#06130e9c", fontSize: 8, fontWeight: 800, opacity: .78 } }, rogueRun ? "WASD mover · toque/Tab alvo · 1–5 ataques · E esquiva" : "WASD mover · 1–5 ataques · E esquiva · Q trocar"),
           resultCurtain,
         ]),
         el("div", { style: { position: "relative", zIndex: 5, background: "#07120df7", boxShadow: "0 -4px 14px #0005" } }, [
@@ -1150,5 +1382,5 @@
     return { RealtimeBattle, ChooseBattleMode };
   }
 
-  window.EV_REALTIME_COMBAT = Object.freeze({ arenaFor, arenaStats, damageFor, telegraphRadius, availableMoves, rogueSequence, chooseAiMove, canOccupy, moveInArena, createView });
+  window.EV_REALTIME_COMBAT = Object.freeze({ arenaFor, arenaStats, damageFor, telegraphRadius, availableMoves, rogueSequence, rogueFormation, chooseAiMove, canOccupy, moveInArena, createView });
 })();

@@ -107,7 +107,7 @@
     const reducedMotion = !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const count = 3 + (hash(`${seedText}:count`) % 3) + (stage >= 2 ? 1 : 0);
     const baseTiming = TIMING[family] || 800;
-    const impactAtMs = reducedMotion ? 120 : baseTiming + (hash(`${seedText}:impact`) % 4) * 32 + stage * 18;
+    const impactAtMs = options.impactOnly ? 0 : reducedMotion ? 120 : baseTiming + (hash(`${seedText}:impact`) % 4) * 32 + stage * 18;
     const element = TYPE_STYLE[moveType] || TYPE_STYLE[attacker.types?.[0]] || TYPE_STYLE.Sombra;
     const secondaryType = attacker.types?.find((type) => type !== moveType) || attacker.types?.[1] || attacker.types?.[0];
     const secondary = TYPE_STYLE[secondaryType]?.a || element.b;
@@ -156,7 +156,7 @@
       count: Math.min(7, count),
       impactAtMs,
       flightMs,
-      durationMs: reducedMotion ? 340 : impactAtMs + 1010,
+      durationMs: options.impactOnly ? 690 : reducedMotion ? 340 : impactAtMs + 1010,
       attackerIsPlayer: options.attackerIsPlayer !== false,
       hit: options.hit !== false,
       damage: Math.max(0, Number(options.damage) || 0),
@@ -296,10 +296,19 @@
       className: "ev-vfx-resonance-wash",
       style: { "--ev-res-x": percent(scene.x1), "--ev-res-y": percent(scene.y1) },
     }));
-    if (!scene.impactOnly && (scene.family === "volley" || scene.family === "spit")) {
-      for (let i = 0; i < scene.count; i++) children.push(flightNode(scene, i, scene.family === "spit" ? "drop" : scene.glyph));
+    if (scene.family === "volley" || scene.family === "spit") {
+      for (let i = 0; i < (scene.impactOnly ? Math.min(5, scene.count) : scene.count); i++) {
+        if (scene.impactOnly) {
+          const angle = (Math.PI * 2 * i) / Math.min(5, scene.count);
+          const radius = scene.size * (0.9 + (i % 2) * 0.4);
+          children.push(N("div", {
+            className: `ev-vfx-shot ev-vfx-shape-${scene.family === "spit" ? "drop" : scene.glyph}`,
+            style: { width: scene.size * 0.48, height: scene.size * 0.48, left: percent(scene.x1), top: percent(scene.y1), "--ev-a": scene.colors[0], "--ev-b": scene.colors[1], "--ev-c": scene.colors[2], "--ev-d": scene.colors[3], "--ev-sign-x": `${Math.cos(angle) * radius}px`, "--ev-sign-y": `${Math.sin(angle) * radius}px`, animation: `ev-vfx-impact-projectile 430ms cubic-bezier(.16,.72,.2,1) ${i * 18}ms both` },
+          }, `signature-${scene.runId}-${i}`));
+        } else children.push(flightNode(scene, i, scene.family === "spit" ? "drop" : scene.glyph));
+      }
     }
-    if (!scene.impactOnly && scene.family === "skyfall") {
+    if (scene.family === "skyfall") {
       for (let i = 0; i < scene.count; i++) {
         const size = scene.size * (0.85 + (i % 3) * 0.22);
         const x = Math.max(0.04, Math.min(0.96, scene.x1 + (((i * 37 + scene.variant * 13) % 9) - 4) * scene.spread * 0.28));
@@ -324,7 +333,7 @@
         }, `meteor-${scene.runId}-${i}`));
       }
     }
-    if ((!scene.impactOnly || scene.realtimeGuard) && (scene.family === "eruption" || scene.family === "roots")) {
+    if (scene.family === "eruption" || scene.family === "roots") {
       const total = scene.family === "roots" ? scene.count + 1 : Math.max(3, scene.count - 1);
       for (let i = 0; i < total; i++) {
         const size = scene.size * (1.0 + ((i + scene.variant) % 3) * 0.45);
@@ -351,7 +360,7 @@
         }, `rise-${scene.runId}-${i}`));
       }
     }
-    if (!scene.impactOnly && scene.family === "rush") {
+    if (scene.family === "rush") {
       const left = Math.min(scene.x0, scene.x1);
       const width = Math.max(0.12, Math.abs(scene.x1 - scene.x0));
       const angle = Math.atan2((scene.y1 - scene.y0) * (scene.attackerIsPlayer ? 1 : -1), Math.abs(scene.x1 - scene.x0)) * 180 / Math.PI;
@@ -367,29 +376,21 @@
         },
       }, `slash-${scene.runId}-${i}`));
     }
-    if (!scene.impactOnly && scene.family === "flood") {
-      children.push(N("div", {
-        className: "ev-vfx-flood-glaze",
-        style: {
-          "--ev-a": scene.colors[0],
-          "--ev-b": scene.colors[1],
-          "--ev-c": scene.colors[2],
-          animation: `ev-vfx-flood-glaze ${scene.impactAtMs}ms ease-out both`,
-        },
-      }));
-      children.push(N("div", {
-        className: `ev-vfx-wave ${scene.attackerIsPlayer ? "from-player" : "from-opponent"}`,
-        style: {
-          top: percent(Math.max(0.04, Math.min(scene.y0, scene.y1) - 0.27)),
-          height: `${Math.max(scene.height * 1.45, 260 + scene.stage * 36)}px`,
-          "--ev-a": scene.colors[0],
-          "--ev-b": scene.colors[1],
-          "--ev-c": scene.colors[2],
-          animation: `${scene.attackerIsPlayer ? "ev-vfx-wave" : "ev-vfx-wave-reverse"} ${scene.impactAtMs}ms cubic-bezier(.18,.64,.26,1) both`,
-        },
-      }));
+    if (scene.family === "flood") {
+      if (scene.impactOnly) {
+        children.push(N("div", { className: "ev-vfx-impact-splash", style: { left: percent(scene.x1), top: percent(scene.y1), "--ev-a": scene.colors[0], "--ev-b": scene.colors[1], "--ev-c": scene.colors[2], animation: "ev-vfx-splash-burst 620ms cubic-bezier(.16,.72,.2,1) both" } }));
+      } else {
+        children.push(N("div", {
+          className: "ev-vfx-flood-glaze",
+          style: { "--ev-a": scene.colors[0], "--ev-b": scene.colors[1], "--ev-c": scene.colors[2], animation: `ev-vfx-flood-glaze ${scene.impactAtMs}ms ease-out both` },
+        }));
+        children.push(N("div", {
+          className: `ev-vfx-wave ${scene.attackerIsPlayer ? "from-player" : "from-opponent"}`,
+          style: { top: percent(Math.max(0.04, Math.min(scene.y0, scene.y1) - 0.27)), height: `${Math.max(scene.height * 1.45, 260 + scene.stage * 36)}px`, "--ev-a": scene.colors[0], "--ev-b": scene.colors[1], "--ev-c": scene.colors[2], animation: `${scene.attackerIsPlayer ? "ev-vfx-wave" : "ev-vfx-wave-reverse"} ${scene.impactAtMs}ms cubic-bezier(.18,.64,.26,1) both` },
+        }));
+      }
     }
-    if (!scene.impactOnly && scene.family === "beam") {
+    if (scene.family === "beam") {
       const left = Math.min(scene.x0, scene.x1);
       const width = Math.max(0.12, Math.abs(scene.x1 - scene.x0));
       const leftToRight = scene.x0 <= scene.x1;
@@ -411,7 +412,7 @@
         },
       }));
     }
-    if (!scene.impactOnly && scene.family === "cyclone") {
+    if (scene.family === "cyclone") {
       for (let i = 0; i < scene.count + 2; i++) {
         const size = scene.size * (0.48 + (i % 3) * 0.16);
         children.push(N("div", {
@@ -430,7 +431,7 @@
         }, `orbit-${scene.runId}-${i}`));
       }
     }
-    if (!scene.impactOnly && scene.family === "eclipse") {
+    if (scene.family === "eclipse") {
       children.push(N("div", {
         className: "ev-vfx-eclipse",
         style: {

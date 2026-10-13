@@ -2892,3 +2892,70 @@
   .ev-vfx-impact-halo,
   .ev-vfx-impact-particle { animation-duration: 1ms !important; animation-delay: 0ms !important; }
 }
+
+
+/* Movimento de arena: sprites animam postura/ciclo sem substituir a arte autoral dos Pets. */
+.ev-rt-creature {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 78%;
+  will-change: transform, filter;
+}
+.ev-rt-creature canvas { image-rendering: pixelated; }
+.ev-rt-creature-shadow {
+  position: absolute;
+  left: 17%; right: 17%; bottom: 5%; height: 13%;
+  border-radius: 50%; background: rgba(4, 14, 10, .48);
+  filter: blur(2px); transform: scaleX(1.1); z-index: -1;
+}
+.ev-rt-creature--idle { animation: ev-rt-idle 1.65s ease-in-out infinite; }
+.ev-rt-creature--move { animation: ev-rt-run .34s ease-in-out infinite; }
+.ev-rt-creature--attack { animation: ev-rt-lunge .36s cubic-bezier(.18,.72,.24,1) 1; }
+.ev-rt-creature--dodge { animation: ev-rt-dodge .39s cubic-bezier(.14,.76,.18,1) 1; }
+.ev-rt-creature--hurt { animation: ev-rt-hit .28s ease-out 1; }
+@keyframes ev-rt-idle {
+  0%,100% { transform: translateY(0) scaleX(1) scaleY(1); }
+  50% { transform: translateY(-2px) scaleX(1.018) scaleY(.985); }
+}
+@keyframes ev-rt-run {
+  0%,100% { transform: translateY(1px) scaleX(1.04) scaleY(.91) rotate(-3deg); }
+  50% { transform: translateY(-6px) scaleX(.94) scaleY(1.08) rotate(3deg); }
+}
+@keyframes ev-rt-lunge {
+  0% { transform: translateX(0) scale(1); }
+  42% { transform: translateX(var(--ev-rt-lunge-x, 10px)) scaleX(1.12) scaleY(.91); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes ev-rt-dodge {
+  0% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+  45% { transform: translateX(var(--ev-rt-dodge-x, 10px)) rotate(-13deg) scale(.92,.86); opacity: .56; }
+  100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+}
+@keyframes ev-rt-hit {
+  0% { transform: translateX(0) scale(1); }
+  28% { transform: translateX(-5px) scale(1.08,.9); }
+  56% { transform: translateX(4px) scale(.96,1.02); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+/* Cada família deixa uma assinatura própria no momento exato da colisão. */
+.ev-vfx-impact-splash {
+  position:absolute; width:24px; height:24px; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle, var(--ev-c) 0 12%, var(--ev-b) 30%, transparent 72%);
+  box-shadow:0 0 18px var(--ev-a); pointer-events:none;
+}
+@keyframes ev-vfx-splash-burst {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.2); }
+  35% { opacity:1; transform:translate(-50%,-50%) scale(3.6,.85); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(5.2,1.2); }
+}
+@keyframes ev-vfx-impact-projectile {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.2) rotate(0); }
+  22% { opacity:1; }
+  100% { opacity:0; transform:translate(calc(-50% + var(--ev-sign-x)),calc(-50% + var(--ev-sign-y))) scale(.05) rotate(220deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ev-rt-creature--idle, .ev-rt-creature--move, .ev-rt-creature--attack,
+  .ev-rt-creature--dodge, .ev-rt-creature--hurt { animation-duration: .18s !important; }
+}
