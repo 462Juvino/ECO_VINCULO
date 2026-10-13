@@ -7,6 +7,10 @@ const vm = require("node:vm");
 
 const sandbox = { window: {} };
 vm.runInNewContext(
+  readFileSync(new URL("../js/18-projectile-physics.js", `file://${__filename}`), "utf8"),
+  sandbox,
+);
+vm.runInNewContext(
   readFileSync(new URL("../js/17-realtime-combat.js", `file://${__filename}`), "utf8"),
   sandbox,
 );
@@ -38,13 +42,13 @@ test("a arena altera ataque, defesa, velocidade e regeneração conforme o tipo"
   assert.equal(secondaryMaré.stats.vel, 54);
 });
 
-test("vantagem elemental e crítico elevam dano; defender reduz dano sem zerá-lo", () => {
+test("vantagem elemental e crítico elevam dano; não existe mitigação por modo defesa", () => {
   const neutral = combat.damageFor({ atk: 50, def: 50, power: 60 });
   const advantage = combat.damageFor({ atk: 50, def: 50, power: 60, typeMultiplier: 2 });
   const guarded = combat.damageFor({ atk: 50, def: 50, power: 60, guarding: true });
   const critical = combat.damageFor({ atk: 50, def: 50, power: 60, crit: true });
   assert.ok(advantage > neutral);
-  assert.ok(guarded < neutral);
+  assert.equal(guarded, neutral);
   assert.ok(critical > neutral);
   assert.equal(combat.damageFor({ atk: 0, def: 999, power: 0, typeMultiplier: 0 }), 1);
 });
@@ -87,4 +91,19 @@ test("o seletor preserva todos os golpes disponíveis, inclusive o quinto", () =
   const moves = ["impacto", "faísca", "onda", "raiz", "assinatura"];
   assert.deepEqual(combat.availableMoves({ moves }), moves);
   assert.equal(combat.availableMoves({ moves: null }).length, 0);
+});
+
+test("encontro selvagem rogue-like termina com o Pet original após clones menores", () => {
+  const sequence = combat.rogueSequence("embercub", 50);
+  assert.equal(sequence.length, 5);
+  assert.ok(Array.from(sequence.slice(0, 4)).every((foe) => foe.sp === "embercub" && foe.isClone && !foe.isPrime));
+  assert.equal(sequence[4].sp, "embercub");
+  assert.equal(sequence[4].isClone, false);
+  assert.equal(sequence[4].isPrime, true);
+  assert.ok(sequence[4].level > sequence[0].level);
+});
+
+test("a quantidade de clones escala com o nível e fica limitada a três a cinco", () => {
+  assert.equal(combat.rogueSequence("leafit", 1).length, 4);
+  assert.equal(combat.rogueSequence("leafit", 90).length, 6);
 });

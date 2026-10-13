@@ -128,22 +128,21 @@ No PvP, a carga é armazenada por ID de participante dentro do estado sincroniza
 
 Os testes não exigem dependências externas: `node --test tests/*.test.js`.
 
-## Combate local em tempo real — primeira etapa
+## Combate local em tempo real — ecos rogue-like
 
-Na tela inicial há agora **Testar combate no celular**: abre diretamente uma arena de demonstração com um time temporário e um botão **SAIR**. XP, captura, evoluções e itens desse treino ficam somente em memória; o save de campanha não é carregado nem sobrescrito. Em encontros normais da campanha, o seletor ainda oferece **Tempo real — prévia** e a batalha clássica como alternativa de segurança. O modo online/PvP continua fora desta etapa.
+Na tela inicial, **Testar combate no celular** abre uma demonstração descartável de encontro selvagem com botão **SAIR**, sequência de ecos e oportunidade de vínculo; ela não carrega nem sobrescreve o save. Nos encontros selvagens escolhidos em **Tempo real**, o Pet agora protege seu vínculo com uma sequência de ecos/duplicatas menores: vencê-los conduz ao Pet original, que pode ser capturado. Encontros de treinadores continuam usando somente o time declarado pelo treinador. O modo PvP online não foi alterado.
 
-- **Celular:** arena top-down em tiles inspirados no mapa, com mais espaço caminhável e obstáculos sólidos. O repertório aparece só ao abrir **GOLPES**; cada técnica é identificada como ataque, área ou defesa. O botão principal muda de **ATACAR** para **DEFESA** quando se seleciona uma técnica defensiva, evitando encher a tela de botões.
-- **Acesso ao treino:** na tela inicial, toque em **Testar combate no celular**; não precisa começar a campanha nem procurar um encontro.
-- **Teclado:** WASD/setas para mover; `1`–`5` para selecionar/usar as técnicas; `F` ou espaço ativa a primeira defesa de chão; `E` ou Shift para esquivar; `Q` para trocar de Pet.
-- O golpe básico custa estamina, técnicas de ataque mais fortes consomem poder e a defesa custa estamina. Estamina/poder recarregam durante a luta; a defesa reduz o dano por uma breve janela.
-- Ataques comuns saem visualmente do Pet e cruzam a arena. A velocidade efetiva do projétil depende da velocidade do atacante; o alvo pode se deslocar e a IA tenta esquivar. O HP só muda quando há colisão; um acerto empurra o Pet atingido um pouco para trás.
-- Golpes sem projétil e efeitos de chão/órbita são reutilizados como técnicas defensivas, com raízes/energia emergindo do piso. Apenas alguns Pets Pedra, ou Pets evoluídos Brasa/Faísca com golpe potente de céu, criam uma área marcada; a marca visível e a colisão usam o mesmo raio.
-- Trocas voluntárias ativam **15 segundos de recarga**; a troca automática quando um Pet desmaia não é bloqueada.
-- Clareira, arena das Marés e caverna mudam atributos efetivos, velocidade e velocidade de recarga conforme as afinidades; tipos secundários também contam. O HUD resume a sinergia/desvantagem e mostra os números completos sob demanda, sem cobrir o campo.
-- Limites ampliados e obstáculos do bioma bloqueiam movimento e esquiva; golpes de projétil mostram o sinal sobre o atacante, e só golpes de área indicam uma zona no chão. O sinal de chefe identifica a técnica antes do disparo.
-- As coreografias reutilizam `js/14-attack-choreography.js`, dando movimento, projéteis e impacto conforme o Pet, tipo e golpe já selecionados.
+- **Ondas:** cada encontro selvagem gera de 3 a 5 ecos do mesmo Pet, conforme o nível, e por fim o original. Ecos têm cerca de metade da vida e atributos ofensivos/defensivos reduzidos, mas maior mobilidade; concedem XP reduzido e uma pequena recuperação entre ondas. Os ecos não podem ser capturados. Derrotar o original encerra o desafio.
+- **Vínculo:** somente o Pet original pode ser vinculado. Um Eco luminoso percorre a arena do jogador até o alvo durante a tentativa; sofrer dano interrompe a animação, e uma tentativa fracassada deixa a luta continuar. Captura/registro e itens continuam no fluxo de save existente.
+- **Ataques:** todos os golpes selecionados são ofensivos. Os dois primeiros ataques do repertório custam **20% da barra de poder**; os seguintes, mais pesados, custam **60%**. Não há modo de defesa nem golpes de chão convertidos em proteção. Esquiva continua consumindo estamina.
+- **Energia:** estamina e poder recarregam em velocidades definidas por ATQ/DEF/VEL do Pet, afinidades com a arena e vantagem/desvantagem de tipo contra o oponente. O inimigo também tem barra discreta de estamina e segue os mesmos custos.
+- **IA:** cada espécie assume um estilo de aproximação distinto (agressivo, ágil, resistente ou equilibrado), recua quando está sem recursos, seleciona golpes dentro do seu alcance e pondera a efetividade elemental; também pode esquivar de ataques marcados.
+- **Colisão física:** as duas criaturas não ocupam o mesmo espaço. Um choque próximo pode causar dano a ambos, calculado com os atributos efetivos e tipos de cada Pet/bioma, e os afasta; esquivas evitam o dano de contato.
+- **Arena e controles:** campo top-down em tiles do bioma, com obstáculos sólidos e controles de toque no celular. Movimento, esquiva, alcance, voo e empurrão são calibrados por distância física, então retrato/paisagem não distorcem a velocidade. O repertório aparece somente ao abrir **GOLPES**; projéteis viajam conforme a VEL, e apenas técnicas selecionadas de céu produzem área marcada. Trocas voluntárias mantêm 15 segundos de recarga.
+- **Teclado:** WASD/setas para mover; `1`–`5` para selecionar/usar golpes; `E` ou Shift para esquivar; `Q` para trocar de Pet.
+- O modo clássico continua disponível como opção de segurança. O modo online/PvP real permanece fora desta revisão.
 
-Esta é uma **primeira fatia jogável para testar e ajustar** equilíbrio e controles, não uma conversão final de todos os confrontos: mantenha a opção clássica enquanto avalia. O PvP online não foi alterado e continua fora desta etapa.
+Validação desta revisão: `node --test tests/*.test.js` cobre **34 testes**, incluindo 3–5 clones e Pet original, custos de poder 20%/60%, regeneração relativa aos atributos/tipos/arena, decisão da IA, efetividade elemental e colisão/separação corporal.
 
 ## Validação desta versão
 

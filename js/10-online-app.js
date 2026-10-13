@@ -4120,14 +4120,14 @@
             }
             const demoSave = DQ("Treinador de Teste", ["Flora", "Faísca"]);
             demoSave.party = ["leafit", "embercub", "aquaffin"].map((sp) => Vl(sp, 8));
+            demoSave.affinities = Array.from(new Set([...(demoSave.affinities || []), "Pedra"]));
             setMobileTest({
               gs: { current: demoSave },
               init: {
-                kind: "trainer",
-                trainerName: "Guardião de Treino",
-                isBoss: true,
+                kind: "wild",
+                foeSp: "pebblor",
+                foeLevel: 8,
                 arena: "grass",
-                team: [{ sp: "pebblor", level: 8 }],
                 testMode: true,
               },
             });
