@@ -42,6 +42,32 @@ test("dois primeiros golpes custam 20% de poder e os pesados custam 60%", () => 
   assert.equal(physics.movePowerCost({ power: 120 }, 4), 60);
 });
 
+test("o básico é fraco, gratuito e tem recarga de no máximo meio segundo; dois leves seguem em 20%", () => {
+  const basic = physics.playerMoveProfile({ power: 80 }, 0);
+  assert.equal(basic.cost, 0);
+  assert.equal(basic.cooldownMs, 500);
+  assert.equal(basic.damageMultiplier, 0.62);
+  assert.equal(basic.basic, true);
+  assert.equal(physics.playerMoveProfile({ power: 70 }, 1).cost, 20);
+  assert.equal(physics.playerMoveProfile({ power: 70 }, 2).cost, 20);
+  assert.equal(physics.playerMoveProfile({ power: 100 }, 3).cost, 60);
+  assert.equal(physics.playerMoveProfile({ power: 100 }, 4).cooldownMs, 1380);
+});
+
+test("Escudo bloqueia vantagem/empate e corta metade em desvantagem; Espelho reflete sem reduzir o golpe", () => {
+  const shield = physics.resolveInstinctHit(40, 1.25, 1, 2);
+  assert.equal(shield.damage, 0);
+  assert.equal(shield.reflectedDamage, 0);
+  assert.equal(shield.shieldUses, 0);
+  assert.equal(shield.mirrorUses, 2);
+  assert.equal(shield.triggered, "escudo");
+  assert.equal(physics.resolveInstinctHit(40, 0.7, 1, 2).damage, 20);
+  assert.equal(physics.resolveInstinctHit(40, 1, 0, 2).reflectedDamage, 20);
+  assert.equal(physics.resolveInstinctHit(40, 0.7, 0, 2).reflectedDamage, 10);
+  assert.equal(physics.resolveInstinctHit(40, 1, 0, 0).damage, 40);
+  assert.equal(physics.resolveInstinctHit(0, 1, 1, 2).triggered, "");
+});
+
 test("velocidade do Pet reduz o tempo de voo do projétil", () => {
   assert.ok(physics.projectileSpeed(95) > physics.projectileSpeed(35));
   assert.ok(physics.projectileFlightMs(0.65, 95) < physics.projectileFlightMs(0.65, 35));

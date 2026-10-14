@@ -6279,15 +6279,21 @@
             return H8(pet.sp, z0(save));
           return null;
         },
+        instincts: nl,
+        fusePets: (first, second) => Z3(first, second),
+        fusionSpecies: (hybridId) => Object.values(Y0).find((entry) => entry.id === hybridId) || null,
+        FusionSprite: Oe,
       });
       var EV_REALTIME_MODE_SELECTOR = EV_REALTIME_VIEWS?.ChooseBattleMode;
       // Ponto de entrada para o treino rápido do menu; recebe um estado descartável e não salva a campanha.
       window.EV_REALTIME_TEST_COMPONENT = EV_REALTIME_VIEWS?.RealtimeBattle;
       function n9(props) {
         if (!EV_REALTIME_MODE_SELECTOR) return N(n9Classic, props);
-        return N(EV_REALTIME_MODE_SELECTOR, {
-          props,
-          Classic: n9Classic,
-          Realtime: EV_REALTIME_VIEWS.RealtimeBattle,
-        });
+        const save = props.gs?.current || {};
+        const classicUnlocked = Boolean(save.tataAlfaDefeated || save.defeated?.includes("dona-cuca"));
+        const preference = window.EV_BATTLE_PREFERENCES?.get?.() || "realtime";
+        const mode = preference === "classic" && classicUnlocked ? "classic" : "realtime";
+        return mode === "classic"
+          ? N(n9Classic, props)
+          : N(EV_REALTIME_VIEWS.RealtimeBattle, props);
       }

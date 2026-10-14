@@ -3,6 +3,19 @@
   "use strict";
 
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const BATTLE_MODE_KEY = "eco-vinculo-battle-mode-v1";
+  const battlePreferences = Object.freeze({
+    get() {
+      try { return localStorage.getItem(BATTLE_MODE_KEY) === "classic" ? "classic" : "realtime"; }
+      catch { return "realtime"; }
+    },
+    set(mode) {
+      if (mode !== "classic" && mode !== "realtime") return false;
+      try { localStorage.setItem(BATTLE_MODE_KEY, mode); return true; }
+      catch { return false; }
+    },
+  });
+  window.EV_BATTLE_PREFERENCES = battlePreferences;
   const ARENAS = Object.freeze({
     grass: {
       id: "grass",
@@ -11,7 +24,7 @@
       sky: "#214b36",
       ground: "#579152",
       accent: "#b5ed83",
-      field: { tile: "#76a85f", tileAlt: "#6d9d56", edge: "#245338", obstacle: "canopy", bounds: { minX: 0.04, maxX: 0.96, minY: 0.04, maxY: 0.96 }, obstacles: [{ x: 0.34, y: 0.34, w: 0.10, h: 0.11 }, { x: 0.63, y: 0.57, w: 0.12, h: 0.09 }] },
+      field: { tile: "#76a85f", tileAlt: "#6d9d56", edge: "#245338", obstacle: "canopy", bounds: { minX: 0.02, maxX: 0.98, minY: 0.02, maxY: 0.98 }, obstacles: [{ x: 0.34, y: 0.34, w: 0.10, h: 0.11 }, { x: 0.63, y: 0.57, w: 0.12, h: 0.09 }] },
       staminaRegen: 1.16,
       powerRegen: 1.08,
       boosts: { Flora: { atk: 1.10, def: 1.03, vel: 1.10 }, Faísca: { vel: 1.05 } },
@@ -24,7 +37,7 @@
       sky: "#164d68",
       ground: "#3688a0",
       accent: "#a2f3ee",
-      field: { tile: "#58a5a4", tileAlt: "#4a9698", edge: "#175d70", obstacle: "reef", bounds: { minX: 0.04, maxX: 0.96, minY: 0.04, maxY: 0.96 }, obstacles: [{ x: 0.30, y: 0.31, w: 0.12, h: 0.10 }, { x: 0.64, y: 0.62, w: 0.13, h: 0.08 }] },
+      field: { tile: "#58a5a4", tileAlt: "#4a9698", edge: "#175d70", obstacle: "reef", bounds: { minX: 0.02, maxX: 0.98, minY: 0.02, maxY: 0.98 }, obstacles: [{ x: 0.30, y: 0.31, w: 0.12, h: 0.10 }, { x: 0.64, y: 0.62, w: 0.13, h: 0.08 }] },
       staminaRegen: 1.12,
       powerRegen: 1.10,
       boosts: { Maré: { def: 1.12, vel: 1.07 }, Faísca: { vel: 1.08 } },
@@ -37,7 +50,7 @@
       sky: "#302745",
       ground: "#625376",
       accent: "#d8bdff",
-      field: { tile: "#766786", tileAlt: "#695b7a", edge: "#382e49", obstacle: "crystal", bounds: { minX: 0.04, maxX: 0.96, minY: 0.04, maxY: 0.96 }, obstacles: [{ x: 0.35, y: 0.36, w: 0.11, h: 0.10 }, { x: 0.64, y: 0.61, w: 0.12, h: 0.11 }] },
+      field: { tile: "#766786", tileAlt: "#695b7a", edge: "#382e49", obstacle: "crystal", bounds: { minX: 0.02, maxX: 0.98, minY: 0.02, maxY: 0.98 }, obstacles: [{ x: 0.35, y: 0.36, w: 0.11, h: 0.10 }, { x: 0.64, y: 0.61, w: 0.12, h: 0.11 }] },
       staminaRegen: 0.96,
       powerRegen: 1.18,
       boosts: { Pedra: { def: 1.12, atk: 1.04 }, Sombra: { atk: 1.09, vel: 1.04 } },
@@ -172,13 +185,16 @@
     return ready.sort((a, b) => score(b) - score(a))[0] || light[0] || heavy[0];
   }
 
-  function createView({ React, h, Sprite, species, getStats, getEffectiveness, makePet, xpForDefeat, xpToNext, evolve, relics, registerSpecies, registerEvolution }) {
+  function createView({ React, h, Sprite, species, getStats, getEffectiveness, makePet, xpForDefeat, xpToNext, evolve, relics, registerSpecies, registerEvolution, instincts = {}, fusePets, fusionSpecies, FusionSprite }) {
     const el = (type, props = {}, children = null) => h(type, { ...props, ...(children === null ? {} : { children }) });
     const bar = (label, value, color, text) => el("div", { style: { marginTop: 5 } }, [
       el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 800, color: "#f7f5ef" } }, [el("span", {}, label), el("span", {}, text)]),
       el("div", { style: { height: 9, overflow: "hidden", borderRadius: 8, background: "#111827aa", border: "1px solid #ffffff30" } },
         el("div", { style: { width: `${clamp(value, 0, 100)}%`, height: "100%", background: color, transition: "width 100ms linear" } })),
     ]);
+    const instinctUsesFor = (pet) => Object.fromEntries(["escudo", "espelho", "fusao", "fusao-instintiva"].map((id) => [
+      id, (pet?.afinidades || []).includes(id) ? Math.max(0, Number(instincts?.[id]?.usosPorBatalha) || 0) : 0,
+    ]));
 
     function RealtimeBattle({ gs, init, onEnd, onExit }) {
       const party = gs.current.party;
@@ -222,10 +238,16 @@
           swarm: rogueRun ? rogueLayout.minions.map((position, index) => ({
             foeIndex: index, x: position.x, y: position.y,
             stamina: 38, power: 34,
-            attackAt: now + 920 + index * 260,
+            attackAt: now + 1800 + index * 260,
             windup: null, dodgeUntil: 0, moving: false, facingLeft: true,
           })) : [],
           primePos: rogueLayout?.prime || null,
+          introUntil: now + 1150,
+          fusion: null,
+          affinityUses: party.map(instinctUsesFor),
+          foeAffinityUses: foeList.current.map(instinctUsesFor),
+          fusionRevealUntil: 0,
+          guardEffect: null,
           playerMoving: false,
           playerFacingLeft: false,
           playerPoseUntil: 0,
@@ -247,7 +269,7 @@
           projectiles: [],
           areaStrikes: [],
           intent: null,
-          attackAt: now + 1200,
+          attackAt: now + 1750,
           frameAt: now,
           paintAt: 0,
           done: false,
@@ -261,10 +283,17 @@
       const [attackScenes, setAttackScenes] = React.useState([]);
       const [selectedMoveIndex, setSelectedMoveIndex] = React.useState(null);
       const [moveMenuOpen, setMoveMenuOpen] = React.useState(false);
+      const [fusionMenuOpen, setFusionMenuOpen] = React.useState(false);
+      const [fusionType, setFusionType] = React.useState("");
+      const [battleIntroOpen, setBattleIntroOpen] = React.useState(true);
       const [showArenaDetails, setShowArenaDetails] = React.useState(false);
       const held = React.useRef(new Set());
       const raf = React.useRef(0);
       const arenaRef = React.useRef(null);
+      React.useEffect(() => {
+        const timer = window.setTimeout(() => setBattleIntroOpen(false), 1100);
+        return () => window.clearTimeout(timer);
+      }, []);
       const physicalDistance = (a, b, rect = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 }) =>
         window.EV_REALTIME_PHYSICS?.bodyDistance(a, b, rect.width, rect.height) ?? Math.hypot(a.x - b.x, a.y - b.y);
       const attackSceneTimers = React.useRef(new Map());
@@ -289,11 +318,11 @@
         repaint((n) => n + 1);
         return true;
       };
-      const active = party[s.playerIndex] || party[aliveStart];
+      const active = s.fusion?.actor || party[s.playerIndex] || party[aliveStart];
       const foe = foeList.current[s.foeIndex];
-      const activeDef = species(active?.sp) || {};
+      const activeDef = s.fusion?.definition || species(active?.sp) || {};
       const foeDef = species(foe?.sp) || {};
-      const activeBase = getStats(active?.sp, active?.level || 1);
+      const activeBase = s.fusion?.base || getStats(active?.sp, active?.level || 1);
       const foeBaseRaw = getStats(foe?.sp, foe?.level || 1);
       const foeBase = foe?.isClone ? {
         ...foeBaseRaw,
@@ -360,8 +389,27 @@
         attackSceneTimers.current.set(scene.runId, timer);
         return scene;
       };
+      const settleFusion = (knockout = false, clear = false) => {
+        const fusion = s.fusion;
+        if (!fusion || fusion.resolved) return;
+        const first = party[fusion.firstIndex];
+        const second = party[fusion.secondIndex];
+        if (first && second) {
+          if (knockout || fusion.actor.hp <= 0) {
+            first.hp = 0;
+            second.hp = 0;
+          } else {
+            const remainingRatio = clamp(fusion.actor.hp / Math.max(1, fusion.initialHp), 0, 1);
+            first.hp = Math.min(first.hp, Math.floor(first.hp * remainingRatio));
+            second.hp = Math.min(second.hp, Math.floor(second.hp * remainingRatio));
+          }
+        }
+        fusion.resolved = true;
+        if (clear) s.fusion = null;
+      };
       const finish = (result) => {
         if (s.done) return;
+        settleFusion();
         s.done = true;
         held.current.clear();
         repaint((n) => n + 1);
@@ -477,6 +525,7 @@
         repaint((n) => n + 1);
       };
       const handlePlayerKnockout = () => {
+        if (s.fusion) settleFusion(true, true);
         const next = party.findIndex((pet, index) => index !== s.playerIndex && pet.hp > 0);
         if (next < 0) {
           s.intent = null;
@@ -485,6 +534,7 @@
         } else swapTo(next, true);
       };
       const swapTo = (index, forced = false) => {
+        if (s.fusion) { report("A Fusão permanece unida até a batalha terminar."); return false; }
         const next = party[index];
         if (!next || next.hp <= 0 || index === s.playerIndex || s.done) return false;
         const now = performance.now();
@@ -502,9 +552,69 @@
         repaint((n) => n + 1);
         return true;
       };
+      const availableFusionTypes = (active?.afinidades || []).filter((id) =>
+        (id === "fusao" || id === "fusao-instintiva") && (s.affinityUses?.[s.playerIndex]?.[id] || 0) > 0,
+      );
+      const fusionPartners = party.map((pet, index) => ({ pet, index })).filter(({ pet, index }) => index !== s.playerIndex && pet.hp > 0);
+      const activateFusion = (partnerIndex, type) => {
+        if (s.done || s.fusion || !availableFusionTypes.includes(type)) return false;
+        const first = party[s.playerIndex];
+        const second = party[partnerIndex];
+        if (!first || !second || first.hp <= 0 || second.hp <= 0 || partnerIndex === s.playerIndex) return false;
+        if (type === "fusao" && (gs.current.items?.["nucleo-fusao"] || 0) < 1) {
+          report("Sem Núcleo de Fusão; use Fusão Instintiva ou obtenha um núcleo na mochila.");
+          return false;
+        }
+        const result = fusePets?.(first, second);
+        if (!result?.stats) { report("Não foi possível formar este vínculo híbrido."); return false; }
+        const id = result.hybridId || `fusao-${first.uid || first.sp}-${second.uid || second.sp}`;
+        const hybrid = fusionSpecies?.(result.hybridId) || {};
+        const fusionVisual = window.EV_SIGNATURES?.fusionVisual(first, second, result);
+        const fusionMoves = window.EV_SIGNATURES?.makeFusionMoves(result, { ...first }, { ...second }) || [
+          ...(species(first.sp)?.moves || []).slice(0, 1),
+          ...(species(second.sp)?.moves || []).slice(0, 1),
+        ];
+        const definition = {
+          ...hybrid,
+          id,
+          name: result.name,
+          types: result.types || [],
+          stage: 2,
+          feature: hybrid.sprite || result.sprite || species(first.sp)?.feature,
+          sprite: hybrid.sprite || result.sprite || species(first.sp)?.feature,
+          moves: fusionMoves,
+          fusionVisual,
+        };
+        const base = { ...result.stats };
+        const initialHp = Math.max(1, Math.min(base.maxHp, first.hp + second.hp));
+        const fusionAffinityUses = Object.fromEntries(["escudo", "espelho"].map((affinity) => [
+          affinity, (s.affinityUses?.[s.playerIndex]?.[affinity] || 0) + (s.affinityUses?.[partnerIndex]?.[affinity] || 0),
+        ]));
+        const actor = {
+          uid: first.uid,
+          sp: id,
+          level: result.level || Math.max(first.level || 1, second.level || 1),
+          hp: initialHp,
+          maxHpOverride: base.maxHp,
+          afinidades: Object.keys(fusionAffinityUses).filter((affinity) => fusionAffinityUses[affinity] > 0),
+          hybridId: result.hybridId,
+          fusionVisual,
+        };
+        s.affinityUses[s.playerIndex][type] = Math.max(0, s.affinityUses[s.playerIndex][type] - 1);
+        if (type === "fusao") gs.current.items["nucleo-fusao"] = Math.max(0, (gs.current.items["nucleo-fusao"] || 0) - 1);
+        s.fusion = { actor, definition, base, affinityUses: fusionAffinityUses, firstIndex: s.playerIndex, secondIndex: partnerIndex, initialHp, resolved: false };
+        s.fusionRevealUntil = performance.now() + 1200;
+        s.playerWindup = null;
+        s.playerPoseUntil = s.fusionRevealUntil;
+        setFusionMenuOpen(false);
+        setMoveMenuOpen(false);
+        setSelectedMoveIndex(0);
+        report(`${species(first.sp)?.name || first.sp} + ${species(second.sp)?.name || second.sp}: FUSÃO! ${result.name} entrou na arena.`);
+        return true;
+      };
       const planMove = (attackerSp, attackerLevel, move, from, to, attackerIsPlayer = true) => {
         const choreo = window.EV_ATTACK_CHOREOGRAPHY;
-        const definition = species(attackerSp) || {};
+        const definition = attackerIsPlayer && s.fusion?.actor.sp === attackerSp ? s.fusion.definition : species(attackerSp) || {};
         const rect = arenaRef.current?.getBoundingClientRect();
         if (!choreo) return null;
         return choreo.plan({
@@ -515,9 +625,10 @@
         });
       };
       const launchProjectile = (owner, attackerSp, attackerLevel, move, family, role, from, to, crit, attackerIndex = s.foeIndex) => {
-        const definition = species(attackerSp) || {};
-        const attacker = owner === "enemy" ? foeList.current[attackerIndex] : party[s.playerIndex];
-        const base = getStats(attackerSp, attackerLevel || 1);
+        const isFusionAttacker = owner === "player" && s.fusion?.actor.sp === attackerSp;
+        const definition = isFusionAttacker ? s.fusion.definition : species(attackerSp) || {};
+        const attacker = owner === "enemy" ? foeList.current[attackerIndex] : s.fusion?.actor || party[s.playerIndex];
+        const base = isFusionAttacker ? s.fusion.base : getStats(attackerSp, attackerLevel || 1);
         const actualBase = attacker?.isClone ? {
           ...base,
           vel: Math.max(1, Math.round(base.vel * (attacker.velMultiplier || 1.08))),
@@ -541,8 +652,8 @@
           evadeChecked: false,
         });
       };
-      const launchAreaStrike = (owner, attackerSp, attackerLevel, move, from, target, crit, isBoss = false) => {
-        const attackerDef = species(attackerSp) || {};
+      const launchAreaStrike = (owner, attackerSp, attackerLevel, move, from, target, crit, isBoss = false, attackerIndex = s.foeIndex) => {
+        const attackerDef = owner === "player" && s.fusion?.actor.sp === attackerSp ? s.fusion.definition : species(attackerSp) || {};
         const scene = playAttackScene(attackerDef, move, 0, crit, from, target, owner === "player");
         const now = performance.now();
         s.areaStrikes.push({
@@ -552,25 +663,23 @@
           landsAt: now + (scene?.impactAtMs || 820),
           targetPlayerIndex: owner === "enemy" ? s.playerIndex : null,
           targetFoeIndex: owner === "player" ? s.foeIndex : null,
+          attackerIndex: owner === "enemy" ? attackerIndex : null,
         });
       };
       const applyHit = (owner, attackerSp, attackerLevel, move, crit, from, impactPoint, attackerIndex = s.foeIndex, targetFoeIndex = s.foeIndex) => {
         const now = performance.now();
         const playerTarget = owner === "enemy";
-        if (playerTarget && s.bondAttempt) {
-          s.bondAttempt = null;
-          s.log = "O impacto quebrou o Eco de Vínculo!";
-          s.logUntil = now + 1100;
-        }
-        const target = playerTarget ? party[s.playerIndex] : foeList.current[targetFoeIndex];
+        const target = playerTarget ? s.fusion?.actor || party[s.playerIndex] : foeList.current[targetFoeIndex];
         if (!target || target.hp <= 0) return;
-        const attackerDef = species(attackerSp) || {};
-        const targetDef = species(target.sp) || {};
+        const attackerIsFusion = owner === "player" && s.fusion?.actor.sp === attackerSp;
+        const targetIsFusion = playerTarget && s.fusion?.actor.sp === target.sp;
+        const attackerDef = attackerIsFusion ? s.fusion.definition : species(attackerSp) || {};
+        const targetDef = targetIsFusion ? s.fusion.definition : species(target.sp) || {};
         const currentFoe = foeList.current[attackerIndex];
-        const attackerActor = playerTarget ? currentFoe : party[s.playerIndex];
-        const targetActor = playerTarget ? party[s.playerIndex] : foeList.current[targetFoeIndex];
-        const attackerBase = getStats(attackerSp, attackerLevel || 1);
-        const targetBase = getStats(target.sp, target.level || 1);
+        const attackerActor = playerTarget ? currentFoe : s.fusion?.actor || party[s.playerIndex];
+        const targetActor = playerTarget ? s.fusion?.actor || party[s.playerIndex] : foeList.current[targetFoeIndex];
+        const attackerBase = attackerIsFusion ? s.fusion.base : getStats(attackerSp, attackerLevel || 1);
+        const targetBase = targetIsFusion ? s.fusion.base : getStats(target.sp, target.level || 1);
         const scaledAttackerBase = attackerActor?.isClone ? {
           ...attackerBase,
           atk: Math.max(1, Math.round(attackerBase.atk * (attackerActor.atkMultiplier || 0.66))),
@@ -587,7 +696,25 @@
         const targetStats = arenaStats(scaledTargetBase, targetDef.types, arena);
         const multiplier = getEffectiveness(move.type, targetDef.types || []);
         const rawDamage = damageFor({ atk: attackerStats.stats.atk, def: targetStats.stats.def, power: move.power, typeMultiplier: multiplier, crit });
-        const damage = playerTarget && boss ? Math.ceil(rawDamage * 1.18) : rawDamage;
+        const baseDamage = playerTarget && boss ? Math.ceil(rawDamage * 1.18) : rawDamage;
+        const targetUses = playerTarget ? (s.fusion?.affinityUses || s.affinityUses?.[s.playerIndex]) : s.foeAffinityUses?.[targetFoeIndex];
+        const targetAffinities = targetActor?.afinidades || [];
+        const instinct = window.EV_REALTIME_PHYSICS?.resolveInstinctHit(baseDamage, multiplier,
+          targetAffinities.includes("escudo") ? targetUses?.escudo || 0 : 0,
+          targetAffinities.includes("espelho") ? targetUses?.espelho || 0 : 0)
+          || { damage: baseDamage, reflectedDamage: 0, shieldUses: targetUses?.escudo || 0, mirrorUses: targetUses?.espelho || 0, triggered: "" };
+        if (targetUses && instinct.triggered) {
+          targetUses.escudo = instinct.shieldUses;
+          targetUses.espelho = instinct.mirrorUses;
+          s.guardEffect = { kind: instinct.triggered, x: playerTarget ? s.px : positionForFoe(targetFoeIndex).x, y: playerTarget ? s.py : positionForFoe(targetFoeIndex).y, until: now + 820 };
+        }
+        const damage = instinct.damage;
+        if (playerTarget && damage > 0 && s.bondAttempt) {
+          s.captureBurst = { x: s.bondAttempt.to.x, y: s.bondAttempt.to.y, until: now + 650 };
+          s.bondAttempt = null;
+          s.log = "O impacto quebrou o Eco de Vínculo!";
+          s.logUntil = now + 1100;
+        }
         const viewport = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 };
         target.hp = Math.max(0, target.hp - damage);
         if (playerTarget) {
@@ -606,9 +733,21 @@
           if (foeList.current[targetFoeIndex]?.isPrime) s.primePos = pushed;
         }
         playAttackScene(attackerDef, move, damage, crit, from, impactPoint, owner === "player", { impactOnly: true });
-        s.floating = { text: `${crit ? "CRÍTICO · " : ""}-${damage}`, x: impactPoint.x, y: impactPoint.y, until: now + 700 };
-        s.log = `${attackerDef.name || attackerSp} acertou ${move.name}: -${damage} HP.`;
+        s.floating = { text: instinct.triggered === "escudo" && damage === 0 ? "ESCUDO!" : `${crit ? "CRÍTICO · " : ""}-${damage}${instinct.reflectedDamage ? ` · REFLETE ${instinct.reflectedDamage}` : ""}`, x: impactPoint.x, y: impactPoint.y, until: now + 800 };
+        s.log = instinct.triggered === "escudo"
+          ? `Escudo instintivo! ${damage ? `dano reduzido para ${damage}` : "golpe bloqueado"}${instinct.reflectedDamage ? ` · Espelho devolve ${instinct.reflectedDamage}` : ""}.`
+          : instinct.triggered === "espelho"
+            ? `Espelho instintivo! ${attackerDef.name || attackerSp} recebe ${instinct.reflectedDamage} de volta.`
+            : `${attackerDef.name || attackerSp} acertou ${move.name}: -${damage} HP.`;
         s.logUntil = now + 1500;
+        if (instinct.reflectedDamage > 0) {
+          const reflectedTarget = playerTarget ? foeList.current[attackerIndex] : s.fusion?.actor || party[s.playerIndex];
+          if (reflectedTarget && reflectedTarget.hp > 0) {
+            reflectedTarget.hp = Math.max(0, reflectedTarget.hp - instinct.reflectedDamage);
+            if (playerTarget && reflectedTarget.hp <= 0) advanceFoe(reflectedTarget, now, attackerIndex);
+            else if (!playerTarget && reflectedTarget.hp <= 0) { settleFusion(true, true); handlePlayerKnockout(); }
+          }
+        }
         if (!playerTarget && target.hp <= 0) {
           advanceFoe(target, now, targetFoeIndex);
         } else if (playerTarget && target.hp <= 0) {
@@ -621,11 +760,6 @@
         const playerPoint = { x: s.px, y: s.py };
         const enemyPoint = { x: s.ex, y: s.ey };
         if (!physics || physics.bodyDistance(playerPoint, enemyPoint, rect.width, rect.height) > 0.232 || now < s.nextContactAt || now < s.dodgeUntil || now < s.enemyDodgeUntil) return;
-        if (s.bondAttempt) {
-          s.bondAttempt = null;
-          s.log = "O choque interrompeu o Eco de Vínculo!";
-          s.logUntil = now + 1100;
-        }
         const playerEffective = arenaStats(currentBase, currentSpecies.types, arena).stats;
         const enemyEffective = arenaStats(opponentBase, opponentSpecies.types, arena).stats;
         const pDamage = damageFor({
@@ -640,8 +774,38 @@
           power: 48,
           typeMultiplier: getEffectiveness(opponentSpecies.types?.[0], currentSpecies.types || []),
         });
-        currentPet.hp = Math.max(0, currentPet.hp - pDamage);
-        opponent.hp = Math.max(0, opponent.hp - eDamage);
+        const playerInstinctUses = s.fusion?.affinityUses || s.affinityUses?.[s.playerIndex] || {};
+        const toPlayer = window.EV_REALTIME_PHYSICS?.resolveInstinctHit(
+          eDamage,
+          getEffectiveness(opponentSpecies.types?.[0], currentSpecies.types || []),
+          (currentPet.afinidades || []).includes("escudo") ? playerInstinctUses.escudo || 0 : 0,
+          (currentPet.afinidades || []).includes("espelho") ? playerInstinctUses.espelho || 0 : 0,
+        ) || { damage: eDamage, reflectedDamage: 0, shieldUses: 0, mirrorUses: 0, triggered: "" };
+        if (toPlayer.triggered) {
+          if (toPlayer.triggered === "escudo") playerInstinctUses.escudo = toPlayer.shieldUses;
+          if (toPlayer.triggered === "espelho") playerInstinctUses.espelho = toPlayer.mirrorUses;
+          s.guardEffect = { kind: toPlayer.triggered, x: s.px, y: s.py, until: now + 820 };
+        }
+        const finalPlayerDamage = toPlayer.damage;
+        if (finalPlayerDamage > 0 && s.bondAttempt) {
+          s.captureBurst = { x: s.bondAttempt.to.x, y: s.bondAttempt.to.y, until: now + 650 };
+          s.bondAttempt = null;
+          s.log = "O choque interrompeu o Eco de Vínculo!";
+          s.logUntil = now + 1100;
+        }
+        currentPet.hp = Math.max(0, currentPet.hp - finalPlayerDamage);
+        const toEnemy = window.EV_REALTIME_PHYSICS?.resolveInstinctHit(
+          pDamage,
+          getEffectiveness(currentSpecies.types?.[0], opponentSpecies.types || []),
+          (opponent.afinidades || []).includes("escudo") ? s.foeAffinityUses?.[s.foeIndex]?.escudo || 0 : 0,
+          (opponent.afinidades || []).includes("espelho") ? s.foeAffinityUses?.[s.foeIndex]?.espelho || 0 : 0,
+        );
+        opponent.hp = Math.max(0, opponent.hp - (toEnemy?.damage ?? pDamage));
+        if (toEnemy?.triggered) {
+          if (toEnemy.triggered === "escudo") s.foeAffinityUses[s.foeIndex].escudo = toEnemy.shieldUses;
+          if (toEnemy.triggered === "espelho") s.foeAffinityUses[s.foeIndex].espelho = toEnemy.mirrorUses;
+          s.guardEffect = { kind: toEnemy.triggered, x: s.ex, y: s.ey, until: now + 820 };
+        }
         const push = physics.knockbackVector(playerPoint, enemyPoint, 0.075, rect.width, rect.height);
         const pushedPlayer = moveInArena(playerPoint, push.x, push.y, arena, 0.06);
         const pushedEnemy = moveInArena(enemyPoint, -push.x, -push.y, arena, 0.06);
@@ -650,8 +814,10 @@
         s.hurtUntil = now + 300;
         s.enemyDodgeUntil = now + 250;
         s.nextContactAt = now + 1200;
-        s.floating = { text: `CHOQUE · -${pDamage} / -${eDamage}`, x: (s.px + s.ex) / 2, y: (s.py + s.ey) / 2, until: now + 850 };
-        s.log = `Choque elemental! ${currentSpecies.name || currentPet.sp} -${pDamage} · ${opponentSpecies.name || opponent.sp} -${eDamage}.`;
+        if (toPlayer.reflectedDamage > 0) opponent.hp = Math.max(0, opponent.hp - toPlayer.reflectedDamage);
+        if (toEnemy?.reflectedDamage > 0) currentPet.hp = Math.max(0, currentPet.hp - toEnemy.reflectedDamage);
+        s.floating = { text: `CHOQUE · -${finalPlayerDamage} / -${toEnemy?.damage ?? pDamage}`, x: (s.px + s.ex) / 2, y: (s.py + s.ey) / 2, until: now + 850 };
+        s.log = `Choque elemental! ${currentSpecies.name || currentPet.sp} -${finalPlayerDamage} · ${opponentSpecies.name || opponent.sp} -${toEnemy?.damage ?? pDamage}.`;
         s.logUntil = now + 1400;
         if (opponent.hp <= 0) advanceFoe(opponent, now);
         if (currentPet.hp <= 0 && !s.done) handlePlayerKnockout();
@@ -659,42 +825,45 @@
       const playerAction = (index) => {
         if (s.done || s.bondAttempt) return;
         if (s.playerWindup) return;
-        const attacker = party[s.playerIndex];
-        const attackerDef = species(attacker?.sp) || {};
+        const attacker = s.fusion?.actor || party[s.playerIndex];
+        const attackerDef = s.fusion?.definition || species(attacker?.sp) || {};
         const currentMoves = describeMoves(attacker, attackerDef);
         const entry = currentMoves[index];
-        const move = entry?.move;
+        const originalMove = entry?.move;
         const now = performance.now();
-        if (!move) return;
+        if (!originalMove) return;
         if (now < s.nextActionAt[index]) return;
-        const currentArenaStats = arenaStats(getStats(attacker?.sp, attacker?.level || 1), attackerDef.types, arena);
+        const attackerBase = s.fusion?.base || getStats(attacker?.sp, attacker?.level || 1);
+        const currentArenaStats = arenaStats(attackerBase, attackerDef.types, arena);
         const attackSlot = index;
-        const powerCost = window.EV_REALTIME_PHYSICS?.movePowerCost(move, attackSlot) ?? (attackSlot < 2 ? 20 : 60);
-        const staminaCost = powerCost >= 60 ? 8 : 4;
+        const profile = window.EV_REALTIME_PHYSICS?.playerMoveProfile(originalMove, attackSlot) || { cost: attackSlot === 0 ? 0 : attackSlot >= 2 ? 60 : 20, staminaCost: attackSlot === 0 ? 2 : attackSlot >= 2 ? 8 : 4, cooldownMs: attackSlot === 0 ? 500 : attackSlot >= 2 ? 1380 : 760, damageMultiplier: attackSlot === 0 ? 0.62 : 1, basic: attackSlot === 0 };
+        const move = profile.basic ? { ...originalMove, power: Math.max(12, Math.round(originalMove.power * profile.damageMultiplier)) } : originalMove;
+        const powerCost = profile.cost;
+        const staminaCost = profile.staminaCost;
         if (s.stamina < staminaCost || s.power < powerCost) {
           report(s.stamina < staminaCost ? "Estamina baixa: recue e recupere o fôlego." : `Faltam ${powerCost}% de poder para ${move.name}.`);
           return;
         }
         const distance = physicalDistance({ x: s.ex, y: s.ey }, { x: s.px, y: s.py });
         const range = entry.role === "charge" ? 0.78 : 1.35;
-        if (distance > range) {
+        if (distance > range && !profile.basic) {
           report(`${move.name}: o oponente está além do alcance.`);
           return;
         }
         s.stamina -= staminaCost;
         s.power -= powerCost;
         const speedFactor = clamp(60 / Math.max(24, currentArenaStats.stats.vel), 0.64, 1.45);
-        s.nextActionAt[index] = now + (powerCost >= 60 ? 1380 : 760) * speedFactor;
-        const windup = clamp(390 - currentArenaStats.stats.vel * 1.2, 190, 350);
+        s.nextActionAt[index] = now + (profile.basic ? Math.min(500, profile.cooldownMs * speedFactor) : profile.cooldownMs * speedFactor);
+        const windup = profile.basic ? clamp(150 - currentArenaStats.stats.vel * 0.4, 90, 130) : clamp(390 - currentArenaStats.stats.vel * 1.2, 190, 350);
         s.playerWindup = {
-          move, role: entry.role, family: entry.family,
+          move, role: profile.basic ? "projectile" : entry.role, family: entry.family,
           attackerSp: attacker.sp, attackerLevel: attacker.level,
           crit: Math.random() < 0.08,
           from: { x: s.px, y: s.py }, target: { x: s.ex, y: s.ey },
           launchAt: now + windup,
         };
         s.playerPoseUntil = now + windup + 360;
-        s.log = `${attackerDef.name || attacker.sp} prepara ${move.name}…`;
+        s.log = profile.basic ? `${attackerDef.name || attacker.sp} dispara ${originalMove.name} (básico).` : `${attackerDef.name || attacker.sp} prepara ${move.name}…`;
         s.logUntil = now + windup + 500;
         repaint((n) => n + 1);
       };
@@ -832,9 +1001,9 @@
             completeBondAttempt(attempt);
             if (s.done) return;
           }
-          const currentPet = party[s.playerIndex];
-          const currentSpecies = species(currentPet?.sp) || {};
-          const currentBase = getStats(currentPet?.sp, currentPet?.level || 1);
+          const currentPet = s.fusion?.actor || party[s.playerIndex];
+          const currentSpecies = s.fusion?.definition || species(currentPet?.sp) || {};
+          const currentBase = s.fusion?.base || getStats(currentPet?.sp, currentPet?.level || 1);
           const currentStats = arenaStats(currentBase, currentSpecies.types, arena);
           const opponent = foeList.current[s.foeIndex];
           const opponentSpecies = species(opponent?.sp) || {};
@@ -971,7 +1140,8 @@
                 const cast = actor.windup;
                 actor.windup = null;
                 actor.poseUntil = now + 350;
-                launchProjectile("enemy", pet.sp, pet.level, cast.move, cast.family, "projectile", { x: actor.x, y: actor.y }, cast.target, Math.random() < 0.035, actor.foeIndex);
+                if (cast.role === "area") launchAreaStrike("enemy", pet.sp, pet.level, cast.move, { x: actor.x, y: actor.y }, cast.target, Math.random() < 0.035, false, actor.foeIndex);
+                else launchProjectile("enemy", pet.sp, pet.level, cast.move, cast.family, cast.role || "projectile", { x: actor.x, y: actor.y }, cast.target, Math.random() < 0.035, actor.foeIndex);
                 actor.attackAt = now + (cast.cost >= 60 ? 3100 : 2450) * clamp(60 / Math.max(25, effective.vel), 0.78, 1.34);
               }
               if (!actor.windup && now >= actor.attackAt) {
@@ -982,7 +1152,7 @@
                   const cost = entry.cost ?? (entry.index < 2 ? 20 : 60);
                   actor.power = Math.max(0, actor.power - cost);
                   actor.stamina = Math.max(0, actor.stamina - (cost >= 60 ? 8 : 4));
-                  actor.windup = { move: entry.move, family: entry.family, cost, fireAt: now + 260, target: { x: s.px, y: s.py } };
+                  actor.windup = { move: entry.move, role: entry.role, family: entry.family, cost, fireAt: now + 260, target: { x: s.px, y: s.py } };
                 } else actor.attackAt = now + 380;
               }
               const blockers = [
@@ -1036,7 +1206,7 @@
             const intent = s.intent;
             s.intent = null;
             if (intent.role === "area") {
-              launchAreaStrike("enemy", opponent.sp, opponent.level, intent.move, { x: s.ex, y: s.ey }, { x: intent.targetX, y: intent.targetY }, Math.random() < (boss ? 0.09 : 0.06), boss);
+              launchAreaStrike("enemy", opponent.sp, opponent.level, intent.move, { x: s.ex, y: s.ey }, { x: intent.targetX, y: intent.targetY }, Math.random() < (boss ? 0.09 : 0.06), boss, s.foeIndex);
             } else {
               launchProjectile("enemy", opponent.sp, opponent.level, intent.move, intent.family, intent.role, { x: s.ex, y: s.ey }, { x: intent.targetX, y: intent.targetY }, Math.random() < (boss ? 0.09 : 0.06));
             }
@@ -1162,18 +1332,19 @@
       const controlButton = (label, action, color = "#183c31", disabled = false, title = "") => el("button", {
         type: "button", disabled, title,
         onPointerDown: action,
-        style: { touchAction: "none", width: "100%", minWidth: 0, minHeight: 42, padding: "7px 5px", borderRadius: 14, border: "1px solid #ffffff40", background: disabled ? "#33415599" : color, color: "white", fontSize: 10, fontWeight: 900, boxShadow: "0 4px 0 #0005", opacity: disabled ? 0.58 : 1, lineHeight: 1.15, userSelect: "none", whiteSpace: "normal" },
+        style: { touchAction: "none", width: "100%", minWidth: 0, minHeight: 38, padding: "6px 5px", borderRadius: 14, border: "1px solid #ffffff40", background: disabled ? "#33415599" : color, color: "white", fontSize: 10, fontWeight: 900, boxShadow: "0 4px 0 #0005", opacity: disabled ? 0.58 : 1, lineHeight: 1.15, userSelect: "none", whiteSpace: "normal" },
       }, label);
       const selectedIndex = selectedMoveIndex ?? 0;
       const selectedEntry = playerMoves[selectedIndex] || playerMoves[0];
       const selectedMove = selectedEntry?.move;
       const selectedAttackSlot = selectedIndex;
-      const selectedMovePowerCost = selectedMove ? (window.EV_REALTIME_PHYSICS?.movePowerCost(selectedMove, selectedAttackSlot) ?? (selectedAttackSlot < 2 ? 20 : 60)) : 0;
-      const selectedMoveCost = `${selectedMovePowerCost}% POD.`;
+      const selectedMoveProfile = selectedMove ? (window.EV_REALTIME_PHYSICS?.playerMoveProfile(selectedMove, selectedAttackSlot) || { cost: selectedAttackSlot === 0 ? 0 : selectedAttackSlot < 3 ? 20 : 60, basic: selectedAttackSlot === 0 }) : { cost: 0, basic: false };
+      const selectedMovePowerCost = selectedMoveProfile.cost;
+      const selectedMoveCost = selectedMoveProfile.basic ? "GRÁTIS · recarga 0,5s" : `${selectedMovePowerCost}% POD.`;
       const directionButton = (label, dir) => el("button", {
         "aria-label": `Mover ${dir}`,
         type: "button", onPointerDown: pressDirection(dir), onPointerUp: releaseDirection(dir), onPointerCancel: releaseDirection(dir), onLostPointerCapture: releaseDirection(dir),
-        style: { touchAction: "none", width: 42, height: 42, borderRadius: 12, border: "1px solid #ffffff50", background: "#142c25cc", color: "white", fontWeight: 900, fontSize: 18, userSelect: "none", boxShadow: "0 2px 0 #0005" },
+        style: { touchAction: "none", width: 34, height: 34, borderRadius: 10, border: "1px solid #ffffff50", background: "#142c25cc", color: "white", fontWeight: 900, fontSize: 18, userSelect: "none", boxShadow: "0 2px 0 #0005" },
       }, label);
       const effectiveSwitches = party.slice(0, 3).map((pet, index) => el("button", {
         key: `pet-${index}`,
@@ -1228,8 +1399,13 @@
       });
       const bondOrb = s.bondAttempt && (() => {
         const rect = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 };
-        return el("div", { key: "bond-echo-orb", "aria-label": "Eco de Vínculo em movimento", style: { position: "absolute", left: `${s.bondAttempt.from.x * 100}%`, top: `${s.bondAttempt.from.y * 100}%`, width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff9d1,#7ee8cf 36%,#5a66de 75%,#182d62)", color: "white", border: "2px solid #efffffe0", boxShadow: "0 0 15px #a7ffee,0 0 32px #7a87ff", fontSize: 23, fontWeight: 1000, zIndex: 8, pointerEvents: "none", "--bond-dx": `${(s.bondAttempt.to.x - s.bondAttempt.from.x) * rect.width}px`, "--bond-dy": `${(s.bondAttempt.to.y - s.bondAttempt.from.y) * rect.height}px`, animation: "ev-rt-bond-travel 1500ms cubic-bezier(.2,.75,.28,1) both" } }, "✧");
+        return el("div", { key: "bond-echo-orb", "aria-label": "Eco de Vínculo em movimento", style: { position: "absolute", left: `${s.bondAttempt.from.x * 100}%`, top: `${s.bondAttempt.from.y * 100}%`, width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff9d1,#7ee8cf 36%,#5a66de 75%,#182d62)", color: "white", border: "2px solid #efffffe0", boxShadow: "0 0 15px #a7ffee,0 0 32px #7a87ff", fontSize: 23, fontWeight: 1000, zIndex: 8, pointerEvents: "none", "--bond-dx": `${(s.bondAttempt.to.x - s.bondAttempt.from.x) * rect.width}px`, "--bond-dy": `${(s.bondAttempt.to.y - s.bondAttempt.from.y) * rect.height}px`, "--bond-mid-dx": `${(s.bondAttempt.to.x - s.bondAttempt.from.x) * rect.width * .52}px`, "--bond-mid-dy": `${(s.bondAttempt.to.y - s.bondAttempt.from.y) * rect.height * .52 - 38}px`, animation: "ev-rt-bond-travel 1500ms cubic-bezier(.2,.75,.28,1) both" } }, "✧");
       })();
+      const bondCaptureAura = s.bondAttempt && el("div", { key: `bond-aura-${s.bondAttempt.startedAt}`, style: { position: "absolute", left: `${s.bondAttempt.to.x * 100}%`, top: `${s.bondAttempt.to.y * 100}%`, width: 126, height: 126, transform: "translate(-50%,-50%)", zIndex: 9, border: "2px solid #c7fff0", borderRadius: "50%", boxShadow: "0 0 22px #8bf5de,inset 0 0 20px #85f3d455", pointerEvents: "none", animation: "ev-rt-bond-seal 1500ms ease-in-out both" } }, [el("div", { style: { position: "absolute", inset: 12, border: "2px dashed #f2fdffcc", borderRadius: "50%", transform: "rotate(45deg)" } }), el("span", { style: { position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#f7fffb", fontSize: 30, textShadow: "0 0 12px #a7ffee" } }, "✧")]);
+      const captureBurst = s.captureBurst && performance.now() < s.captureBurst.until && el("div", { style: { position: "absolute", left: `${s.captureBurst.x * 100}%`, top: `${s.captureBurst.y * 100}%`, width: 100, height: 100, transform: "translate(-50%,-50%)", border: "3px solid #ff8d87", borderRadius: "50%", boxShadow: "0 0 26px #ff4d6d", color: "white", display: "grid", placeItems: "center", fontSize: 30, zIndex: 11, pointerEvents: "none", animation: "ev-rt-guard 620ms ease-out both" } }, "×");
+      const guardEffect = s.guardEffect && performance.now() < s.guardEffect.until && el("div", { key: `guard-${s.guardEffect.until}`, style: { position: "absolute", left: `${s.guardEffect.x * 100}%`, top: `${s.guardEffect.y * 100}%`, width: 82, height: 82, transform: "translate(-50%,-50%)", zIndex: 12, pointerEvents: "none", display: "grid", placeItems: "center", border: `3px ${s.guardEffect.kind === "escudo" ? "solid #a7f3ff" : "double #f0abfc"}`, borderRadius: s.guardEffect.kind === "escudo" ? 22 : "50%", background: s.guardEffect.kind === "escudo" ? "radial-gradient(circle,#a5f3fc55,#22d3ee08 70%)" : "radial-gradient(circle,#e879f955,#a855f708 68%)", boxShadow: s.guardEffect.kind === "escudo" ? "0 0 22px #67e8f9,inset 0 0 16px #a5f3fc" : "0 0 22px #e879f9,inset 0 0 16px #f0abfc", animation: "ev-rt-guard 780ms ease-out both" } }, el("span", { style: { color: "white", fontSize: 24, fontWeight: 1000, textShadow: "0 2px 8px #000" } }, s.guardEffect.kind === "escudo" ? "⬡" : "◇"));
+      const fusionReveal = s.fusion && performance.now() < s.fusionRevealUntil && el("div", { style: { position: "absolute", inset: 0, zIndex: 43, display: "grid", placeItems: "center", pointerEvents: "none", background: "radial-gradient(circle at 50% 48%,#c084fc30,transparent 45%)" } }, el("div", { style: { padding: "10px 18px", borderRadius: 18, border: "1px solid #e9d5ff99", background: "#160c23c9", color: "#f5e8ff", fontSize: 14, fontWeight: 1000, letterSpacing: ".12em", textAlign: "center", textShadow: "0 0 16px #d8b4fe", animation: "ev-rt-reveal 1.1s ease both" } }, ["FUSÃO", el("span", { style: { display: "block", marginTop: 4, fontSize: 11, letterSpacing: ".04em" } }, s.fusion.definition.name)]));
+      const battleIntro = battleIntroOpen && !s.done && el("div", { style: { position: "absolute", inset: 0, zIndex: 42, display: "grid", placeItems: "center", pointerEvents: "none", background: "linear-gradient(180deg,#07120d85,#07120d22 45%,#07120d7a)" } }, el("div", { style: { width: "min(88%,420px)", padding: "12px 16px", borderTop: "1px solid #c5f1d855", borderBottom: "1px solid #c5f1d855", color: "#f5fff8", textAlign: "center", textShadow: "0 3px 18px #000", animation: "ev-rt-intro 1.1s cubic-bezier(.15,.7,.2,1) both" } }, [el("div", { style: { fontSize: 8, fontWeight: 1000, letterSpacing: ".32em", color: "#b6efc8" } }, "ECO VÍNCULO"), el("div", { style: { marginTop: 4, fontSize: 18, fontWeight: 1000, letterSpacing: ".08em" } }, rogueRun ? "ENXAME DE ECOS" : init.kind === "trainer" ? boss ? "DUELO DE GUARDIÕES" : "DESAFIO DE TREINADOR" : "ENCONTRO SELVAGEM"), el("div", { style: { marginTop: 3, fontSize: 10, fontWeight: 800, color: "#e6f7e9" } }, `${foeDef.name || foe.sp} · ${arena.name}`)]));
       const resultCurtain = s.done && el("div", { style: { position: "absolute", inset: 0, zIndex: 10, display: "grid", placeItems: "center", padding: 18, background: "#07110dcc", color: "white", fontSize: 24, fontWeight: 1000, textAlign: "center", textShadow: "0 5px 20px #000", pointerEvents: "none" } }, s.log);
       const hud = el("div", { style: { position: "relative", zIndex: 4, padding: "max(7px, env(safe-area-inset-top)) 12px 7px", background: "#07120de8", color: "white", boxShadow: "0 3px 12px #0005" } }, [
         el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 } }, [
@@ -1254,39 +1430,48 @@
         el("div", { style: { height: 5, flex: 1, overflow: "hidden", borderRadius: 6, background: "#111827aa" } }, el("div", { style: { width: `${clamp(value, 0, 100)}%`, height: "100%", background: color, transition: "width 100ms linear" } })),
       ]);
       const playerCard = el("div", { style: { display: "flex", alignItems: "center", gap: 7, padding: "5px 10px 4px", background: "#0a1914", color: "white" } }, [
-        el(Sprite, { sp: active.sp, size: 40, fainted: active.hp <= 0 }),
+        s.fusion && FusionSprite ? el(FusionSprite, { def: activeDef, size: 40, fainted: active.hp <= 0 }) : el(Sprite, { sp: active.sp, size: 40, fainted: active.hp <= 0 }),
         el("div", { style: { minWidth: 0, flex: 1 } }, [
           el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 900 } }, [el("span", { style: { overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" } }, `${activeDef.name || active.sp} · Nv ${active.level}`), el("span", { style: { flex: "none", fontSize: 9, color: pArena.favored ? "#b5ed83" : pArena.hindered ? "#ffb4a5" : "#becbc1" } }, pArena.favored ? "SINERGIA ↑" : pArena.hindered ? "BIOMA ↓" : "")]),
           el("div", { style: { height: 5, marginTop: 3, overflow: "hidden", borderRadius: 6, background: "#ffffff22" } }, el("div", { style: { width: `${playerHpPct}%`, height: "100%", background: "linear-gradient(90deg,#38c878,#b3ef62)" } })),
           el("div", { style: { display: "flex", gap: 9, marginTop: 4 } }, [compactMeter("E", s.stamina, "linear-gradient(90deg,#36c8aa,#a5f3d0)", "Estamina"), compactMeter("P", s.power, "linear-gradient(90deg,#5596ff,#c4b5fd)", "Poder")]),
         ]),
-        el("span", { title: switchRemaining > 0 ? "Tempo para poder trocar" : "Troca pronta", style: { flex: "none", minWidth: 34, color: switchRemaining > 0 ? "#f5cf73" : "#b7dfbe", fontSize: 9, fontWeight: 900, textAlign: "right" } }, switchRemaining > 0 ? `${Math.ceil(switchRemaining / 1000)}s` : "Q · PET"),
+        el("span", { title: s.fusion ? "Fusão ativa; a troca retorna depois que a batalha terminar" : switchRemaining > 0 ? "Tempo para poder trocar" : "Troca pronta", style: { flex: "none", minWidth: 34, color: s.fusion ? "#e9d5ff" : switchRemaining > 0 ? "#f5cf73" : "#b7dfbe", fontSize: 9, fontWeight: 900, textAlign: "right" } }, s.fusion ? "FUSÃO" : switchRemaining > 0 ? `${Math.ceil(switchRemaining / 1000)}s` : "Q · PET"),
       ]);
       const buttonStyle = (background, minHeight = 42) => ({ minWidth: 0, minHeight, padding: "5px 7px", borderRadius: 10, border: "1px solid #ffffff36", background, color: "#fff", fontSize: 9, fontWeight: 950, lineHeight: 1.1, boxShadow: "0 2px 0 #0005", touchAction: "none", userSelect: "none", cursor: "pointer" });
       const compactAction = (label, onPointerDown, background, disabled = false, title = "") => el("button", { type: "button", disabled, title, onPointerDown, style: { ...buttonStyle(disabled ? "#263831" : background), opacity: disabled ? .56 : 1 } }, label);
       const moveChoices = moveMenuOpen && el("div", { style: { position: "absolute", zIndex: 8, right: 8, bottom: "calc(100% + 7px)", width: "min(270px, 74vw)", display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 5, padding: 7, borderRadius: 15, border: "1px solid #ffffff35", background: "#081813f5", boxShadow: "0 8px 28px #0009" } }, playerMoves.map((entry, index) => {
-        const cost = (window.EV_REALTIME_PHYSICS?.movePowerCost(entry.move, index) ?? (index < 2 ? 20 : 60)) + "% POD.";
+        const profile = window.EV_REALTIME_PHYSICS?.playerMoveProfile(entry.move, index) || { cost: index === 0 ? 0 : index < 3 ? 20 : 60, basic: index === 0 };
+        const cost = profile.basic ? "GRÁTIS · fraco" : `${profile.cost}% POD.`;
         return compactAction(
-        `${index + 1} · ${entry.role === "area" ? "ÁREA" : "ATAQUE"}\n${entry.move.name} · ${cost}`,
+        `${index + 1} · ${profile.basic ? "BÁSICO" : entry.role === "area" ? "ÁREA" : "ATAQUE"}\n${entry.move.name} · ${cost}`,
         (event) => { event.preventDefault(); event.stopPropagation(); setSelectedMoveIndex(index); setMoveMenuOpen(false); },
         selectedIndex === index ? "#42734d" : "#1e3e38",
         false,
-        `${entry.move.type} · Poder ${entry.move.power}${entry.role === "area" ? " · técnica ofensiva de área" : entry.role === "charge" ? " · investida ofensiva" : " · projétil ofensivo"}`,
+        `${entry.move.type} · Poder ${entry.move.power}${profile.basic ? " · ataque fraco, imediato e sem custo" : entry.role === "area" ? " · técnica ofensiva de área" : entry.role === "charge" ? " · investida ofensiva" : " · projétil ofensivo"}`,
       );
       }));
-      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "132px minmax(0,1fr)", gap: 7, alignItems: "center", padding: "4px 8px max(7px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
-        el("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,42px)", gridTemplateRows: "repeat(3,42px)", gap: 1, justifyContent: "center", alignContent: "center" } }, [
+      const fusionChoices = fusionMenuOpen && !s.fusion && availableFusionTypes.length > 0 && el("div", { style: { position: "absolute", zIndex: 9, right: 8, bottom: "calc(100% + 7px)", width: "min(280px, 78vw)", display: "grid", gap: 6, padding: 8, borderRadius: 15, border: "1px solid #e8c7ff66", background: "#160c23f5", boxShadow: "0 8px 28px #000a" } }, [
+        el("div", { style: { color: "#f0d5ff", fontSize: 10, fontWeight: 1000, letterSpacing: ".08em" } }, "FUSÃO · ESCOLHA O PARCEIRO"),
+        availableFusionTypes.length > 1 && el("div", { style: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 4 } }, availableFusionTypes.map((type) => compactAction(type === "fusao" ? "NÚCLEO" : "INSTINTIVA", (event) => { event.preventDefault(); setFusionType(type); }, fusionType === type ? "#76518f" : "#342342", false, type === "fusao" ? "Consome 1 Núcleo de Fusão" : "Fusão instintiva sem Núcleo"))),
+        ...fusionPartners.map(({ pet, index }) => compactAction(`${species(pet.sp)?.name || pet.sp} · Nv ${pet.level} · HP ${pet.hp}`, (event) => { event.preventDefault(); activateFusion(index, fusionType || availableFusionTypes[0]); }, "#4a3263", false, "Une os dois Pets até o fim da batalha; o dano será distribuído ao encerrar.")),
+        compactAction("CANCELAR", (event) => { event.preventDefault(); setFusionMenuOpen(false); }, "#263831"),
+      ]);
+      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "106px minmax(0,1fr)", gap: 7, alignItems: "center", padding: "4px 8px max(7px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
+        el("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,34px)", gridTemplateRows: "repeat(3,34px)", gap: 1, justifyContent: "center", alignContent: "center" } }, [
           el("span", { style: { gridColumn: "2", gridRow: "1" } }, directionButton("▲", "up")),
           el("span", { style: { gridColumn: "1", gridRow: "2" } }, directionButton("◀", "left")),
           el("span", { style: { gridColumn: "2", gridRow: "3" } }, directionButton("▼", "down")),
           el("span", { style: { gridColumn: "3", gridRow: "2" } }, directionButton("▶", "right")),
         ]),
         el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(60px,.75fr)", gap: 5, alignContent: "center" } }, [
-          compactAction([el("span", { style: { display: "block", fontSize: 8, opacity: .75 } }, "ATACAR · " + selectedMoveCost), el("span", { style: { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10 } }, selectedMove?.name || "Golpe")], (event) => { event.preventDefault(); if (selectedEntry) playerAction(selectedIndex); }, "linear-gradient(135deg,#a14f27,#74351f)", s.done || Boolean(s.bondAttempt), selectedMove ? `${selectedMove.type} · Poder ${selectedMove.power} · técnica ofensiva` : "Sem golpes"),
+          compactAction([el("span", { style: { display: "block", fontSize: 8, opacity: .75 } }, (selectedMoveProfile.basic ? "BÁSICO · " : "ATACAR · ") + selectedMoveCost), el("span", { style: { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10 } }, selectedMove?.name || "Golpe")], (event) => { event.preventDefault(); if (selectedEntry) playerAction(selectedIndex); }, "linear-gradient(135deg,#a14f27,#74351f)", s.done || Boolean(s.bondAttempt), selectedMove ? `${selectedMove.type} · Poder ${selectedMove.power} · ${selectedMoveProfile.basic ? "golpe fraco, imediato e gratuito" : "técnica ofensiva"}` : "Sem golpes"),
           compactAction(`GOLPES ${playerMoves.length} ▴`, (event) => { event.preventDefault(); setMoveMenuOpen((open) => !open); }, "#244a63", s.done || Boolean(s.bondAttempt), "Selecione uma técnica ofensiva; golpes de área têm marca de impacto."),
           compactAction("ESQUIVA", (event) => { event.preventDefault(); dodge(); }, "#56437d", s.done || s.stamina < 22, "Rolar na direção pressionada (E/Shift no teclado)."),
           init.kind === "wild" && compactAction(foe.isClone ? "ALCANÇAR ORIGINAL" : "VINCULAR", (event) => { event.preventDefault(); tryCapture(); }, "#806128", s.done || Boolean(s.bondAttempt) || Boolean(foe.isClone), foe.isClone ? "Derrote este eco para chegar ao Pet original." : "Iniciar Eco de Vínculo; sofrer um impacto pode interrompê-lo."),
+          !s.fusion && fusionPartners.length > 0 && availableFusionTypes.length > 0 && compactAction("FUSÃO ◈", (event) => { event.preventDefault(); setFusionMenuOpen(true); setMoveMenuOpen(false); setFusionType(availableFusionTypes[0]); }, "#5b3b70", s.done || Boolean(s.bondAttempt), "Combine este Pet com um parceiro até o fim da batalha."),
           moveChoices,
+          fusionChoices,
         ]),
       ]);
       const onPointerUp = () => {};
@@ -1329,7 +1514,7 @@
       }) : [];
       const singleEnemyNode = !rogueRun ? el("div", { key: `enemy-${s.foeIndex}`, style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100}%`, transform: "translate(-50%,-50%)", transition: "left 75ms linear,top 75ms linear", filter: performance.now() < s.enemyDodgeUntil ? "opacity(.58) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < (s.enemyPoseUntil || 0) || s.intent ? "attack" : s.enemyMoving ? "move" : "idle"}` }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: foe.sp, size: 82, flip: true, fainted: foe.hp <= 0, battleMode: true, tScale: s.enemyMoving ? 3.2 : 1.4 })])) : null;
       return el("div", { onPointerUp, onPointerCancel: onPointerUp, style: { width: "100%", height: "100dvh", overflow: "hidden", position: "relative", display: "grid", gridTemplateRows: "auto minmax(0,1fr) auto", color: "white", fontFamily: "system-ui,sans-serif", background: "#07120d", userSelect: "none", touchAction: "none" } }, [
-        el("style", {}, `@keyframes ev-rt-telegraph{from{opacity:.38;transform:scale(.72)}to{opacity:1;transform:scale(1.12)}} @keyframes ev-rt-float{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-36px)}} @keyframes ev-rt-bond-travel{0%{opacity:0;transform:translate(-50%,-50%) scale(.45);filter:blur(4px)}15%{opacity:1;filter:blur(0)}55%{transform:translate(calc(-50% + var(--bond-mid-dx)),calc(-50% + var(--bond-mid-dy))) scale(1.2)}100%{opacity:.12;transform:translate(calc(-50% + var(--bond-dx)),calc(-50% + var(--bond-dy))) scale(.2);filter:blur(2px)}} .ev-rt-hint{display:none}@media(min-width:700px){.ev-rt-hint{display:block}} @media(max-height:680px){.ev-rt-hint{display:none!important}}`),
+        el("style", {}, `@keyframes ev-rt-telegraph{from{opacity:.38;transform:scale(.72)}to{opacity:1;transform:scale(1.12)}} @keyframes ev-rt-float{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-36px)}} @keyframes ev-rt-intro{0%{opacity:0;transform:translateY(12px) scale(.94);letter-spacing:.2em}25%{opacity:1;transform:translateY(0) scale(1)}82%{opacity:1}100%{opacity:0;transform:translateY(-8px) scale(1.02)}} @keyframes ev-rt-reveal{0%{opacity:0;transform:scale(.55);filter:blur(8px)}45%{opacity:1;transform:scale(1.1);filter:blur(0)}100%{opacity:0;transform:scale(1.05)}} @keyframes ev-rt-guard{0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-25deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.16) rotate(8deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.42) rotate(25deg)}} @keyframes ev-rt-bond-seal{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-70deg)}20%{opacity:.95}75%{opacity:.88;transform:translate(-50%,-50%) scale(1) rotate(180deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(340deg)}} @keyframes ev-rt-bond-travel{0%{opacity:0;transform:translate(-50%,-50%) scale(.45);filter:blur(4px)}15%{opacity:1;filter:blur(0)}55%{transform:translate(calc(-50% + var(--bond-mid-dx)),calc(-50% + var(--bond-mid-dy))) scale(1.2)}100%{opacity:.12;transform:translate(calc(-50% + var(--bond-dx)),calc(-50% + var(--bond-dy))) scale(.2);filter:blur(2px)}} .ev-rt-hint{display:none}@media(min-width:700px){.ev-rt-hint{display:block}} @media(max-height:680px){.ev-rt-hint{display:none!important}}`),
         hud,
         el("div", { ref: arenaRef, style: { minHeight: 0, position: "relative", overflow: "hidden", backgroundColor: arenaField.tile, backgroundImage: `linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%),linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%)`, backgroundPosition: "0 0,20px 20px", backgroundSize: "40px 40px", imageRendering: "pixelated" } }, [
           el("div", { style: { position: "absolute", inset: 3, border: `6px solid ${arenaField.edge}`, outline: "2px solid #08140d88", boxShadow: `inset 0 0 0 3px ${arena.accent}50,inset 0 0 28px #06140b55,0 0 0 1px #ffffff20`, pointerEvents: "none", zIndex: 1 } }),
@@ -1337,7 +1522,7 @@
           primeNode,
           primeActiveNode,
           ...areaWarningNodes,
-          el("div", { style: { position: "absolute", left: `${s.px * 100}%`, top: `${s.py * 100}%`, transform: "translate(-50%,-50%)", transition: "left 45ms linear,top 45ms linear", filter: performance.now() < s.hurtUntil ? "brightness(1.7) saturate(2)" : performance.now() < s.dodgeUntil ? "opacity(.55) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < s.hurtUntil ? "hurt" : performance.now() < s.dodgeUntil ? "dodge" : performance.now() < s.playerPoseUntil ? "attack" : s.playerMoving ? "move" : "idle"}`, style: { "--ev-rt-lunge-x": `${s.playerFacingLeft ? -11 : 11}px` } }, [el("span", { className: "ev-rt-creature-shadow" }), el(Sprite, { sp: active.sp, size: 82, flip: s.playerFacingLeft, fainted: active.hp <= 0, battleMode: true, tScale: s.playerMoving ? 3.2 : 1.4 })])),
+          el("div", { style: { position: "absolute", left: `${s.px * 100}%`, top: `${s.py * 100}%`, transform: "translate(-50%,-50%)", transition: "left 45ms linear,top 45ms linear", filter: performance.now() < s.hurtUntil ? "brightness(1.7) saturate(2)" : performance.now() < s.dodgeUntil ? "opacity(.55) drop-shadow(0 0 18px #fff)" : "drop-shadow(0 5px 3px #07110d99)", zIndex: 4 } }, el("div", { className: `ev-rt-creature ev-rt-creature--${performance.now() < s.hurtUntil ? "hurt" : performance.now() < s.dodgeUntil ? "dodge" : performance.now() < s.playerPoseUntil ? "attack" : s.playerMoving ? "move" : "idle"}`, style: { "--ev-rt-lunge-x": `${s.playerFacingLeft ? -11 : 11}px` } }, [el("span", { className: "ev-rt-creature-shadow" }), s.fusion && FusionSprite ? el(FusionSprite, { def: activeDef, size: 82, flip: s.playerFacingLeft, fainted: active.hp <= 0 }) : el(Sprite, { sp: active.sp, size: 82, flip: s.playerFacingLeft, fainted: active.hp <= 0, battleMode: true, tScale: s.playerMoving ? 3.2 : 1.4 })])),
           telegraph,
           windupMarker,
           ...swarmWindupNodes,
@@ -1346,6 +1531,11 @@
           ...projectileNodes,
           choreographyLayer,
           bondOrb,
+          bondCaptureAura,
+          captureBurst,
+          guardEffect,
+          fusionReveal,
+          battleIntro,
           s.floating && performance.now() < s.floating.until && el("div", { style: { position: "absolute", left: `${(s.floating.x ?? s.ex) * 100}%`, top: `${(s.floating.y ?? s.ey) * 100 - 8}%`, color: "#fff3a7", fontWeight: 1000, fontSize: 19, textShadow: "0 3px 5px #000", transform: "translateX(-50%)", animation: "ev-rt-float 650ms ease-out forwards", zIndex: 46 } }, s.floating.text),
           !s.intent && s.log && performance.now() < (s.logUntil || 0) && el("div", { style: { position: "absolute", left: "50%", top: 9, transform: "translateX(-50%)", maxWidth: "82%", padding: "4px 8px", borderRadius: 8, background: "#06130edc", border: "1px solid #ffffff35", color: "white", textAlign: "center", fontSize: 9, fontWeight: 850, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", pointerEvents: "none", zIndex: 5 } }, s.log),
           el("div", { className: "ev-rt-hint", style: { position: "absolute", right: 8, top: 8, padding: "4px 7px", borderRadius: 8, background: "#06130e9c", fontSize: 8, fontWeight: 800, opacity: .78 } }, rogueRun ? "WASD mover · toque/Tab alvo · 1–5 ataques · E esquiva" : "WASD mover · 1–5 ataques · E esquiva · Q trocar"),

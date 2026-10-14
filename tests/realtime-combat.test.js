@@ -16,6 +16,27 @@ vm.runInNewContext(
 );
 const combat = sandbox.window.EV_REALTIME_COMBAT;
 
+test("a preferência de modo é separada do save e aceita somente modos reconhecidos", () => {
+  const values = new Map();
+  const prefsSandbox = {
+    window: {},
+    localStorage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    },
+  };
+  vm.runInNewContext(
+    readFileSync(new URL("../js/17-realtime-combat.js", `file://${__filename}`), "utf8"),
+    prefsSandbox,
+  );
+  const preferences = prefsSandbox.window.EV_BATTLE_PREFERENCES;
+  assert.equal(preferences.get(), "realtime");
+  assert.equal(preferences.set("classic"), true);
+  assert.equal(preferences.get(), "classic");
+  assert.equal(preferences.set("unknown"), false);
+  assert.deepEqual(Array.from(values.keys()), ["eco-vinculo-battle-mode-v1"]);
+});
+
 test("escolhe uma arena reconhecível para floresta, água e caverna", () => {
   assert.equal(combat.arenaFor("grass").name, "Clareira do Vínculo");
   assert.equal(combat.arenaFor("water").name, "Anel das Marés");
@@ -60,8 +81,10 @@ test("o campo de combate bloqueia bordas e obstáculos nos três biomas", () => 
     assert.equal(combat.canOccupy(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, arena), false);
     assert.equal(combat.canOccupy(0.52, 0.52, arena), true);
     assert.equal(combat.canOccupy(0.01, 0.5, arena), false);
-    assert.equal(arena.field.bounds.minX, 0.04);
-    assert.equal(arena.field.bounds.maxX, 0.96);
+    assert.equal(arena.field.bounds.minX, 0.02);
+    assert.equal(arena.field.bounds.maxX, 0.98);
+    assert.equal(arena.field.bounds.minY, 0.02);
+    assert.equal(arena.field.bounds.maxY, 0.98);
   }
 });
 

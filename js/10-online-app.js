@@ -2801,6 +2801,9 @@
         onOnline: l,
         onDexUnlock: o,
         onTestMobile: testMobile,
+        battleMode = "realtime",
+        battleModeUnlocked = false,
+        onSetBattleMode = () => {},
       }) {
         let [f, $] = fu.useState(!1),
           [_, v] = fu.useState(""),
@@ -2907,6 +2910,17 @@
                       className: "block mt-0.5 text-[10px] font-semibold text-sky-100/70",
                       children: "Arena de demonstração · não altera seu save",
                     }),
+                  ],
+                }),
+                O("section", {
+                  className: "rounded-2xl border border-white/15 bg-black/25 p-3 text-left",
+                  children: [
+                    N("div", { className: "text-[10px] font-black tracking-[0.18em] text-emerald-200", children: "MODO DE BATALHA DA CAMPANHA" }),
+                    N("div", { className: "mt-1 text-[10px] font-semibold text-white/55", children: battleModeUnlocked ? "A escolha fica salva e não interrompe os encontros." : "O modo clássico será liberado após concluir a primeira parte da campanha." }),
+                    O("div", { className: "mt-2 grid grid-cols-2 gap-2", children: [
+                      O("button", { onClick: () => onSetBattleMode("realtime"), className: `rounded-xl border px-2 py-2 text-[10px] font-black transition ${battleMode === "realtime" ? "border-emerald-300 bg-emerald-400/20 text-emerald-100" : "border-white/15 bg-white/5 text-white/70"}`, children: "⚔ Tempo real" }),
+                      O("button", { disabled: !battleModeUnlocked, onClick: () => onSetBattleMode("classic"), className: `rounded-xl border px-2 py-2 text-[10px] font-black transition ${!battleModeUnlocked ? "cursor-not-allowed border-white/10 bg-white/5 text-white/25" : battleMode === "classic" ? "border-amber-300 bg-amber-400/20 text-amber-100" : "border-white/15 bg-white/5 text-white/70"}`, children: battleModeUnlocked ? "↻ Clássico" : "🔒 Clássico" }),
+                    ] }),
                   ],
                 }),
                 O("button", {
@@ -4075,6 +4089,7 @@
           [e, Q] = fu.useState(null),
           [M, H] = fu.useState(!1),
           [K, V] = fu.useState(() => LQ(I0)),
+          [battleMode, setBattleMode] = fu.useState(() => window.EV_BATTLE_PREFERENCES?.get?.() || "realtime"),
           [C, D] = fu.useState(""),
           [W, B] = fu.useState([]),
           A = (b, z) => {
@@ -4120,6 +4135,9 @@
             }
             const demoSave = DQ("Treinador de Teste", ["Flora", "Faísca"]);
             demoSave.party = ["leafit", "embercub", "aquaffin"].map((sp) => Vl(sp, 8));
+            demoSave.party[0].afinidades = ["fusao", "fusao-instintiva", "escudo", "espelho"];
+            demoSave.items ||= {};
+            demoSave.items["nucleo-fusao"] = 1;
             demoSave.affinities = Array.from(new Set([...(demoSave.affinities || []), "Pedra"]));
             setMobileTest({
               gs: { current: demoSave },
@@ -4190,7 +4208,9 @@
                 ...G.box.map((b) => b.level),
               )
             : 5,
-          i = On[G?.affinities[0] ?? "Flora"].color;
+          i = On[G?.affinities[0] ?? "Flora"].color,
+          titleSave = K ? D8(I0) : null,
+          battleModeUnlocked = Boolean(titleSave?.tataAlfaDefeated || titleSave?.defeated?.includes("dona-cuca"));
         return O("div", {
           className: "min-h-dvh w-full bg-[#0b1f16] text-white overflow-hidden",
           style: {
@@ -4219,6 +4239,15 @@
                         u("dex"));
                     },
                     onTestMobile: startMobileTest,
+                    battleMode,
+                    battleModeUnlocked,
+                    onSetBattleMode: (mode) => {
+                      if (mode === "classic" && !battleModeUnlocked) return;
+                      if (window.EV_BATTLE_PREFERENCES?.set?.(mode)) {
+                        setBattleMode(mode);
+                        Jr("success", mode === "classic" ? "Batalha clássica selecionada." : "Combate em tempo real selecionado.");
+                      }
+                    },
                   }),
                 r === "create" &&
                   N(be, {
