@@ -56,3 +56,18 @@ test("mantém o número de dano e o crítico dentro do mesmo evento visual de im
   assert.equal(damage.props.children, "-42");
   assert.equal(scene.impactAtMs > 0, true);
 });
+
+
+test("um golpe pesado que erra ainda produz marca elemental de impacto no chão", () => {
+  const scene = choreography.plan({
+    attacker: { id: "qa-stone-pet", name: "Pet de Pedra", types: ["Pedra"], stage: 2, feature: "stone-crest" },
+    move: { id: "avalanche", name: "Avalanche", type: "Pedra", power: 72 },
+    x0: 0.2, y0: 0.7, x1: 0.8, y1: 0.4, width: 390, height: 640,
+    damage: 0, hit: false, groundImpact: true, impactOnly: true, runId: "qa-ground-miss",
+  });
+  const tree = choreography.View({ scene });
+  const names = tree.props.children.map((child) => child?.props?.className || "");
+  assert.equal(scene.hit, false);
+  assert.equal(scene.groundImpact, true);
+  assert.ok(names.some((name) => name.includes("ev-vfx-heavy-mark--fracture")));
+});

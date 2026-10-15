@@ -13,6 +13,7 @@
         notice: l,
         autoIntro: o,
         restoreLoc: f,
+        wildCooldownUntil: battleCooldownUntil = 0,
       }) {
         let $ = n.current;
         M8($);
@@ -925,7 +926,7 @@
           if (p === jn.current) return;
           jn.current = p;
           let x = performance.now();
-          if (x < Sn) return;
+          if (x < Math.max(Sn, Number(battleCooldownUntil) || 0)) return;
           let Xn = Sr(J, g, S),
             qn = A.current;
           if (!!qn && Qo.some((Hu) => Hu.id === qn)) {

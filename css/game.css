@@ -2959,3 +2959,70 @@
   .ev-rt-creature--idle, .ev-rt-creature--move, .ev-rt-creature--attack,
   .ev-rt-creature--dodge, .ev-rt-creature--hurt { animation-duration: .18s !important; }
 }
+
+
+/* Combate em tempo real: arena com cicatrizes fortes, locais e temporárias. */
+.ev-rt-battlefield {
+  isolation: isolate;
+  transition: filter 140ms ease-out;
+}
+.ev-rt-battlefield--quake {
+  animation: ev-rt-arena-quake 220ms cubic-bezier(.2,.8,.3,1) both;
+}
+.ev-rt-arena-scar {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 48% 52% 44% 56%;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(ellipse at 50% 50%, #111a1a 0 8%, transparent 10% 15%, #131c1c 17% 20%, transparent 23% 30%, #121a19 33% 36%, transparent 39%),
+    repeating-linear-gradient(28deg, transparent 0 8px, #111a1caa 9px 11px, transparent 12px 19px);
+  box-shadow: 0 0 0 2px #101715bb, 0 0 18px #05080788, inset 0 0 12px #050908cc;
+  filter: drop-shadow(0 2px 2px #0009);
+  animation: ev-rt-scar-bloom 440ms ease-out both;
+}
+.ev-rt-arena-scar::before,
+.ev-rt-arena-scar::after {
+  content: "";
+  position: absolute;
+  inset: 8% 5%;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ev-rt-arena-scar::before {
+  background: linear-gradient(145deg, #101716dd, #05090899 48%, transparent 72%);
+  clip-path: polygon(47% 0,54% 30%,100% 13%,62% 47%,93% 78%,52% 61%,20% 100%,40% 57%,0 44%,39% 39%);
+}
+.ev-rt-arena-scar::after {
+  inset: 19% 20%;
+  border: 1px solid #d9e3d533;
+  box-shadow: 0 0 8px #d9e3d51c;
+  transform: rotate(-18deg);
+}
+.ev-rt-arena-scar--ember { box-shadow: 0 0 0 2px #3c1a12dd, 0 0 18px #ff6b3544, inset 0 0 14px #f97316aa; }
+.ev-rt-arena-scar--ember::after { border-color: #ffb16b77; }
+.ev-rt-arena-scar--tide { box-shadow: 0 0 0 2px #092938dd, 0 0 18px #0ea5e944, inset 0 0 14px #38bdf877; }
+.ev-rt-arena-scar--tide::after { border-color: #bae6fd88; }
+.ev-rt-arena-scar--verdant { box-shadow: 0 0 0 2px #12351ddd, 0 0 18px #22c55e44, inset 0 0 14px #84cc16aa; }
+.ev-rt-arena-scar--verdant::after { border-color: #bbf7d088; }
+.ev-rt-arena-scar--storm { box-shadow: 0 0 0 2px #3d310ddd, 0 0 18px #eab30855, inset 0 0 14px #facc15aa; }
+.ev-rt-arena-scar--storm::after { border-color: #fef08a99; }
+.ev-rt-arena-scar--fracture { box-shadow: 0 0 0 3px #28231ddd, 0 0 16px #b08b6866, inset 0 0 18px #d6b894cc; }
+.ev-rt-arena-scar--fracture::after { border-color: #f2e8dcaa; }
+.ev-rt-arena-scar--void { box-shadow: 0 0 0 2px #21133add, 0 0 20px #7c3aed55, inset 0 0 16px #6d28d9aa; }
+.ev-rt-arena-scar--void::after { border-color: #ddd6fe99; }
+.ev-rt-arena-scar--critical { filter: brightness(1.35) drop-shadow(0 0 8px #fff4c2); }
+@keyframes ev-rt-arena-quake {
+  0%,100% { transform: translate(0,0); filter: brightness(1); }
+  24% { transform: translate(-2px,1px); filter: brightness(1.14) contrast(1.08); }
+  48% { transform: translate(2px,-1px); filter: brightness(.94) contrast(1.12); }
+  72% { transform: translate(-1px,0); filter: brightness(1.08); }
+}
+@keyframes ev-rt-scar-bloom {
+  0% { filter: blur(2px) brightness(1.8) drop-shadow(0 0 12px #fff); }
+  100% { filter: blur(0) brightness(1) drop-shadow(0 2px 2px #0009); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ev-rt-battlefield--quake { animation: none !important; }
+  .ev-rt-arena-scar { animation-duration: .01ms !important; }
+}

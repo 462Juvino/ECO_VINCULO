@@ -174,3 +174,15 @@ Validação desta revisão: `node --test tests/*.test.js` cobre **37 testes**, i
 - Teste de formação expandido para manter os mesmos **34 testes**: quatro ecos são posicionados juntos, em tiles válidos e sem se sobrepor nas arenas de floresta, água e caverna; `node --check` passou nos módulos de combate alterados.
 - Controles móveis: no layout de 390 px, as quatro setas aparecem em cruz, têm alvos de 42×42 px e a grade reservada impede sobreposição com as ações.
 - Revisão do combate de projéteis: golpes percorrem a arena em velocidade derivada do atributo VEL; defesa usa técnicas existentes e efeito de raízes do chão; certos golpes de céu são área, os alvos (inclusive a IA) podem esquivar e acertos aplicam um pequeno empurrão. Foram aprovados 27 testes e `node --check` em todos os módulos; a prévia do menu e a arena foram carregadas no Chromium sem erro de runtime.
+
+
+## Ajustes mobile e robustez de campanha — 15/10/2026
+
+- O movimento mobile usa um **analógico virtual** com zona morta e velocidade proporcional ao arrasto; teclado e esquiva direcional continuam disponíveis.
+- Botões de ação foram compactados para liberar espaço, mantendo alvos de toque com altura mínima de 40 px e os menus de golpes/Fusão acessíveis.
+- Depois de um combate selvagem, há 3,5 segundos sem novos encontros aleatórios, evitando emendar batalhas enquanto o jogador ainda retorna à exploração.
+- Golpes pesados que acertam ou atingem o solo deixam marcas elementais/crateras temporárias; acertos fortes também causam um tremor e um clarão breve. O registro é local à batalha, limitado a oito marcas e não é salvo.
+- A inicialização dos usos de Fusão/Escudo/Espelho aceita afinidades de saves antigos mesmo quando os metadados de usos não existem; o Núcleo só é consumido depois de o híbrido ser criado e validado.
+- O fluxo do combate em tempo real continua concedendo XP e chamando a evolução e o registro no Dex da campanha. PvP online e o esquema do save não foram alterados nesta rodada.
+
+Validação desta rodada: `node --check` em todos os arquivos JavaScript e `node --test tests/*.test.js` — **42 testes aprovados**, incluindo analógico, cicatrizes pesadas, afinidades legadas e ligação da evolução ao save.

@@ -10,6 +10,7 @@
     Pedra: { a: "#a87950", b: "#d6b894", c: "#ede0d4", d: "#4b3621" },
     Sombra: { a: "#7c3aed", b: "#c4b5fd", c: "#ede9fe", d: "#1e103d" },
   };
+  const IMPACT_THEMES = { Brasa: "ember", "Maré": "tide", Flora: "verdant", "Faísca": "storm", Pedra: "fracture", Sombra: "void" };
   const TYPE_FAMILIES = {
     Brasa: ["rush", "eruption", "skyfall", "beam", "volley", "cyclone", "roots", "eclipse"],
     "Maré": ["flood", "volley", "beam", "cyclone", "rush", "eclipse", "skyfall", "spit"],
@@ -129,6 +130,7 @@
       ({ Brasa: "flame", "Maré": "drop", Flora: "leaf", Faísca: "spark", Pedra: "shard", Sombra: "wisp" }[moveType] || "spark");
     const width = Math.max(1, safeNum(options.width, 360));
     const height = Math.max(1, safeNum(options.height, 640));
+    const power = Math.max(0, safeNum(move.power, 0));
     const x0 = clamp01(options.x0 ?? 0.18);
     const y0 = clamp01(options.y0 ?? 0.68);
     const x1 = clamp01(options.x1 ?? 0.82);
@@ -145,6 +147,9 @@
       speciesFeature: feature,
       moveName,
       moveType,
+      power,
+      impactTheme: IMPACT_THEMES[moveType] || IMPACT_THEMES[attacker.types?.[0]] || "void",
+      impactVariant: hash(`${seedText}:impact-shape`) % 4,
       stage,
       glyph,
       colors,
@@ -159,6 +164,8 @@
       durationMs: options.impactOnly ? 690 : reducedMotion ? 340 : impactAtMs + 1010,
       attackerIsPlayer: options.attackerIsPlayer !== false,
       hit: options.hit !== false,
+      impactOnly: options.impactOnly === true,
+      groundImpact: options.groundImpact === true,
       damage: Math.max(0, Number(options.damage) || 0),
       showDamage: options.showDamage === true,
       crit: options.crit === true,
@@ -286,6 +293,12 @@
   function VfxView({ scene }) {
     if (!scene) return null;
     const children = [];
+    if (scene.impactOnly && (scene.power >= 58 || scene.crit) && ((scene.hit && scene.damage > 0) || scene.groundImpact)) {
+      children.push(N("div", {
+        className: `ev-vfx-heavy-mark ev-vfx-heavy-mark--${scene.impactTheme || "void"} ev-vfx-heavy-mark--v${scene.impactVariant || 0}`,
+        style: { left: percent(scene.x1), top: percent(scene.y1), "--ev-a": scene.colors[0], "--ev-b": scene.colors[1], "--ev-c": scene.colors[2], "--ev-mark-size": `${Math.round(scene.size * (3.1 + scene.stage * 0.22))}px`, "--ev-mark-rotation": `${(scene.impactVariant || 0) * 22 - 33}deg`, "--ev-impact-delay": `${scene.impactAtMs}ms` },
+      }));
+    }
     if (scene.hit) {
       if (!scene.impactOnly) children.push(windupNode(scene));
       children.push(impactHalo(scene));
@@ -454,5 +467,6 @@
     });
   }
 
-  window.EV_ATTACK_CHOREOGRAPHY = Object.freeze({ plan, View: VfxView });
+  const surfaceKindFor = (moveType, fallbackType) => IMPACT_THEMES[moveType] || IMPACT_THEMES[fallbackType] || "void";
+  window.EV_ATTACK_CHOREOGRAPHY = Object.freeze({ plan, View: VfxView, surfaceKindFor });
 })();

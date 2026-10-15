@@ -4082,6 +4082,7 @@
         let [n, u] = fu.useState("title"),
           [r, l] = pQ(n),
           o = fu.useRef(null),
+          wildEncounterCooldown = fu.useRef(0),
           [f, $] = fu.useState(null),
           [mobileTest, setMobileTest] = fu.useState(null),
           [_, v] = fu.useState(null),
@@ -4166,6 +4167,7 @@
               $(b));
           },
           L = (b) => {
+            if (f?.kind === "wild") wildEncounterCooldown.current = performance.now() + 3500;
             let z = o.current;
             if (($(null), z)) {
               if (!b.won && !b.fled && qQ(z) === 0)
@@ -4268,6 +4270,7 @@
                     notice: e,
                     autoIntro: M,
                     restoreLoc: _,
+                    wildCooldownUntil: wildEncounterCooldown.current,
                   }),
                 r === "online" &&
                   N(J9, {

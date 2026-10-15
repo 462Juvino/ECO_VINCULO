@@ -141,3 +141,45 @@ test("a quantidade de clones escala com o nível e a formação simultânea resp
     }
   }
 });
+
+
+test("analógico tem zona morta, velocidade gradual e vetor limitado no diagonal", () => {
+  const centered = combat.vectorForStick(0.06, 0.06);
+  assert.equal(centered.x, 0);
+  assert.equal(centered.y, 0);
+  const partial = combat.vectorForStick(0.56, 0);
+  assert.ok(partial.x > 0 && partial.x < 1);
+  assert.equal(partial.y, 0);
+  const full = combat.vectorForStick(2, 0);
+  assert.ok(Math.abs(full.x - 1) < 1e-9);
+  const diagonal = combat.vectorForStick(1, 1);
+  assert.ok(Math.hypot(diagonal.x, diagonal.y) <= 1 + 1e-9);
+});
+
+test("somente ataques fortes que acertam ou atingem o chão deixam cicatrizes na arena", () => {
+  assert.equal(combat.shouldLeaveArenaScar({ power: 57, damage: 50 }), false);
+  assert.equal(combat.shouldLeaveArenaScar({ power: 58, damage: 0 }), false);
+  assert.equal(combat.shouldLeaveArenaScar({ power: 58, damage: 24 }), true);
+  assert.equal(combat.shouldLeaveArenaScar({ power: 58, groundImpact: true }), true);
+  assert.equal(combat.shouldLeaveArenaScar({ power: 30, crit: true, groundImpact: true }), true);
+});
+
+test("Fusão/instintos mantêm usos mesmo em afinidades de saves antigos sem metadados completos", () => {
+  const uses = combat.normalizedInstinctUses(
+    { afinidades: ["fusao", "fusao-instintiva", "espelho"] },
+    { espelho: { usosPorBatalha: 2 } },
+  );
+  assert.equal(uses.fusao, 1);
+  assert.equal(uses["fusao-instintiva"], 1);
+  assert.equal(uses.espelho, 2);
+  assert.equal(uses.escudo, 0);
+});
+
+test("a batalha realtime continua concedendo XP e chamando a evolução do save de campanha", () => {
+  const combatSource = readFileSync(new URL("../js/17-realtime-combat.js", `file://${__filename}`), "utf8");
+  const bridgeSource = readFileSync(new URL("../js/09-battle.js", `file://${__filename}`), "utf8");
+  assert.match(combatSource, /updateXpAndEvolution\(defeated, s\.playerIndex, defeated\?\.isClone \? 0\.24 : 1\)/);
+  assert.match(combatSource, /const evolvedId = evolve\(pet, gs\.current\);/);
+  assert.match(combatSource, /registerEvolution\?\.\(gs\.current, evolvedId, pet\);/);
+  assert.match(bridgeSource, /evolve: \(pet, save\) => \{[\s\S]{0,350}return H8\(pet\.sp, z0\(save\)\);/);
+});

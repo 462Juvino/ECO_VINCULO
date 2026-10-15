@@ -148,6 +148,24 @@
     return power >= 58 ? (boss ? 0.23 : 0.18) : (boss ? 0.155 : 0.12);
   }
 
+  function shouldLeaveArenaScar({ power = 0, crit = false, damage = 0, groundImpact = false } = {}) {
+    return (Number(power) >= 58 || crit === true) && (groundImpact === true || Number(damage) > 0);
+  }
+
+  function vectorForStick(x, y, deadZone = 0.12) {
+    const length = Math.hypot(Number(x) || 0, Number(y) || 0);
+    if (!length || length <= deadZone) return { x: 0, y: 0 };
+    const magnitude = Math.min(1, (Math.min(1, length) - deadZone) / (1 - deadZone));
+    return { x: (x / length) * magnitude, y: (y / length) * magnitude };
+  }
+
+  function normalizedInstinctUses(pet, definitions = {}) {
+    return Object.fromEntries(["escudo", "espelho", "fusao", "fusao-instintiva"].map((id) => {
+      const uses = Number(definitions?.[id]?.usosPorBatalha);
+      return [id, (pet?.afinidades || []).includes(id) ? Math.max(1, Number.isFinite(uses) ? uses : 1) : 0];
+    }));
+  }
+
   function availableMoves(creature) {
     return Array.isArray(creature?.moves) ? creature.moves : [];
   }
@@ -192,9 +210,7 @@
       el("div", { style: { height: 9, overflow: "hidden", borderRadius: 8, background: "#111827aa", border: "1px solid #ffffff30" } },
         el("div", { style: { width: `${clamp(value, 0, 100)}%`, height: "100%", background: color, transition: "width 100ms linear" } })),
     ]);
-    const instinctUsesFor = (pet) => Object.fromEntries(["escudo", "espelho", "fusao", "fusao-instintiva"].map((id) => [
-      id, (pet?.afinidades || []).includes(id) ? Math.max(0, Number(instincts?.[id]?.usosPorBatalha) || 0) : 0,
-    ]));
+    const instinctUsesFor = (pet) => normalizedInstinctUses(pet, instincts);
 
     function RealtimeBattle({ gs, init, onEnd, onExit }) {
       const party = gs.current.party;
@@ -276,6 +292,10 @@
           log: "Leia o sinal do oponente e escolha o momento de agir.",
           logUntil: now + 2600,
           floating: null,
+          arenaScars: [],
+          arenaScarsPrunedAt: now,
+          arenaImpactCount: 0,
+          arenaShockUntil: 0,
           playerWon: 0,
         };
       }
@@ -288,6 +308,8 @@
       const [battleIntroOpen, setBattleIntroOpen] = React.useState(true);
       const [showArenaDetails, setShowArenaDetails] = React.useState(false);
       const held = React.useRef(new Set());
+      const analogRef = React.useRef({ x: 0, y: 0, pointerId: null });
+      const [stickPosition, setStickPosition] = React.useState({ x: 0, y: 0 });
       const raf = React.useRef(0);
       const arenaRef = React.useRef(null);
       React.useEffect(() => {
@@ -371,7 +393,8 @@
           height: rect.height,
           damage,
           crit,
-          hit: true,
+          hit: options.hit !== false,
+          groundImpact: options.groundImpact === true,
           showDamage: false,
           attackerIsPlayer,
           impactOnly: options.impactOnly === true,
@@ -379,6 +402,7 @@
           runId: `rt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         });
         scene.impactOnly = options.impactOnly === true;
+        scene.groundImpact = options.groundImpact === true;
         scene.realtimeGuard = options.realtimeGuard === true;
         if (options.family) scene.family = options.family;
         setAttackScenes((activeScenes) => [...activeScenes, scene]);
@@ -388,6 +412,19 @@
         }, Math.max(650, scene.durationMs || 1050));
         attackSceneTimers.current.set(scene.runId, timer);
         return scene;
+      };
+      const recordArenaScar = (move, attacker, point, now, damage = 0, crit = false, groundImpact = false) => {
+        if (!shouldLeaveArenaScar({ power: move?.power, crit, damage, groundImpact })) return false;
+        const theme = window.EV_ATTACK_CHOREOGRAPHY?.surfaceKindFor?.(move?.type, attacker?.types?.[0]) || "void";
+        const id = ++s.arenaImpactCount;
+        s.arenaScars.push({
+          id, x: clamp(point?.x ?? 0.5, 0.045, 0.955), y: clamp(point?.y ?? 0.5, 0.045, 0.955),
+          theme, scale: clamp(0.76 + (Number(move?.power) || 0) / 150 + (crit ? 0.16 : 0), 0.82, 1.55),
+          rotation: (id * 47) % 360, until: now + 9200, crit,
+        });
+        if (s.arenaScars.length > 8) s.arenaScars.splice(0, s.arenaScars.length - 8);
+        s.arenaShockUntil = now + 250;
+        return true;
       };
       const settleFusion = (knockout = false, clear = false) => {
         const fusion = s.fusion;
@@ -412,6 +449,7 @@
         settleFusion();
         s.done = true;
         held.current.clear();
+        analogRef.current.x = 0; analogRef.current.y = 0; analogRef.current.pointerId = null;
         repaint((n) => n + 1);
         window.setTimeout(() => onEnd(result), 700);
       };
@@ -558,6 +596,7 @@
       const fusionPartners = party.map((pet, index) => ({ pet, index })).filter(({ pet, index }) => index !== s.playerIndex && pet.hp > 0);
       const activateFusion = (partnerIndex, type) => {
         if (s.done || s.fusion || !availableFusionTypes.includes(type)) return false;
+        gs.current.items ||= {};
         const first = party[s.playerIndex];
         const second = party[partnerIndex];
         if (!first || !second || first.hp <= 0 || second.hp <= 0 || partnerIndex === s.playerIndex) return false;
@@ -565,8 +604,13 @@
           report("Sem Núcleo de Fusão; use Fusão Instintiva ou obtenha um núcleo na mochila.");
           return false;
         }
-        const result = fusePets?.(first, second);
-        if (!result?.stats) { report("Não foi possível formar este vínculo híbrido."); return false; }
+        let result;
+        try { result = fusePets?.(first, second); }
+        catch { report("A Fusão falhou ao calcular o híbrido. Nenhum item foi consumido; tente novamente."); return false; }
+        if (!result?.stats || !Number.isFinite(result.stats.maxHp) || !Number.isFinite(result.stats.atk)) {
+          report("Não foi possível formar este vínculo híbrido. Confira os dois Pets e tente novamente.");
+          return false;
+        }
         const id = result.hybridId || `fusao-${first.uid || first.sp}-${second.uid || second.sp}`;
         const hybrid = fusionSpecies?.(result.hybridId) || {};
         const fusionVisual = window.EV_SIGNATURES?.fusionVisual(first, second, result);
@@ -717,6 +761,7 @@
         }
         const viewport = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 };
         target.hp = Math.max(0, target.hp - damage);
+        recordArenaScar(move, attackerDef, impactPoint, now, damage, crit, false);
         if (playerTarget) {
           const impulse = window.EV_REALTIME_PHYSICS?.knockbackVector(impactPoint, from, clamp(0.045 + damage * 0.0007, 0.045, 0.09), viewport.width, viewport.height) || { x: 0.06, y: 0 };
           const pushed = moveInArena({ x: s.px, y: s.py }, impulse.x, impulse.y, arena, 0.055);
@@ -872,8 +917,8 @@
         if (s.done || now < s.nextDodgeAt || s.stamina < 22) return;
         const rect = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 };
         const minDimension = Math.min(rect.width, rect.height);
-        let dx = (held.current.has("right") ? 1 : 0) - (held.current.has("left") ? 1 : 0);
-        let dy = (held.current.has("down") ? 1 : 0) - (held.current.has("up") ? 1 : 0);
+        let dx = (held.current.has("right") ? 1 : 0) - (held.current.has("left") ? 1 : 0) + analogRef.current.x;
+        let dy = (held.current.has("down") ? 1 : 0) - (held.current.has("up") ? 1 : 0) + analogRef.current.y;
         if (!dx && !dy) { dx = (s.px - s.ex) * rect.width; dy = (s.py - s.ey) * rect.height; }
         else { dx *= rect.width; dy *= rect.height; }
         const len = Math.hypot(dx, dy) || 1;
@@ -995,6 +1040,10 @@
           const dt = Math.min(0.05, Math.max(0, (time - last) / 1000));
           last = time;
           const now = time;
+          if (now - s.arenaScarsPrunedAt > 220) {
+            s.arenaScars = s.arenaScars.filter((scar) => scar.until > now);
+            s.arenaScarsPrunedAt = now;
+          }
           if (s.bondAttempt && now >= s.bondAttempt.endsAt) {
             const attempt = s.bondAttempt;
             s.bondAttempt = null;
@@ -1027,15 +1076,16 @@
             bestMatchup(opponentSpecies.types, currentSpecies.types)) || { staminaRegen: 8, powerRegen: 5.5 };
           const rectNow = arenaRef.current?.getBoundingClientRect() || { width: 390, height: 640 };
           const minDimension = Math.min(rectNow.width, rectNow.height);
-          const moveX = (held.current.has("right") ? 1 : 0) - (held.current.has("left") ? 1 : 0);
-          const moveY = (held.current.has("down") ? 1 : 0) - (held.current.has("up") ? 1 : 0);
+          const moveX = clamp((held.current.has("right") ? 1 : 0) - (held.current.has("left") ? 1 : 0) + analogRef.current.x, -1, 1);
+          const moveY = clamp((held.current.has("down") ? 1 : 0) - (held.current.has("up") ? 1 : 0) + analogRef.current.y, -1, 1);
+          const moveMagnitude = Math.min(1, Math.hypot(moveX, moveY));
           const moveLength = Math.hypot(moveX, moveY) || 1;
           s.playerMoving = Boolean((moveX || moveY) && !s.bondAttempt);
           if (moveX < 0) s.playerFacingLeft = true;
           else if (moveX > 0) s.playerFacingLeft = false;
           if ((moveX || moveY) && !s.bondAttempt) {
             const speed = 0.34 * clamp(currentStats.stats.vel / 52, 0.62, 1.55);
-            const travel = speed * dt * minDimension;
+            const travel = speed * dt * minDimension * moveMagnitude;
             const moved = moveInArena({ x: s.px, y: s.py }, moveX / moveLength * travel / rectNow.width, moveY / moveLength * travel / rectNow.height, arena);
             s.px = moved.x;
             s.py = moved.y;
@@ -1250,6 +1300,11 @@
               if (inside && !dodged) {
                 applyHit(strike.owner, strike.attackerSp, strike.attackerLevel, strike.move, strike.crit, strike.from, targetPos, strike.attackerIndex ?? s.foeIndex, strike.targetFoeIndex ?? s.foeIndex);
               } else {
+                const missPoint = { x: strike.x, y: strike.y };
+                const strikeAttacker = strike.owner === "player" && s.fusion?.actor.sp === strike.attackerSp
+                  ? s.fusion.definition : species(strike.attackerSp) || {};
+                if (recordArenaScar(strike.move, strikeAttacker, missPoint, now, 0, strike.crit, true))
+                  playAttackScene(strikeAttacker, strike.move, 0, strike.crit, strike.from, missPoint, strike.owner === "player", { impactOnly: true, hit: false, groundImpact: true });
                 s.log = dodged ? "Esquiva no último instante!" : "O impacto de área atingiu o chão vazio.";
                 s.logUntil = now + 1000;
               }
@@ -1301,6 +1356,12 @@
                 continue;
               }
               if (projectile.elapsedMs >= projectile.flightMs || remainingDistance <= step + 0.0001) {
+                const missPoint = { x: projectile.toX, y: projectile.toY };
+                const shotAttacker = projectile.owner === "player" && s.fusion?.actor.sp === projectile.attackerSp
+                  ? s.fusion.definition : species(projectile.attackerSp) || {};
+                if (recordArenaScar(projectile.move, shotAttacker, missPoint, now, 0, projectile.crit, true)) {
+                  playAttackScene(shotAttacker, projectile.move, 0, projectile.crit, { x: projectile.fromX, y: projectile.fromY }, missPoint, projectile.owner === "player", { impactOnly: true, hit: false, groundImpact: true });
+                }
                 if (!projectile.missLogged) { s.log = "O projétil passou no vazio!"; s.logUntil = now + 850; }
                 continue;
               }
@@ -1317,18 +1378,48 @@
           window.removeEventListener("keydown", down, true);
           window.removeEventListener("keyup", up, true);
           held.current.clear();
+          analogRef.current.x = 0; analogRef.current.y = 0; analogRef.current.pointerId = null;
           for (const timer of attackSceneTimers.current.values()) window.clearTimeout(timer);
           attackSceneTimers.current.clear();
           window.EV_MUSIC?.leaveBattle?.();
         };
       }, []);
 
-      const pressDirection = (direction) => (event) => {
-        event.preventDefault();
-        held.current.add(direction);
-        try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+      const updateStick = (event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const radius = Math.max(1, rect.width * 0.34);
+        const x = (event.clientX - (rect.left + rect.width / 2)) / radius;
+        const y = (event.clientY - (rect.top + rect.height / 2)) / radius;
+        const vector = vectorForStick(x, y);
+        analogRef.current.x = vector.x; analogRef.current.y = vector.y;
+        setStickPosition({ x: vector.x * radius, y: vector.y * radius });
       };
-      const releaseDirection = (direction) => (event) => { event.preventDefault(); held.current.delete(direction); };
+      const startStick = (event) => {
+        event.preventDefault(); event.stopPropagation();
+        analogRef.current.pointerId = event.pointerId;
+        try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+        updateStick(event);
+      };
+      const moveStick = (event) => {
+        if (analogRef.current.pointerId !== event.pointerId) return;
+        event.preventDefault(); updateStick(event);
+      };
+      const endStick = (event) => {
+        if (analogRef.current.pointerId !== event.pointerId) return;
+        event.preventDefault(); analogRef.current.x = 0; analogRef.current.y = 0; analogRef.current.pointerId = null;
+        setStickPosition({ x: 0, y: 0 });
+      };
+      const analogStick = el("div", {
+        role: "group", "aria-label": "Analógico de movimento", title: "Arraste para mover; a intensidade controla a velocidade",
+        onPointerDown: startStick, onPointerMove: moveStick, onPointerUp: endStick, onPointerCancel: endStick, onLostPointerCapture: endStick,
+        style: { position: "relative", width: 88, height: 88, margin: "0 auto", borderRadius: "50%", touchAction: "none", border: "2px solid #d8eee066", background: "radial-gradient(circle,#48665bce 0 30%,#182e28e8 72%)", boxShadow: "inset 0 0 0 8px #ffffff08,0 3px 10px #0007", userSelect: "none" },
+      }, [
+        el("span", { style: { position: "absolute", left: "50%", top: 4, transform: "translateX(-50%)", color: "#d7e9dc88", fontSize: 8, fontWeight: 900, pointerEvents: "none" } }, "▲"),
+        el("span", { style: { position: "absolute", left: "50%", bottom: 4, transform: "translateX(-50%)", color: "#d7e9dc88", fontSize: 8, fontWeight: 900, pointerEvents: "none" } }, "▼"),
+        el("span", { style: { position: "absolute", left: 5, top: "50%", transform: "translateY(-50%)", color: "#d7e9dc88", fontSize: 8, fontWeight: 900, pointerEvents: "none" } }, "◀"),
+        el("span", { style: { position: "absolute", right: 5, top: "50%", transform: "translateY(-50%)", color: "#d7e9dc88", fontSize: 8, fontWeight: 900, pointerEvents: "none" } }, "▶"),
+        el("span", { style: { position: "absolute", left: "50%", top: "50%", width: 30, height: 30, transform: `translate(calc(-50% + ${stickPosition.x}px),calc(-50% + ${stickPosition.y}px))`, borderRadius: "50%", border: "1px solid #efffffa8", background: "radial-gradient(circle at 35% 28%,#e9fff2,#84b89c 48%,#355344)", boxShadow: "0 2px 6px #0009,inset 0 0 5px #ffffff88", pointerEvents: "none" } }),
+      ]);
       const controlButton = (label, action, color = "#183c31", disabled = false, title = "") => el("button", {
         type: "button", disabled, title,
         onPointerDown: action,
@@ -1341,11 +1432,6 @@
       const selectedMoveProfile = selectedMove ? (window.EV_REALTIME_PHYSICS?.playerMoveProfile(selectedMove, selectedAttackSlot) || { cost: selectedAttackSlot === 0 ? 0 : selectedAttackSlot < 3 ? 20 : 60, basic: selectedAttackSlot === 0 }) : { cost: 0, basic: false };
       const selectedMovePowerCost = selectedMoveProfile.cost;
       const selectedMoveCost = selectedMoveProfile.basic ? "GRÁTIS · recarga 0,5s" : `${selectedMovePowerCost}% POD.`;
-      const directionButton = (label, dir) => el("button", {
-        "aria-label": `Mover ${dir}`,
-        type: "button", onPointerDown: pressDirection(dir), onPointerUp: releaseDirection(dir), onPointerCancel: releaseDirection(dir), onLostPointerCapture: releaseDirection(dir),
-        style: { touchAction: "none", width: 34, height: 34, borderRadius: 10, border: "1px solid #ffffff50", background: "#142c25cc", color: "white", fontWeight: 900, fontSize: 18, userSelect: "none", boxShadow: "0 2px 0 #0005" },
-      }, label);
       const effectiveSwitches = party.slice(0, 3).map((pet, index) => el("button", {
         key: `pet-${index}`,
         type: "button",
@@ -1372,6 +1458,13 @@
           el("span", { style: { position: "absolute", left: "50%", top: "calc(100% - 3px)", transform: "translate(-50%,0)", padding: "3px 6px", borderRadius: 6, background: "#07120df2", border: `1px solid ${color}`, color: "white", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap" } }, `${warning.label} · ${warning.move?.name || "Impacto"}`),
         ]);
       });
+      const scarNow = performance.now();
+      const scarMinDimension = Math.min(arenaRect?.width || 360, arenaRect?.height || 640);
+      const arenaScarNodes = (s.arenaScars || []).map((scar) => el("div", {
+        key: `arena-scar-${scar.id}`, className: `ev-rt-arena-scar ev-rt-arena-scar--${scar.theme}${scar.crit ? " ev-rt-arena-scar--critical" : ""}`,
+        "aria-hidden": true,
+        style: { left: `${scar.x * 100}%`, top: `${scar.y * 100}%`, width: scarMinDimension * 0.18 * scar.scale, height: scarMinDimension * 0.105 * scar.scale, transform: `translate(-50%,-50%) rotate(${scar.rotation}deg)`, opacity: Math.min(1, (scar.until - scarNow) / 1100), zIndex: 2 },
+      }));
       const swarmWindupNodes = rogueRun ? s.swarm.filter((actor) => actor.windup && foeList.current[actor.foeIndex]?.hp > 0).map((actor) =>
         el("div", { key: `swarm-windup-${actor.foeIndex}`, title: `Ataque iminente: ${actor.windup.move.name}`, style: { position: "absolute", left: `${actor.x * 100}%`, top: `${actor.y * 100 - 8}%`, transform: "translate(-50%,-50%)", zIndex: 7, pointerEvents: "none", display: "grid", placeItems: "center", width: 23, height: 23, borderRadius: "50%", background: "#8e321bea", border: "2px solid #ffd27a", color: "#fff2ba", fontSize: 13, fontWeight: 1000, boxShadow: "0 0 12px #ff9f43", animation: "ev-rt-telegraph 350ms ease-in-out infinite alternate" } }, "!")) : [];
       const telegraph = s.intent && s.intent.role !== "area" && el("div", { style: { position: "absolute", left: `${s.ex * 100}%`, top: `${s.ey * 100 - 8}%`, transform: "translate(-50%,-50%)", zIndex: 6, pointerEvents: "none", padding: "4px 7px", borderRadius: 9, background: "#3e1111e8", border: "1px solid #ff8585", color: "white", fontSize: 8, fontWeight: 1000, whiteSpace: "nowrap", boxShadow: "0 2px 9px #0009" } }, `${boss ? "SINAL DO CHEFE" : "SINAL"} · ${s.intent.move.name}`);
@@ -1438,7 +1531,7 @@
         ]),
         el("span", { title: s.fusion ? "Fusão ativa; a troca retorna depois que a batalha terminar" : switchRemaining > 0 ? "Tempo para poder trocar" : "Troca pronta", style: { flex: "none", minWidth: 34, color: s.fusion ? "#e9d5ff" : switchRemaining > 0 ? "#f5cf73" : "#b7dfbe", fontSize: 9, fontWeight: 900, textAlign: "right" } }, s.fusion ? "FUSÃO" : switchRemaining > 0 ? `${Math.ceil(switchRemaining / 1000)}s` : "Q · PET"),
       ]);
-      const buttonStyle = (background, minHeight = 42) => ({ minWidth: 0, minHeight, padding: "5px 7px", borderRadius: 10, border: "1px solid #ffffff36", background, color: "#fff", fontSize: 9, fontWeight: 950, lineHeight: 1.1, boxShadow: "0 2px 0 #0005", touchAction: "none", userSelect: "none", cursor: "pointer" });
+      const buttonStyle = (background, minHeight = 40) => ({ minWidth: 0, minHeight, padding: "4px 6px", borderRadius: 9, border: "1px solid #ffffff36", background, color: "#fff", fontSize: 8.5, fontWeight: 950, lineHeight: 1.1, boxShadow: "0 2px 0 #0005", touchAction: "none", userSelect: "none", cursor: "pointer" });
       const compactAction = (label, onPointerDown, background, disabled = false, title = "") => el("button", { type: "button", disabled, title, onPointerDown, style: { ...buttonStyle(disabled ? "#263831" : background), opacity: disabled ? .56 : 1 } }, label);
       const moveChoices = moveMenuOpen && el("div", { style: { position: "absolute", zIndex: 8, right: 8, bottom: "calc(100% + 7px)", width: "min(270px, 74vw)", display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 5, padding: 7, borderRadius: 15, border: "1px solid #ffffff35", background: "#081813f5", boxShadow: "0 8px 28px #0009" } }, playerMoves.map((entry, index) => {
         const profile = window.EV_REALTIME_PHYSICS?.playerMoveProfile(entry.move, index) || { cost: index === 0 ? 0 : index < 3 ? 20 : 60, basic: index === 0 };
@@ -1457,13 +1550,8 @@
         ...fusionPartners.map(({ pet, index }) => compactAction(`${species(pet.sp)?.name || pet.sp} · Nv ${pet.level} · HP ${pet.hp}`, (event) => { event.preventDefault(); activateFusion(index, fusionType || availableFusionTypes[0]); }, "#4a3263", false, "Une os dois Pets até o fim da batalha; o dano será distribuído ao encerrar.")),
         compactAction("CANCELAR", (event) => { event.preventDefault(); setFusionMenuOpen(false); }, "#263831"),
       ]);
-      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "106px minmax(0,1fr)", gap: 7, alignItems: "center", padding: "4px 8px max(7px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
-        el("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,34px)", gridTemplateRows: "repeat(3,34px)", gap: 1, justifyContent: "center", alignContent: "center" } }, [
-          el("span", { style: { gridColumn: "2", gridRow: "1" } }, directionButton("▲", "up")),
-          el("span", { style: { gridColumn: "1", gridRow: "2" } }, directionButton("◀", "left")),
-          el("span", { style: { gridColumn: "2", gridRow: "3" } }, directionButton("▼", "down")),
-          el("span", { style: { gridColumn: "3", gridRow: "2" } }, directionButton("▶", "right")),
-        ]),
+      const controls = el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "96px minmax(0,1fr)", gap: 6, alignItems: "center", padding: "3px 7px max(6px, env(safe-area-inset-bottom))", background: "#07120df7", color: "white", touchAction: "none" } }, [
+        analogStick,
         el("div", { style: { position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(60px,.75fr)", gap: 5, alignContent: "center" } }, [
           compactAction([el("span", { style: { display: "block", fontSize: 8, opacity: .75 } }, (selectedMoveProfile.basic ? "BÁSICO · " : "ATACAR · ") + selectedMoveCost), el("span", { style: { display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10 } }, selectedMove?.name || "Golpe")], (event) => { event.preventDefault(); if (selectedEntry) playerAction(selectedIndex); }, "linear-gradient(135deg,#a14f27,#74351f)", s.done || Boolean(s.bondAttempt), selectedMove ? `${selectedMove.type} · Poder ${selectedMove.power} · ${selectedMoveProfile.basic ? "golpe fraco, imediato e gratuito" : "técnica ofensiva"}` : "Sem golpes"),
           compactAction(`GOLPES ${playerMoves.length} ▴`, (event) => { event.preventDefault(); setMoveMenuOpen((open) => !open); }, "#244a63", s.done || Boolean(s.bondAttempt), "Selecione uma técnica ofensiva; golpes de área têm marca de impacto."),
@@ -1516,9 +1604,10 @@
       return el("div", { onPointerUp, onPointerCancel: onPointerUp, style: { width: "100%", height: "100dvh", overflow: "hidden", position: "relative", display: "grid", gridTemplateRows: "auto minmax(0,1fr) auto", color: "white", fontFamily: "system-ui,sans-serif", background: "#07120d", userSelect: "none", touchAction: "none" } }, [
         el("style", {}, `@keyframes ev-rt-telegraph{from{opacity:.38;transform:scale(.72)}to{opacity:1;transform:scale(1.12)}} @keyframes ev-rt-float{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-36px)}} @keyframes ev-rt-intro{0%{opacity:0;transform:translateY(12px) scale(.94);letter-spacing:.2em}25%{opacity:1;transform:translateY(0) scale(1)}82%{opacity:1}100%{opacity:0;transform:translateY(-8px) scale(1.02)}} @keyframes ev-rt-reveal{0%{opacity:0;transform:scale(.55);filter:blur(8px)}45%{opacity:1;transform:scale(1.1);filter:blur(0)}100%{opacity:0;transform:scale(1.05)}} @keyframes ev-rt-guard{0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-25deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.16) rotate(8deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.42) rotate(25deg)}} @keyframes ev-rt-bond-seal{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-70deg)}20%{opacity:.95}75%{opacity:.88;transform:translate(-50%,-50%) scale(1) rotate(180deg)}100%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(340deg)}} @keyframes ev-rt-bond-travel{0%{opacity:0;transform:translate(-50%,-50%) scale(.45);filter:blur(4px)}15%{opacity:1;filter:blur(0)}55%{transform:translate(calc(-50% + var(--bond-mid-dx)),calc(-50% + var(--bond-mid-dy))) scale(1.2)}100%{opacity:.12;transform:translate(calc(-50% + var(--bond-dx)),calc(-50% + var(--bond-dy))) scale(.2);filter:blur(2px)}} .ev-rt-hint{display:none}@media(min-width:700px){.ev-rt-hint{display:block}} @media(max-height:680px){.ev-rt-hint{display:none!important}}`),
         hud,
-        el("div", { ref: arenaRef, style: { minHeight: 0, position: "relative", overflow: "hidden", backgroundColor: arenaField.tile, backgroundImage: `linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%),linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%)`, backgroundPosition: "0 0,20px 20px", backgroundSize: "40px 40px", imageRendering: "pixelated" } }, [
+        el("div", { ref: arenaRef, className: `ev-rt-battlefield${performance.now() < (s.arenaShockUntil || 0) ? " ev-rt-battlefield--quake" : ""}`, style: { minHeight: 0, position: "relative", overflow: "hidden", backgroundColor: arenaField.tile, backgroundImage: `radial-gradient(ellipse at 50% 42%,color-mix(in srgb,${arena.accent} 18%,transparent),transparent 68%),linear-gradient(180deg,#ffffff05,transparent 40%,#04120c4a),linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%),linear-gradient(45deg,${arenaField.tileAlt}68 25%,transparent 25%,transparent 75%,${arenaField.tileAlt}68 75%)`, backgroundPosition: "center,center,0 0,20px 20px", backgroundSize: "auto,auto,40px 40px,40px 40px", imageRendering: "pixelated", "--ev-arena-accent": arena.accent } }, [
           el("div", { style: { position: "absolute", inset: 3, border: `6px solid ${arenaField.edge}`, outline: "2px solid #08140d88", boxShadow: `inset 0 0 0 3px ${arena.accent}50,inset 0 0 28px #06140b55,0 0 0 1px #ffffff20`, pointerEvents: "none", zIndex: 1 } }),
           ...terrainObstacles,
+          ...arenaScarNodes,
           primeNode,
           primeActiveNode,
           ...areaWarningNodes,
@@ -1572,5 +1661,5 @@
     return { RealtimeBattle, ChooseBattleMode };
   }
 
-  window.EV_REALTIME_COMBAT = Object.freeze({ arenaFor, arenaStats, damageFor, telegraphRadius, availableMoves, rogueSequence, rogueFormation, chooseAiMove, canOccupy, moveInArena, createView });
+  window.EV_REALTIME_COMBAT = Object.freeze({ arenaFor, arenaStats, damageFor, telegraphRadius, shouldLeaveArenaScar, vectorForStick, normalizedInstinctUses, availableMoves, rogueSequence, rogueFormation, chooseAiMove, canOccupy, moveInArena, createView });
 })();
